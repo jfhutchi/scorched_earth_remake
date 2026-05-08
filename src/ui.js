@@ -1,4 +1,4 @@
-import { CONFIG, WEAPONS } from './config.js';
+import { CONFIG, GAME_VERSION, WEAPONS } from './config.js';
 
 export class UI {
     constructor() {
@@ -10,6 +10,8 @@ export class UI {
         this.summaryScore = document.getElementById('summaryScore');
         this.summaryStats = document.getElementById('summaryStats');
         this.shopContent = document.getElementById('shopContent');
+        this.menuVersion = document.getElementById('menuVersion');
+        this.versionChip = document.getElementById('versionChip');
 
         this.twoPlayerBtn = document.getElementById('twoPlayerBtn');
         this.cpuBtn = document.getElementById('cpuBtn');
@@ -55,6 +57,12 @@ export class UI {
         this.controlsHint = document.getElementById('controlsHint');
 
         this.loadSettings();
+        this.setVersion(GAME_VERSION);
+    }
+
+    setVersion(version) {
+        if (this.menuVersion) this.menuVersion.textContent = version;
+        if (this.versionChip) this.versionChip.textContent = version;
     }
 
     loadSettings() {
@@ -186,7 +194,7 @@ export class UI {
 
         this.angleVal.textContent = `${Math.round(active.angle)} deg`;
         this.powerVal.textContent = String(Math.round(active.power));
-        this.windVal.textContent = formatWind(wind);
+        this.windVal.textContent = `${formatWind(wind)} (${state.settings.windMode})`;
         this.weaponVal.textContent = selectedWeapon.name;
         this.ammoVal.textContent = formatAmmo(active.ammoFor(selectedWeapon.id));
         this.moveVal.textContent = `${Math.round(active.movementFuel)} px`;

@@ -13,14 +13,17 @@ Original prompt: Upgrade the existing local browser Scorched Earth-style artille
 - Completed v0.4 input-control fix: `ArrowLeft`/`ArrowRight` adjust cannon angle only, while `A`/`D` move the active human tank only.
 - Completed v0.4 replayability systems: economy, summary screen, between-round shop, player and CPU purchases, defensive utilities, CPU difficulty profiles, saved match settings, HUD inventory display, and documentation updates.
 - Browser verification covered two-player input separation, firing control lockout, CPU turn progression, settings persistence, economy/shop math, shield absorb, repair kit healing, parachute fall mitigation, summary/shop overlays, and dedicated web-game Playwright client smoke testing with no console errors.
+- Started v0.5 stabilization pass: added `v0.5.0` version display, tuned weapon feedback, added a Dirt Bomb dirt-puff effect, tightened shop/state guards, added repair-use messaging, added CPU shop reserves, and documented debug helpers.
 
 ## Notes
 
 - No dependencies or build step are present.
 - Use a local static server for testing because ES modules are blocked by some browsers on `file://`.
 - Browser verification covered two-player smoke play, CPU smoke play, HUD screenshots, mute persistence, forced win scoring, next-round state, new-match state, and 1280x720 / 1366x768 / 1920x1080 screenshots with no console errors.
+- v0.5 debug helpers are available only when loading the page with `?debug=1`.
 
 ## TODO
 
+- v0.5 browser verification covered version display, debug-helper gating, Arrow vs A/D control separation, Standard/Heavy/Dirt impact helpers, summary -> shop -> next round flow, shop purchase prices, wind off, shield absorb, repair messages, parachute fall mitigation, 1280x720 / 1366x768 / 1920x1080 screenshots, and the dedicated web-game Playwright client with no console errors.
 - Optional next pass: hand-play full best-of-three matches on each CPU difficulty and tune aim errors, shop preferences, and money pacing if needed.
 - Optional future feature: add Bouncer Shell once core economy and utility balance feel stable.

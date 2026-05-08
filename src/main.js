@@ -1,6 +1,6 @@
 import { Game } from './game.js';
 import { UI } from './ui.js';
-import { CONFIG } from './config.js';
+import { CONFIG, GAME_VERSION } from './config.js';
 
 const canvas = document.getElementById('gameCanvas');
 canvas.width = CONFIG.canvas.width;
@@ -102,5 +102,14 @@ fitCanvas();
 
 window.render_game_to_text = () => game.renderTextState();
 window.advanceTime = (ms) => game.advanceTime(ms);
+
+const debugEnabled = CONFIG.debug || new URLSearchParams(window.location.search).has('debug');
+if (debugEnabled) {
+    window.debugGameState = () => game.debugState();
+    window.testWeaponImpact = (weaponId) => game.testWeaponImpact(weaponId);
+    window.forceRoundWin = (playerIndex) => game.forceRoundWin(playerIndex);
+}
+
+window.GAME_VERSION = GAME_VERSION;
 
 ui.showMenu();

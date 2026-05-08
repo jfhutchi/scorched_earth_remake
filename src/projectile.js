@@ -51,13 +51,19 @@ export class Explosion {
         this.maxRadius = maxRadius;
         this.weapon = weapon;
         this.t = 0;
-        this.duration = weapon.id === 'heavy' ? 0.7 : 0.58;
+        this.duration = weapon.id === 'heavy' ? 0.78 : (weapon.id === 'dirt' ? 0.72 : 0.56);
         this.alive = true;
-        this.fragments = Array.from({ length: weapon.id === 'dirt' ? 18 : 13 }, () => ({
-            angle: Math.random() * Math.PI * 2,
-            speed: 18 + Math.random() * maxRadius * 1.1,
-            size: 1.5 + Math.random() * 3,
-        }));
+        const fragmentCount = weapon.id === 'heavy' ? 22 : (weapon.id === 'dirt' ? 28 : 13);
+        this.fragments = Array.from({ length: fragmentCount }, () => {
+            const upwardBias = weapon.id === 'dirt' ? -Math.PI / 2 + (Math.random() - 0.5) * Math.PI * 0.95 : Math.random() * Math.PI * 2;
+            return {
+                angle: upwardBias,
+                speed: 18 + Math.random() * maxRadius * (weapon.id === 'heavy' ? 1.35 : 1.1),
+                size: 1.5 + Math.random() * (weapon.id === 'dirt' ? 4.5 : 3),
+                drift: weapon.id === 'dirt' ? (Math.random() - 0.5) * 18 : 0,
+                soilTint: Math.random(),
+            };
+        });
     }
 
     update(dt) {
@@ -67,29 +73,37 @@ export class Explosion {
 
     draw(ctx) {
         const k = Math.min(1, this.t / this.duration);
+        if (this.weapon.impactVisual === 'dirtPuff') {
+            this._drawDirtPuff(ctx, k);
+            return;
+        }
+
         const shockRadius = this.maxRadius * (0.25 + k * 1.05);
         const coreRadius = this.maxRadius * (0.95 - k * 0.45);
+        const isHeavy = this.weapon.impactVisual === 'heavyBlast';
 
         ctx.save();
 
-        ctx.strokeStyle = `rgba(255, 238, 145, ${1 - k})`;
-        ctx.lineWidth = 3;
+        ctx.strokeStyle = isHeavy
+            ? `rgba(255, 230, 120, ${0.95 - k * 0.82})`
+            : `rgba(255, 238, 145, ${0.78 - k * 0.66})`;
+        ctx.lineWidth = isHeavy ? 4 : 3;
         ctx.beginPath();
         ctx.arc(this.x, this.y, shockRadius, 0, Math.PI * 2);
         ctx.stroke();
 
         const gradient = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, coreRadius);
-        gradient.addColorStop(0, `rgba(255, 248, 218, ${0.9 - k * 0.6})`);
-        gradient.addColorStop(0.38, `rgba(255, 137, 38, ${0.78 - k * 0.55})`);
-        gradient.addColorStop(1, 'rgba(120, 40, 24, 0)');
+        gradient.addColorStop(0, `rgba(255, 248, 218, ${isHeavy ? 0.95 - k * 0.55 : 0.82 - k * 0.58})`);
+        gradient.addColorStop(0.36, `rgba(255, 137, 38, ${isHeavy ? 0.86 - k * 0.48 : 0.68 - k * 0.50})`);
+        gradient.addColorStop(1, `rgba(120, 40, 24, ${isHeavy ? 0.08 * (1 - k) : 0})`);
         ctx.fillStyle = gradient;
         ctx.beginPath();
         ctx.arc(this.x, this.y, coreRadius, 0, Math.PI * 2);
         ctx.fill();
 
-        ctx.fillStyle = this.weapon.id === 'dirt'
-            ? `rgba(98, 64, 38, ${0.75 - k * 0.55})`
-            : `rgba(55, 45, 38, ${0.55 - k * 0.45})`;
+        ctx.fillStyle = isHeavy
+            ? `rgba(45, 38, 32, ${0.7 - k * 0.55})`
+            : `rgba(55, 45, 38, ${0.5 - k * 0.4})`;
         for (const fragment of this.fragments) {
             const d = fragment.speed * k;
             ctx.beginPath();
@@ -100,6 +114,43 @@ export class Explosion {
                 0,
                 Math.PI * 2
             );
+            ctx.fill();
+        }
+
+        ctx.restore();
+    }
+
+    _drawDirtPuff(ctx, k) {
+        const puffRadius = this.maxRadius * (0.35 + k * 0.72);
+        const alpha = Math.max(0, 0.7 - k * 0.62);
+
+        ctx.save();
+
+        const gradient = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, puffRadius);
+        gradient.addColorStop(0, `rgba(141, 112, 66, ${alpha})`);
+        gradient.addColorStop(0.48, `rgba(104, 82, 48, ${alpha * 0.68})`);
+        gradient.addColorStop(1, 'rgba(70, 50, 30, 0)');
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.ellipse(this.x, this.y - this.maxRadius * 0.1 * k, puffRadius * 1.08, puffRadius * 0.62, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = `rgba(81, 122, 56, ${0.42 - k * 0.32})`;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.maxRadius * (0.35 + k * 0.54), Math.PI * 0.08, Math.PI * 0.92);
+        ctx.stroke();
+
+        for (const fragment of this.fragments) {
+            const d = fragment.speed * k;
+            const gravityDrop = this.maxRadius * 0.42 * k * k;
+            const fx = this.x + Math.cos(fragment.angle) * d + fragment.drift * k;
+            const fy = this.y + Math.sin(fragment.angle) * d + gravityDrop;
+            ctx.fillStyle = fragment.soilTint > 0.72
+                ? `rgba(91, 132, 57, ${0.72 - k * 0.52})`
+                : `rgba(104, 75, 42, ${0.78 - k * 0.56})`;
+            ctx.beginPath();
+            ctx.arc(fx, fy, fragment.size * (1 - k * 0.38), 0, Math.PI * 2);
             ctx.fill();
         }
 
