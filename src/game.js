@@ -3,7 +3,7 @@ import { Tank } from './tank.js';
 import { Projectile, Explosion } from './projectile.js';
 import { AudioManager } from './audio.js';
 import { CPUController } from './cpu.js';
-import { CONFIG, CPU_DIFFICULTY, GAME_VERSION, WEAPONS, clamp, getWeaponById } from './config.js';
+import { CONFIG, CPU_DIFFICULTY, GAME_VERSION, WEAPONS, clamp, getWeaponById, maxAmmoFor } from './config.js';
 
 export class Game {
     constructor(canvas, ui) {
@@ -113,23 +113,118 @@ export class Game {
         const player = this.playerData[playerIndex];
         const item = CONFIG.shop[itemId];
         if (this.gameMode === 'cpu' && playerIndex === 1) return false;
-        if (!player || !item || player.money < item.price) return false;
+        if (!player || !item) return false;
+
+        if (!this._canPurchase(player, itemId)) {
+            this.audio.playBlocked();
+            return false;
+        }
+        if (player.money < item.price) {
+            this.audio.playBlocked();
+            return false;
+        }
 
         player.money -= item.price;
         this._grantShopItem(player, itemId);
         this._syncTankInventoryFromPlayerData(playerIndex);
+        this.audio.playPurchase();
         this.ui.showShop(this._state(), this.getShopItems());
         return true;
     }
 
     getShopItems() {
-        return Object.entries(CONFIG.shop).map(([id, item]) => ({ id, ...item }));
+        return Object.entries(CONFIG.shop).map(([id, item]) => ({
+            id,
+            ...item,
+            refillToMax: item.weaponId ? maxAmmoFor(item.weaponId) : null,
+        }));
+    }
+
+    _canPurchase(player, itemId) {
+        if (!player) return false;
+        const item = CONFIG.shop[itemId];
+        if (!item) return false;
+        if (item.weaponId) {
+            const max = maxAmmoFor(item.weaponId);
+            if (!Number.isFinite(max)) return true;
+            return (player.ammo[item.weaponId] || 0) < max;
+        }
+        if (itemId === 'repair') {
+            return player.health < CONFIG.tank.maxHealth;
+        }
+        if (itemId === 'shield') {
+            return player.shieldCharge < CONFIG.utilities.shieldMaxCharge;
+        }
+        return true;
     }
 
     toggleMute() {
         const muted = this.audio.toggleMute();
         this.ui.setMuted(muted);
         return muted;
+    }
+
+    // Map a touch action onto the same key the keyboard handler watches so
+    // hold-to-repeat behavior matches between input methods.
+    _touchHoldKey(action) {
+        switch (action) {
+            case 'aimLeft': return 'ArrowLeft';
+            case 'aimRight': return 'ArrowRight';
+            case 'powerUp': return 'ArrowUp';
+            case 'powerDown': return 'ArrowDown';
+            case 'moveLeft': return 'KeyA';
+            case 'moveRight': return 'KeyD';
+            default: return null;
+        }
+    }
+
+    touchHoldStart(action) {
+        const code = this._touchHoldKey(action);
+        if (!code || !this.running) return;
+        this.keys.add(code);
+    }
+
+    touchHoldEnd(action) {
+        const code = this._touchHoldKey(action);
+        if (!code) return;
+        this.keys.delete(code);
+    }
+
+    touchTap(action) {
+        if (action === 'fire') {
+            if (this._canHumanControl()) this._fireSelectedWeapon();
+            return;
+        }
+        if (action === 'weapon') {
+            if (this._canHumanControl()) this._cycleWeapon();
+            return;
+        }
+        if (action === 'restart') {
+            if (['aiming', 'cpuThinking', 'projectile', 'resolving'].includes(this.phase)) {
+                this.resetCurrentRound();
+            }
+            return;
+        }
+        if (action === 'next') {
+            this.nextRound();
+            return;
+        }
+        if (action === 'menu') {
+            this.returnToMenu();
+            return;
+        }
+        if (action === 'mute') {
+            this.toggleMute();
+            return;
+        }
+    }
+
+    canHumanControl() {
+        return this._canHumanControl();
+    }
+
+    clearTouchHolds() {
+        ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'KeyA', 'KeyD'].forEach((code) => this.keys.delete(code));
     }
 
     advanceTime(ms) {
@@ -354,14 +449,19 @@ export class Game {
 
     _applyRepairKitsForNewRound() {
         const messages = [];
+        let anyHealed = false;
         for (const player of this.playerData) {
+            // v0.6: First Aid Kit fully restores health between rounds and is
+            // only consumed when the tank is below max health.
             if (player.repairKits > 0 && player.health < CONFIG.tank.maxHealth) {
                 player.repairKits -= 1;
-                const before = player.health;
-                player.health = Math.min(CONFIG.tank.maxHealth, player.health + CONFIG.utilities.repairHeal);
-                messages.push(`${player.name} used a repair kit (+${player.health - before} HP).`);
+                const healed = CONFIG.tank.maxHealth - player.health;
+                player.health = CONFIG.tank.maxHealth;
+                messages.push(`${player.name} used a First Aid Kit (+${healed} HP, fully healed).`);
+                anyHealed = true;
             }
         }
+        if (anyHealed) this.audio.playHeal();
         return messages;
     }
 
@@ -804,6 +904,7 @@ export class Game {
 
         this.audio.playExplosion(weapon);
         if (result.totalDamage > 0) this.audio.playHit();
+        if (result.shieldAbsorbed > 0) this.audio.playShieldAbsorb();
     }
 
     _applyTerrainEffect(x, y, weapon) {
@@ -872,6 +973,7 @@ export class Game {
 
         return {
             totalDamage,
+            shieldAbsorbed,
             message: `${prefix} ${details.join(' ')}`,
         };
     }
@@ -900,6 +1002,7 @@ export class Game {
                 tank.parachutes -= 1;
                 fallDamage = Math.max(0, Math.round(fallDamage * (1 - CONFIG.utilities.parachuteReduction)));
                 messages.push(`${tank.name}'s parachute reduced fall damage.`);
+                this.audio.playParachute();
             }
 
             if (fallDamage > 0) {
@@ -1017,6 +1120,8 @@ export class Game {
             const reserve = profile.reserveMoney ?? 0;
             const urgentRepair = itemId === 'repair' && cpu.health < 55;
             if (!item || cpu.money < item.price || Math.random() > chance) return false;
+            // v0.6: never spend on a weapon refill or shield/repair that is already full.
+            if (!this._canPurchase(cpu, itemId)) return false;
             if (!urgentRepair && cpu.money - item.price < reserve) return false;
             cpu.money -= item.price;
             this._grantShopItem(cpu, itemId);
@@ -1025,15 +1130,17 @@ export class Game {
 
         if (cpu.health < 85) tryBuy('repair', cpu.health < 55 ? Math.min(1, profile.repairBuyChance + 0.25) : profile.repairBuyChance);
         if (cpu.shieldCharge < CONFIG.utilities.shieldPurchaseCharge) tryBuy('shield', profile.shieldBuyChance);
-        if (cpu.ammo.heavy < 2) tryBuy('heavyAmmo', profile.ammoBuyChance);
-        if (cpu.ammo.dirt < 1) tryBuy('dirtAmmo', profile.ammoBuyChance * 0.45);
+        // v0.6: ammo now refills to max, so the CPU only buys when actually low.
+        if (cpu.ammo.heavy < maxAmmoFor('heavy')) tryBuy('heavyAmmo', profile.ammoBuyChance);
+        if (cpu.ammo.dirt < maxAmmoFor('dirt')) tryBuy('dirtAmmo', profile.ammoBuyChance * 0.45);
         if (cpu.parachutes < 1) tryBuy('parachute', profile.shieldBuyChance * 0.45);
         this._syncTankInventoryFromPlayerData(cpuIndex);
     }
 
     _grantShopItem(player, itemId) {
-        if (itemId === 'heavyAmmo') player.ammo.heavy += 1;
-        if (itemId === 'dirtAmmo') player.ammo.dirt += 1;
+        // v0.6: ammo purchases refill that weapon to its max carried ammo.
+        if (itemId === 'heavyAmmo') player.ammo.heavy = maxAmmoFor('heavy');
+        if (itemId === 'dirtAmmo') player.ammo.dirt = maxAmmoFor('dirt');
         if (itemId === 'shield') {
             player.shieldCharge = Math.min(
                 CONFIG.utilities.shieldMaxCharge,

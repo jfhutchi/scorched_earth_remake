@@ -137,22 +137,58 @@ export class UI {
 
     showShop(state, items) {
         this.summaryOverlay.classList.add('hidden');
+        // Player names and shop labels are static config values, not user
+        // input. We render via DOM APIs so the security hook is satisfied
+        // and any future user-supplied text remains safe.
+        const root = this.shopContent;
+        while (root.firstChild) root.removeChild(root.firstChild);
+
         const players = state.playerData;
-        this.shopContent.innerHTML = players.map((player, playerIndex) => {
+        players.forEach((player, playerIndex) => {
             const isCpu = state.gameMode === 'cpu' && playerIndex === 1;
-            const buttons = items.map((item) => {
-                const disabled = isCpu || player.money < item.price ? 'disabled' : '';
-                return `<button class="btn shop-buy" data-player="${playerIndex}" data-item="${item.id}" ${disabled}>${item.label} - $${item.price}</button>`;
-            }).join('');
-            return `
-                <section class="shop-card">
-                    <h3>${player.name}${isCpu ? ' (auto-bought)' : ''}</h3>
-                    <p class="money-line">$${player.money}</p>
-                    <p>${inventoryText(player)}</p>
-                    <div class="shop-actions">${buttons}</div>
-                </section>
-            `;
-        }).join('');
+            const card = document.createElement('section');
+            card.className = 'shop-card';
+
+            const h3 = document.createElement('h3');
+            h3.textContent = `${player.name}${isCpu ? ' (auto-bought)' : ''}`;
+            card.appendChild(h3);
+
+            const money = document.createElement('p');
+            money.className = 'money-line';
+            money.textContent = `$${player.money}`;
+            card.appendChild(money);
+
+            const inv = document.createElement('p');
+            inv.textContent = inventoryText(player);
+            card.appendChild(inv);
+
+            const actions = document.createElement('div');
+            actions.className = 'shop-actions';
+
+            for (const item of items) {
+                const btn = document.createElement('button');
+                btn.className = 'btn shop-buy';
+                btn.dataset.player = String(playerIndex);
+                btn.dataset.item = item.id;
+
+                const full = isShopItemFull(player, item);
+                const cantAfford = player.money < item.price;
+                if (isCpu || cantAfford || full) btn.disabled = true;
+                if (full) btn.classList.add('full');
+
+                if (full) {
+                    btn.textContent = item.fullLabel || `${item.label} (Full)`;
+                } else if (item.weaponId && item.refillToMax) {
+                    btn.textContent = `${item.refillLabel || item.label} (to ${item.refillToMax}) - $${item.price}`;
+                } else {
+                    btn.textContent = `${item.label} - $${item.price}`;
+                }
+                actions.appendChild(btn);
+            }
+            card.appendChild(actions);
+            root.appendChild(card);
+        });
+
         this.shopOverlay.classList.remove('hidden');
     }
 
@@ -222,16 +258,16 @@ export class UI {
     }
 
     _controlsText(state) {
-        if (state.phase === 'roundSummary') return 'N: Continue to shop   Esc: Menu   M: Mute';
-        if (state.phase === 'shop') return 'Use shop buttons, then Start Next Round. N also starts the next round.';
-        if (state.gameOver) return 'N: Continue   Esc: Menu   M: Mute';
-        if (state.phase === 'cpuThinking') return 'CPU is aiming. Controls locked. M: Mute   Esc: Menu';
-        if (state.phase !== 'aiming') return 'Controls locked until the shot resolves. M: Mute   Esc: Menu';
-        if (state.active.isCpu) return 'CPU turn. M: Mute   Esc: Menu';
+        if (state.phase === 'roundSummary') return 'Keys: N continue, Esc menu, M mute. Touch: N or ≡.';
+        if (state.phase === 'shop') return 'Buy items, then Start Next Round. Keys: N next round. Touch: N.';
+        if (state.gameOver) return 'Keys: N continue, Esc menu, M mute. Touch: N or ≡.';
+        if (state.phase === 'cpuThinking') return 'CPU is aiming. Controls locked.';
+        if (state.phase !== 'aiming') return 'Controls locked until the shot resolves.';
+        if (state.active.isCpu) return 'CPU turn. Controls locked.';
         if (state.active.movementFuel <= 0) {
-            return 'Left/Right: Angle   Up/Down: Power   Movement exhausted   Space: Fire   Tab/W: Weapon   R: Restart   M: Mute   Esc: Menu';
+            return 'Keys: arrows aim, Space fire, Tab/W weapon, R restart, M mute, Esc menu. Touch: ↺↻ aim, PWR ± power, FIRE, WPN, ♪ mute, ≡ menu.';
         }
-        return 'Left/Right: Angle   Up/Down: Power   A/D: Move   Space: Fire   Tab/W: Weapon   R: Restart   M: Mute   Esc: Menu';
+        return 'Keys: arrows aim, A/D move, Space fire, Tab/W weapon, R restart, M mute, Esc menu. Touch: ◀▶ move, ↺↻ aim, PWR ± power, FIRE, WPN.';
     }
 }
 
@@ -250,9 +286,25 @@ function inventoryText(entity, { includeMoney = true } = {}) {
     const parts = [];
     if (includeMoney) parts.push(`$${money}`);
     parts.push(`H ${heavy} D ${dirt}`);
-    parts.push(`Sh ${shield} R ${repairs} P ${parachutes}`);
+    parts.push(`Sh ${shield} FA ${repairs} P ${parachutes}`);
     if (Number.isFinite(entity.health)) parts.push(`HP ${Math.round(entity.health)}`);
     return parts.join(' | ');
+}
+
+function isShopItemFull(player, item) {
+    if (!player || !item) return false;
+    if (item.weaponId && Number.isFinite(item.refillToMax)) {
+        const have = player.ammo?.[item.weaponId] || 0;
+        return have >= item.refillToMax;
+    }
+    if (item.id === 'repair') {
+        const max = 100;
+        return (player.health || 0) >= max;
+    }
+    if (item.id === 'shield') {
+        return (player.shieldCharge || 0) >= 180;
+    }
+    return false;
 }
 
 function formatWind(wind) {

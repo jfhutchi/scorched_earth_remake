@@ -14,15 +14,23 @@ body {
         linear-gradient(135deg, #17394a 0%, #192d33 44%, #1a1c1a 100%);
     color: #f3efe3;
     font-family: Georgia, "Trebuchet MS", serif;
+    /* Prevent iOS rubber-band scroll and double-tap zoom while playing. */
+    overscroll-behavior: none;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%;
 }
 
 button {
     font: inherit;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
 }
 
 #app {
     width: 100vw;
     height: 100vh;
+    height: 100dvh;
     position: relative;
 }
 
@@ -39,9 +47,15 @@ button {
     display: none !important;
 }
 
+/* Default: hide mobile-only widgets, show desktop. Phone media queries below
+   flip these. */
+.mobile-only { display: none !important; }
+.mobile-instructions { display: none; }
+
 .menu-card {
     width: min(760px, calc(100vw - 32px));
     max-height: calc(100vh - 32px);
+    max-height: calc(100dvh - 32px);
     overflow: auto;
     padding: 32px 38px;
     border: 1px solid rgba(255, 236, 190, 0.22);
@@ -51,6 +65,8 @@ button {
         repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.03) 0 1px, transparent 1px 12px);
     box-shadow: 0 22px 58px rgba(0, 0, 0, 0.42);
     text-align: center;
+    padding-top: max(32px, env(safe-area-inset-top));
+    padding-bottom: max(32px, env(safe-area-inset-bottom));
 }
 
 .eyebrow {
@@ -64,7 +80,7 @@ button {
 
 .title {
     color: #ffe8a6;
-    font-size: clamp(34px, 5vw, 58px);
+    font-size: clamp(28px, 5vw, 58px);
     line-height: 0.95;
     margin-bottom: 12px;
     text-shadow: 0 3px 0 rgba(89, 48, 25, 0.5);
@@ -114,11 +130,13 @@ button {
 .settings-grid select {
     width: 100%;
     margin-top: 5px;
-    padding: 8px;
+    padding: 10px;
     border: 1px solid rgba(255, 232, 166, 0.22);
     border-radius: 6px;
     background: #1f2b2a;
     color: #f8efd8;
+    min-height: 40px;
+    font-size: 14px;
 }
 
 .btn {
@@ -206,6 +224,10 @@ button {
     align-items: center;
     justify-content: center;
     background: #15272d;
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
 }
 
 #stage {
@@ -222,6 +244,9 @@ button {
     background: #8ccced;
     border-radius: 6px;
     box-shadow: 0 22px 55px rgba(0, 0, 0, 0.38);
+    max-width: 100%;
+    max-height: 100%;
+    touch-action: none;
 }
 
 #hud {
@@ -234,6 +259,7 @@ button {
     grid-template-columns: minmax(220px, 1fr) minmax(360px, 1.2fr) minmax(220px, 1fr);
     gap: 12px;
     pointer-events: none;
+    padding-top: env(safe-area-inset-top);
 }
 
 .hud-panel {
@@ -306,6 +332,8 @@ button {
     font-size: 12px;
     font-weight: 800;
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .label {
@@ -458,10 +486,14 @@ button {
     justify-content: center;
     background: rgba(10, 17, 19, 0.58);
     backdrop-filter: blur(4px);
+    z-index: 20;
 }
 
 .overlay-card {
     max-width: 780px;
+    max-height: calc(100vh - 24px);
+    max-height: calc(100dvh - 24px);
+    overflow: auto;
 }
 
 .wide-card {
@@ -519,6 +551,12 @@ button {
     cursor: not-allowed;
 }
 
+.shop-buy.full:disabled {
+    background: rgba(35, 108, 125, 0.28);
+    color: rgba(228, 220, 200, 0.62);
+    border-color: rgba(158, 219, 230, 0.24);
+}
+
 .small-warning {
     position: absolute;
     top: 8px;
@@ -532,6 +570,159 @@ button {
     font-size: 12px;
     font-weight: 800;
 }
+
+.orientation-hint {
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    z-index: 9;
+    transform: translateX(-50%);
+    padding: 7px 14px;
+    border-radius: 999px;
+    background: rgba(35, 108, 125, 0.88);
+    color: #f8efd8;
+    font-size: 12px;
+    font-weight: 800;
+    pointer-events: none;
+}
+
+/* ========================
+   Touch / on-screen controls
+   ======================== */
+
+.touch-controls {
+    position: absolute;
+    inset: auto 0 0 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto auto;
+    grid-template-areas:
+        "utils utils"
+        "left right";
+    gap: 10px;
+    padding: 8px 12px;
+    padding-bottom: max(8px, env(safe-area-inset-bottom));
+    padding-left: max(12px, env(safe-area-inset-left));
+    padding-right: max(12px, env(safe-area-inset-right));
+    pointer-events: none;
+    z-index: 6;
+    /* Hidden on desktop unless the device exposes a coarse pointer (touchscreen). */
+    display: none;
+}
+
+.touch-controls > * {
+    pointer-events: auto;
+}
+
+.touch-cluster {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}
+
+.touch-cluster.left-cluster {
+    grid-area: left;
+    justify-content: flex-start;
+}
+
+.touch-cluster.right-cluster {
+    grid-area: right;
+    justify-content: flex-end;
+}
+
+.touch-cluster.utils-cluster {
+    grid-area: utils;
+    justify-content: center;
+}
+
+.touch-btn {
+    min-width: 52px;
+    min-height: 52px;
+    padding: 6px 12px;
+    border: 1px solid rgba(255, 236, 190, 0.32);
+    border-radius: 12px;
+    background: rgba(28, 36, 36, 0.76);
+    color: #f8efd8;
+    font-size: 18px;
+    font-weight: 800;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    touch-action: none;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.32);
+}
+
+.touch-btn:active,
+.touch-btn.pressed {
+    background: rgba(199, 82, 47, 0.78);
+    border-color: rgba(255, 236, 190, 0.6);
+    transform: translateY(1px);
+}
+
+.touch-btn.fire {
+    min-width: 90px;
+    min-height: 64px;
+    background: rgba(199, 82, 47, 0.88);
+    border-color: #e08245;
+    font-size: 17px;
+    color: #fff4de;
+}
+
+.touch-btn.fire:active,
+.touch-btn.fire.pressed {
+    background: #d86637;
+}
+
+.touch-btn.power {
+    min-width: 60px;
+    font-size: 14px;
+}
+
+.touch-btn.aim {
+    font-size: 22px;
+}
+
+.touch-btn.move {
+    min-width: 64px;
+    font-size: 24px;
+}
+
+.touch-btn.util {
+    min-width: 48px;
+    min-height: 44px;
+    padding: 4px 10px;
+    font-size: 14px;
+    background: rgba(35, 108, 125, 0.78);
+    border-color: rgba(158, 219, 230, 0.42);
+}
+
+.touch-btn:disabled,
+.touch-btn.locked {
+    opacity: 0.42;
+    cursor: not-allowed;
+}
+
+/* Show touch controls when running on a coarse-pointer (touch) device,
+   regardless of viewport size, so tablets and Chromebooks get them too. */
+@media (pointer: coarse) {
+    .touch-controls:not(.hidden) {
+        display: grid;
+    }
+}
+
+/* Show touch controls on small-viewport browsers even when pointer is fine
+   (e.g. emulated phone in DevTools, narrow desktop window). */
+@media (max-width: 900px) {
+    .touch-controls:not(.hidden) {
+        display: grid;
+    }
+}
+
+/* ========================
+   Phone / mobile menu
+   ======================== */
 
 @media (max-width: 960px), (max-height: 660px) {
     #hud {
@@ -556,36 +747,167 @@ button {
     .settings-grid,
     .summary-grid,
     .shop-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: 1fr 1fr;
     }
 }
 
-@media (max-width: 720px) {
+@media (max-width: 768px) {
+    /* Phone layout: hide Two Player + Single Player buttons in favor of a
+       single Play button that starts CPU mode. */
+    .desktop-only { display: none !important; }
+    .mobile-only { display: inline-flex !important; }
+    .desktop-instructions { display: none; }
+    .mobile-instructions { display: block; }
+
     .menu-card {
-        padding: 24px 20px;
+        padding: 22px 18px;
+        padding-top: max(22px, env(safe-area-inset-top));
+        padding-bottom: max(22px, env(safe-area-inset-bottom));
+    }
+
+    .title {
+        font-size: clamp(28px, 8vw, 40px);
+    }
+
+    .subtitle {
+        font-size: 14px;
+        margin-bottom: 16px;
     }
 
     .menu-actions {
         flex-direction: column;
     }
 
+    .menu-actions .btn {
+        width: 100%;
+    }
+
+    .settings-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+    }
+
+    .settings-grid label {
+        font-size: 12px;
+    }
+
+    #controlsHint {
+        display: none;
+    }
+
     #hud {
-        width: calc(100vw - 16px);
+        width: calc(100vw - 12px);
+        grid-template-columns: 1fr 1fr;
+        gap: 6px;
     }
 
     .hud-panel {
-        padding: 8px;
-    }
-
-    .player-name,
-    .turn-label {
-        font-size: 14px;
-    }
-
-    .stat-grid,
-    .status-line,
-    .result-line,
-    #controlsHint {
+        padding: 6px 8px;
         font-size: 11px;
+    }
+
+    .player-name {
+        font-size: 13px;
+    }
+
+    .turn-label {
+        font-size: 15px;
+    }
+
+    .stat-grid {
+        font-size: 10px;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .stat-grid b {
+        font-size: 11px;
+    }
+
+    .inventory-row {
+        font-size: 11px;
+    }
+
+    .summary-grid,
+    .shop-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .overlay-card {
+        max-width: calc(100vw - 12px);
+        padding: 18px 14px;
+    }
+
+    /* Move version chip to the top corner so the touch controls have the
+       full bottom edge to themselves. */
+    .version-chip {
+        top: max(8px, env(safe-area-inset-top));
+        left: max(8px, env(safe-area-inset-left));
+        bottom: auto;
+        font-size: 10px;
+        padding: 4px 8px;
+        z-index: 7;
+    }
+
+    /* Mute is also reachable as a touch button (♪), but the chip stays so
+       desktop muscle memory still works. Move it above the touch row. */
+    .mute-chip {
+        top: max(8px, env(safe-area-inset-top));
+        right: max(8px, env(safe-area-inset-right));
+        bottom: auto;
+        z-index: 7;
+    }
+}
+
+@media (max-width: 480px) {
+    .touch-btn {
+        min-width: 44px;
+        min-height: 46px;
+        font-size: 15px;
+        border-radius: 10px;
+    }
+
+    .touch-btn.fire {
+        min-width: 78px;
+        min-height: 56px;
+    }
+
+    .touch-btn.move {
+        min-width: 54px;
+        font-size: 20px;
+    }
+
+    .touch-cluster {
+        gap: 6px;
+    }
+
+    .touch-controls {
+        padding-left: max(8px, env(safe-area-inset-left));
+        padding-right: max(8px, env(safe-area-inset-right));
+    }
+}
+
+/* Landscape phones: pack utility chips into a single bottom row, and put the
+   left/right clusters along the bottom edges. */
+@media (max-width: 900px) and (orientation: landscape) and (max-height: 480px) {
+    .touch-controls {
+        grid-template-areas:
+            "left utils right";
+        grid-template-columns: auto 1fr auto;
+        grid-template-rows: 1fr;
+        align-items: end;
+    }
+    .touch-cluster.utils-cluster {
+        flex-wrap: wrap;
+        align-self: end;
+    }
+    .touch-btn {
+        min-height: 44px;
+    }
+    .touch-btn.fire {
+        min-height: 50px;
+        min-width: 70px;
+    }
+    #hud {
+        top: 4px;
     }
 }
