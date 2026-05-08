@@ -12,7 +12,7 @@
             <main class="menu-card">
                 <p class="eyebrow">Local artillery duel</p>
                 <h1 class="title">Tank Artillery Duel</h1>
-                <p class="subtitle">Destroy the opposing tank across a shifting battlefield of wind, craters, and limited heavy ammo.</p>
+                <p class="subtitle">Destroy the opposing tank across a shifting battlefield of wind, craters, dirt mounds, and limited heavy ammo.</p>
 
                 <div class="menu-actions">
                     <button id="twoPlayerBtn" class="btn primary">Two Player Local</button>
@@ -25,6 +25,7 @@
                     <ul>
                         <li><b>Left / Right Arrow</b> adjust cannon angle</li>
                         <li><b>Up / Down Arrow</b> adjust shot power</li>
+                        <li><b>A / D</b> move before firing</li>
                         <li><b>Spacebar</b> fire</li>
                         <li><b>Tab or W</b> cycle weapon</li>
                         <li><b>M</b> mute or unmute</li>
@@ -32,7 +33,7 @@
                         <li><b>N</b> next round after a win</li>
                         <li><b>Escape</b> return to this menu</li>
                     </ul>
-                    <p class="note">Weapons: Standard Shell has unlimited ammo, Heavy Shell hits harder, and Dirt Bomb reshapes more terrain.</p>
+                    <p class="note">Weapons: Standard Shell makes a normal crater, Heavy Shell hits harder with a larger blast, and Dirt Bomb adds dirt to build mounds or fill craters.</p>
                 </section>
             </main>
         </div>
@@ -67,6 +68,7 @@
                             <span>Wind <b id="windVal">0</b></span>
                             <span>Weapon <b id="weaponVal">Standard Shell</b></span>
                             <span>Ammo <b id="ammoVal">Unlimited</b></span>
+                            <span>Move <b id="moveVal">90 px</b></span>
                         </div>
                         <div class="result-line" id="resultVal">Round ready.</div>
                     </section>
@@ -84,7 +86,7 @@
                     </section>
                 </div>
 
-                <div id="controlsHint">Left/Right: Angle   Up/Down: Power   Space: Fire   Tab/W: Weapon   R: Restart   M: Mute   Esc: Menu</div>
+                <div id="controlsHint">Left/Right: Angle   Up/Down: Power   A/D: Move   Space: Fire   Tab/W: Weapon   R: Restart   M: Mute   Esc: Menu</div>
                 <button id="muteBtn" class="mute-chip">Sound: On</button>
             </div>
 

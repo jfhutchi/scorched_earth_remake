@@ -8,6 +8,7 @@ export class Terrain {
         this.height = height;
         this.heights = new Float32Array(width);
         this.craters = [];
+        this.mounds = [];
         this.color = '#735433';
         this.deepColor = '#4d3524';
         this.grassColor = '#3f9f4d';
@@ -41,6 +42,7 @@ export class Terrain {
 
         this._smooth(4);
         this.craters = [];
+        this.mounds = [];
     }
 
     heightAt(x) {
@@ -101,7 +103,7 @@ export class Terrain {
         this._smoothRange(xMin - 18, xMax + 18, 2);
     }
 
-    explode(cx, cy, radius) {
+    explode(cx, cy, radius, strength = 1) {
         if (!Number.isFinite(cx) || !Number.isFinite(cy) || radius <= 0) return;
 
         const xMin = Math.max(0, Math.floor(cx - radius));
@@ -113,7 +115,7 @@ export class Terrain {
             if (inside <= 0) continue;
 
             const halfChord = Math.sqrt(inside);
-            const bottomOfHole = cy + halfChord;
+            const bottomOfHole = cy + halfChord * strength;
             if (bottomOfHole > this.heights[x]) {
                 this.heights[x] = clamp(bottomOfHole, 0, this.height);
             }
@@ -122,6 +124,25 @@ export class Terrain {
         this.craters.push({ x: cx, y: cy, radius });
         if (this.craters.length > 24) this.craters.shift();
         this._smoothRange(xMin - 3, xMax + 3, 1);
+    }
+
+    addMound(cx, cy, radius, maxMoundHeight) {
+        if (!Number.isFinite(cx) || !Number.isFinite(cy) || radius <= 0 || maxMoundHeight <= 0) return;
+
+        const xMin = Math.max(0, Math.floor(cx - radius));
+        const xMax = Math.min(this.width - 1, Math.ceil(cx + radius));
+        const minGroundY = this.height * 0.18;
+
+        for (let x = xMin; x <= xMax; x++) {
+            const distance = Math.abs(x - cx);
+            const t = Math.max(0, 1 - distance / radius);
+            const moundHeight = maxMoundHeight * t * t;
+            this.heights[x] = clamp(this.heights[x] - moundHeight, minGroundY, this.height);
+        }
+
+        this.mounds.push({ x: cx, y: cy, radius });
+        if (this.mounds.length > 16) this.mounds.shift();
+        this._smoothRange(xMin - 10, xMax + 10, 3);
     }
 
     draw(ctx) {
@@ -143,6 +164,7 @@ export class Terrain {
 
         this._drawStrata(ctx);
         this._drawCraterShadows(ctx);
+        this._drawMoundHighlights(ctx);
 
         ctx.beginPath();
         ctx.moveTo(0, this.heights[0]);
@@ -202,6 +224,24 @@ export class Terrain {
             const end = Math.min(this.width - 1, Math.ceil(crater.x + crater.radius));
             for (let x = start; x <= end; x += 2) {
                 const y = this.heightAt(x) + 2;
+                if (x === start) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+        }
+        ctx.restore();
+    }
+
+    _drawMoundHighlights(ctx) {
+        ctx.save();
+        for (const mound of this.mounds) {
+            ctx.strokeStyle = 'rgba(143, 191, 76, 0.24)';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            const start = Math.max(0, Math.floor(mound.x - mound.radius));
+            const end = Math.min(this.width - 1, Math.ceil(mound.x + mound.radius));
+            for (let x = start; x <= end; x += 2) {
+                const y = this.heightAt(x) - 1;
                 if (x === start) ctx.moveTo(x, y);
                 else ctx.lineTo(x, y);
             }

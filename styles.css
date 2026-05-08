@@ -344,6 +344,14 @@ button {
     grid-column: span 2;
 }
 
+.stat-grid span.available {
+    background: rgba(63, 159, 77, 0.18);
+}
+
+.stat-grid span.empty {
+    background: rgba(185, 79, 45, 0.18);
+}
+
 .result-line {
     min-height: 18px;
     color: #8a3e27;
@@ -356,7 +364,7 @@ button {
     left: 50%;
     bottom: 12px;
     transform: translateX(-50%);
-    width: min(920px, calc(100vw - 24px));
+    width: min(1040px, calc(100vw - 24px));
     padding: 8px 12px;
     border: 1px solid rgba(255, 236, 190, 0.2);
     border-radius: 8px;

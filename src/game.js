@@ -123,6 +123,7 @@ export class Game {
                 alive: tank.alive,
                 angle: Math.round(tank.angle),
                 power: Math.round(tank.power),
+                movementFuel: Math.round(tank.movementFuel),
                 isCpu: tank.isCpu,
                 selectedWeapon: tank.selectedWeapon().name,
                 ammo: tank.weaponSnapshot().map((weapon) => ({
@@ -254,7 +255,7 @@ export class Game {
                 return;
             }
 
-            if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) {
+            if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'a', 'A', 'd', 'D'].includes(e.key)) {
                 e.preventDefault();
                 this.keys.add(e.key);
             }
@@ -294,6 +295,7 @@ export class Game {
         if (this.gameOver) return;
         const active = this._activeTank();
         active.ensureAvailableWeapon();
+        active.resetMovementFuel();
 
         if (active.isCpu) {
             this.phase = 'cpuThinking';
@@ -325,6 +327,7 @@ export class Game {
 
         if (this.phase === 'aiming' && this._canHumanControl()) {
             this._updateHumanAim(dt);
+            this._updateHumanMovement(dt);
         }
 
         if (this.phase === 'cpuThinking') {
@@ -363,6 +366,57 @@ export class Game {
         if (this.keys.has('ArrowUp')) powerDelta += 1;
         if (this.keys.has('ArrowDown')) powerDelta -= 1;
         if (powerDelta !== 0) tank.adjustPower(powerDelta * powerSpeed * dt);
+    }
+
+    _updateHumanMovement(dt) {
+        const tank = this._activeTank();
+        if (tank.movementFuel <= 0) return;
+
+        let direction = 0;
+        if (this.keys.has('a') || this.keys.has('A')) direction -= 1;
+        if (this.keys.has('d') || this.keys.has('D')) direction += 1;
+        if (direction === 0) return;
+
+        const distance = Math.min(CONFIG.tank.moveSpeed * dt, tank.movementFuel);
+        if (distance <= 0) return;
+
+        const moved = this._tryMoveTank(tank, direction * distance);
+        if (moved) {
+            tank.spendMovementFuel(Math.abs(moved));
+            this.statusMessage = tank.movementFuel > 0
+                ? `${tank.name} is repositioning.`
+                : `${tank.name} has no movement fuel left.`;
+        } else {
+            this.statusMessage = `${tank.name} cannot drive there.`;
+        }
+    }
+
+    _tryMoveTank(tank, deltaX) {
+        if (!this.terrain || deltaX === 0) return 0;
+
+        const nextX = tank.x + deltaX;
+        const halfWidth = tank.width / 2;
+        const minX = Math.max(CONFIG.tank.spawnMargin * 0.35, halfWidth + 4);
+        const maxX = Math.min(this.width - CONFIG.tank.spawnMargin * 0.35, this.width - halfWidth - 4);
+        if (nextX < minX || nextX > maxX) return 0;
+
+        for (const other of this.tanks) {
+            if (other === tank || !other.alive) continue;
+            if (Math.abs(nextX - other.x) < CONFIG.tank.minTankSeparation) return 0;
+        }
+
+        const nextY = this.terrain.heightAt(nextX);
+        const leftY = this.terrain.heightAt(nextX - halfWidth);
+        const rightY = this.terrain.heightAt(nextX + halfWidth);
+        const acrossDelta = Math.abs(leftY - rightY);
+        const stepDelta = Math.abs(nextY - tank.y);
+        if (acrossDelta > CONFIG.tank.maxClimbDelta || stepDelta > CONFIG.tank.maxClimbDelta) {
+            return 0;
+        }
+
+        tank.x = nextX;
+        tank.settleOn(this.terrain);
+        return deltaX;
     }
 
     _fireCpuShot() {
@@ -497,18 +551,29 @@ export class Game {
         this.shotInfo.collision = collision;
         this.projectile = null;
 
-        this.terrain.explode(x, y, weapon.craterRadius);
         const result = this._applyExplosionDamage(x, y, weapon, collision);
-        this.lastResult = result.message;
+        const terrainMessage = this._applyTerrainEffect(x, y, weapon);
+        this.tanks.forEach((tank) => tank.settleOn(this.terrain));
+        this.lastResult = `${result.message} ${terrainMessage}`;
         this.statusMessage = 'Impact resolving.';
 
-        const explosion = new Explosion(x, y, weapon.craterRadius, weapon);
+        const explosion = new Explosion(x, y, weapon.explosionRadius, weapon);
         this.explosions.push(explosion);
         this.phase = 'resolving';
         this.phaseTimer = Math.max(CONFIG.turn.impactDelaySeconds, explosion.duration + 0.15);
 
         this.audio.playExplosion(weapon);
         if (result.totalDamage > 0) this.audio.playHit();
+    }
+
+    _applyTerrainEffect(x, y, weapon) {
+        if (weapon.behavior === 'addTerrain') {
+            this.terrain.addMound(x, y, weapon.terrainEffectRadius, weapon.terrainEffectStrength);
+            return weapon.terrainMessage;
+        }
+
+        this.terrain.explode(x, y, weapon.terrainEffectRadius, weapon.terrainEffectStrength);
+        return weapon.terrainMessage;
     }
 
     _applyExplosionDamage(x, y, weapon, collision) {
@@ -526,11 +591,15 @@ export class Game {
             const dx = circle.x - x;
             const dy = circle.y - y;
             const dist = Math.sqrt(dx * dx + dy * dy);
-            if (dist > weapon.craterRadius + circle.r * 0.35) continue;
+            if (dist > weapon.damageRadius + circle.r * 0.35) continue;
 
-            const falloff = clamp(1 - dist / weapon.craterRadius, 0.15, 1);
+            const normalized = clamp(1 - dist / weapon.damageRadius, 0, 1);
+            let falloff = Math.pow(normalized, weapon.damageFalloff);
             const directBonus = collision === 'tank' && i === this.shotInfo.targetIndex ? 1.08 : 1;
-            const damage = tank.applyDamage(weapon.damage * falloff * directBonus);
+            if (collision === 'tank' && i === this.shotInfo.targetIndex) {
+                falloff = Math.max(falloff, 0.82);
+            }
+            const damage = tank.applyDamage(Math.min(weapon.maxDamage, weapon.maxDamage * falloff * directBonus));
             totalDamage += damage;
             if (i === this.shotInfo.targetIndex) enemyDamage += damage;
             if (i === this.shotInfo.shooterIndex) selfDamage += damage;
@@ -540,22 +609,26 @@ export class Game {
         this.shotInfo.enemyDamage = enemyDamage;
         this.shotInfo.selfDamage = selfDamage;
 
-        const prefix = collision === 'tank' || enemyDamage >= weapon.damage * 0.55
+        const prefix = collision === 'tank' || enemyDamage >= weapon.maxDamage * 0.55
             ? 'Direct hit!'
-            : (enemyDamage > 0 || this.shotInfo.minTargetDistance <= weapon.craterRadius + 48)
+            : (enemyDamage > 0 || this.shotInfo.minTargetDistance <= weapon.damageRadius + 48)
                 ? 'Near miss!'
                 : 'Missed.';
 
-        let detail = ' No damage.';
+        const details = [];
         if (enemyDamage > 0) {
-            detail = ` ${target.name} took ${enemyDamage} damage.`;
-        } else if (selfDamage > 0) {
-            detail = ` ${shooter.name} took ${selfDamage} self-damage.`;
+            details.push(`${target.name} took ${enemyDamage} damage.`);
+        }
+        if (selfDamage > 0) {
+            details.push(`${shooter.name} took ${selfDamage} self-damage.`);
+        }
+        if (details.length === 0) {
+            details.push('No damage.');
         }
 
         return {
             totalDamage,
-            message: `${prefix}${detail}`,
+            message: `${prefix} ${details.join(' ')}`,
         };
     }
 
@@ -679,21 +752,27 @@ export class Game {
         const dt = 1 / 30;
         const points = [];
 
-        for (let i = 0; i < 68; i++) {
+        for (let i = 0; i < 54; i++) {
             vy += CONFIG.physics.gravity * dt;
             vx += this.wind * CONFIG.physics.windAccelScale * dt;
             x += vx * dt;
             y += vy * dt;
             if (x < 0 || x >= this.width || y >= this.height) break;
-            if (i % 3 === 0) points.push({ x, y, alpha: 1 - i / 78 });
+            if (i % 3 === 0) points.push({ x, y, alpha: 1 - i / 62 });
             if (y >= this.terrain.heightAt(x)) break;
         }
 
         ctx.save();
         for (const point of points) {
-            ctx.fillStyle = `rgba(255, 255, 255, ${0.1 + point.alpha * 0.35})`;
+            ctx.fillStyle = `rgba(0, 0, 0, ${0.18 + point.alpha * 0.42})`;
             ctx.beginPath();
-            ctx.arc(point.x, point.y, 2.2, 0, Math.PI * 2);
+            ctx.arc(point.x, point.y, 4.1, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        for (const point of points) {
+            ctx.fillStyle = `rgba(255, 245, 120, ${0.32 + point.alpha * 0.63})`;
+            ctx.beginPath();
+            ctx.arc(point.x, point.y, 2.45, 0, Math.PI * 2);
             ctx.fill();
         }
         ctx.restore();
