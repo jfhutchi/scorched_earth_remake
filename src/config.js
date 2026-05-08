@@ -1,4 +1,4 @@
-export const GAME_VERSION = 'v0.5.0';
+export const GAME_VERSION = 'v0.6.3';
 
 export const CONFIG = {
     debug: false,
@@ -73,18 +73,20 @@ export const CONFIG = {
         shieldPurchaseCharge: 60,
         shieldMaxCharge: 180,
         shieldAbsorbRatio: 0.5,
-        repairHeal: 25,
+        // First Aid Kit fully restores health between rounds (v0.6).
+        firstAidFullHeal: true,
         fallDamageDropThreshold: 45,
         fallDamageScale: 0.6,
         fallDamageMax: 40,
         parachuteReduction: 0.8,
         rebuildHealthAfterDeath: 50,
     },
+    // v0.6: ammo purchases now refill to max carried ammo for that weapon.
     shop: {
-        heavyAmmo: { label: 'Heavy Shell Ammo', price: 50 },
-        dirtAmmo: { label: 'Dirt Bomb Ammo', price: 30 },
+        heavyAmmo: { label: 'Refill Heavy Shells', refillLabel: 'Refill Heavy Shells', fullLabel: 'Heavy Shells Full', price: 100, weaponId: 'heavy' },
+        dirtAmmo: { label: 'Refill Dirt Bombs', refillLabel: 'Refill Dirt Bombs', fullLabel: 'Dirt Bombs Full', price: 80, weaponId: 'dirt' },
         shield: { label: 'Shield Charge', price: 85 },
-        repair: { label: 'Repair Kit', price: 65 },
+        repair: { label: 'First Aid Kit', price: 110 },
         parachute: { label: 'Parachute', price: 45 },
     },
     settings: {
@@ -141,6 +143,7 @@ export const CPU_DIFFICULTY = {
     },
 };
 
+// `ammo` doubles as the carried-max for refill purchases (Infinity = unlimited).
 export const WEAPONS = [
     {
         id: 'standard',
@@ -181,6 +184,8 @@ export const WEAPONS = [
         description: 'High damage and a larger crater. Limited ammo.',
     },
     {
+        // v0.6: Dirt Bomb buffed to ~3x visible mound effect (wider radius +
+        // taller mound with reduced post-smoothing).
         id: 'dirt',
         name: 'Dirt Bomb',
         behavior: 'addTerrain',
@@ -188,16 +193,16 @@ export const WEAPONS = [
         maxDamage: 10,
         damageRadius: 34,
         damageFalloff: 1.7,
-        explosionRadius: 54,
-        terrainEffectRadius: 58,
-        terrainEffectStrength: 38,
+        explosionRadius: 70,
+        terrainEffectRadius: 88,
+        terrainEffectStrength: 92,
         speedScale: 0.92,
         projectileRadius: 6,
         color: '#8fbd52',
         trailColor: '130, 110, 68',
         impactVisual: 'dirtPuff',
-        terrainMessage: 'Dirt Bomb added terrain.',
-        description: 'Builds a mound or fills a crater with low tank damage.',
+        terrainMessage: 'Dirt Bomb piled up a large mound.',
+        description: 'Builds a much larger mound or fills a crater with low tank damage.',
     },
 ];
 
@@ -207,4 +212,9 @@ export function getWeaponById(id) {
 
 export function clamp(value, min, max) {
     return Math.max(min, Math.min(max, value));
+}
+
+export function maxAmmoFor(weaponId) {
+    const weapon = getWeaponById(weaponId);
+    return weapon ? weapon.ammo : 0;
 }

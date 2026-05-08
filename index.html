@@ -2,7 +2,10 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="theme-color" content="#17394a" />
     <title>Tank Artillery Duel</title>
     <link rel="stylesheet" href="styles.css" />
 </head>
@@ -10,14 +13,14 @@
     <div id="app">
         <div id="menu" class="screen">
             <main class="menu-card">
-                <p class="eyebrow">Local artillery duel</p>
                 <h1 class="title">Tank Artillery Duel</h1>
-                <p id="menuVersion" class="version-line">v0.5.0</p>
+                <p id="menuVersion" class="version-line">v0.6.3</p>
                 <p class="subtitle">Destroy the opposing tank across a shifting battlefield of wind, craters, dirt mounds, and limited heavy ammo.</p>
 
                 <div class="menu-actions">
-                    <button id="twoPlayerBtn" class="btn primary">Two Player Local</button>
-                    <button id="cpuBtn" class="btn primary alt">Single Player vs CPU</button>
+                    <button id="mobilePlayBtn" class="btn primary mobile-only">Play</button>
+                    <button id="twoPlayerBtn" class="btn primary desktop-only">Two Player Local</button>
+                    <button id="cpuBtn" class="btn primary alt desktop-only">Single Player vs CPU</button>
                     <button id="menuMuteBtn" class="btn small">Sound: On</button>
                 </div>
 
@@ -60,8 +63,8 @@
                     </label>
                 </section>
 
-                <section class="instructions" aria-label="Instructions">
-                    <h2>Controls</h2>
+                <section class="instructions desktop-instructions" aria-label="Desktop instructions">
+                    <h2>Keyboard Controls</h2>
                     <ul>
                         <li><b>Left / Right Arrow</b> adjust cannon angle</li>
                         <li><b>Up / Down Arrow</b> adjust shot power</li>
@@ -73,7 +76,20 @@
                         <li><b>N</b> next round after a win</li>
                         <li><b>Escape</b> return to this menu</li>
                     </ul>
-                    <p class="note">Weapons: Standard Shell makes a normal crater, Heavy Shell hits harder with a larger blast, and Dirt Bomb adds dirt to build mounds or fill craters.</p>
+                    <p class="note">Weapons: Standard Shell makes a normal crater, Heavy Shell hits harder with a larger blast, and Dirt Bomb piles up a much larger mound to build cover or fill craters.</p>
+                </section>
+
+                <section class="instructions mobile-instructions" aria-label="Touch instructions">
+                    <h2>Touch Controls</h2>
+                    <ul>
+                        <li><b>◀ ▶</b> on the left move the tank</li>
+                        <li><b>↺ ↻</b> on the right adjust cannon angle</li>
+                        <li><b>PWR-</b> / <b>PWR+</b> change shot power</li>
+                        <li><b>FIRE</b> launches one shot per tap</li>
+                        <li><b>WPN</b> cycles weapons; <b>♪</b> mutes</li>
+                        <li><b>R</b> restarts; <b>N</b> goes to next round; <b>≡</b> returns to menu</li>
+                    </ul>
+                    <p class="note">Landscape is recommended for the clearest aim.</p>
                 </section>
             </main>
         </div>
@@ -81,6 +97,29 @@
         <div id="game" class="screen hidden">
             <div id="stage">
                 <canvas id="gameCanvas" width="1280" height="720"></canvas>
+
+                <div id="mobileHud" class="mobile-hud" aria-hidden="true">
+                    <div class="mhud-row mhud-row-top">
+                        <span class="mhud-pill mhud-turn" id="mhudTurn">P1</span>
+                        <span class="mhud-pill mhud-hp p1"><b>P1</b> <span id="mhudP1Hp">100</span></span>
+                        <span class="mhud-pill mhud-hp p2"><b>P2</b> <span id="mhudP2Hp">100</span></span>
+                        <span class="mhud-pill mhud-wind">W <span id="mhudWind">0</span></span>
+                        <span class="mhud-pill mhud-version" id="mhudVersion">v0.6.3</span>
+                        <button type="button" id="mhudInfoBtn" class="mhud-pill mhud-info" aria-label="Toggle extra info">i</button>
+                    </div>
+                    <div class="mhud-row mhud-row-bottom">
+                        <span class="mhud-pill mhud-weapon" id="mhudWeapon">Standard</span>
+                        <span class="mhud-pill" >A <span id="mhudAngle">45</span>&deg;</span>
+                        <span class="mhud-pill" >P <span id="mhudPower">50</span></span>
+                        <span class="mhud-pill" >Ammo <span id="mhudAmmo">&infin;</span></span>
+                    </div>
+                    <div class="mhud-row mhud-row-extra hidden" id="mhudExtra">
+                        <span class="mhud-pill" id="mhudP1Inv">P1 $0</span>
+                        <span class="mhud-pill" id="mhudP2Inv">P2 $0</span>
+                        <span class="mhud-pill" id="mhudRound">R 1/3</span>
+                        <span class="mhud-pill" id="mhudResult">--</span>
+                    </div>
+                </div>
 
                 <div id="hud">
                     <section class="hud-panel player left" id="p1Panel">
@@ -93,7 +132,7 @@
                             <div class="health-bar"><div class="health-fill" id="p1Health"></div></div>
                             <span class="health-text" id="p1HealthText">100/100</span>
                         </div>
-                        <div class="inventory-row" id="p1Inventory">$150 | H 3 D 4 | Sh 0 R 0 P 0</div>
+                        <div class="inventory-row" id="p1Inventory">$150 | H 3 D 4 | Sh 0 FA 0 P 0</div>
                     </section>
 
                     <section class="hud-panel center" id="turnPanel">
@@ -124,16 +163,50 @@
                             <div class="health-bar"><div class="health-fill" id="p2Health"></div></div>
                             <span class="health-text" id="p2HealthText">100/100</span>
                         </div>
-                        <div class="inventory-row" id="p2Inventory">$150 | H 3 D 4 | Sh 0 R 0 P 0</div>
+                        <div class="inventory-row" id="p2Inventory">$150 | H 3 D 4 | Sh 0 FA 0 P 0</div>
                     </section>
                 </div>
 
                 <div id="controlsHint">Left/Right: Angle   Up/Down: Power   A/D: Move   Space: Fire   Tab/W: Weapon   R: Restart   M: Mute   Esc: Menu</div>
-                <div id="versionChip" class="version-chip">v0.5.0</div>
+                <div id="versionChip" class="version-chip">v0.6.3</div>
                 <button id="muteBtn" class="mute-chip">Sound: On</button>
+
+                <div id="touchControls" class="touch-controls hidden" aria-hidden="true">
+                    <div class="touch-cluster left-cluster">
+                        <button type="button" class="touch-btn move repeat" data-touch-action="moveLeft" aria-label="Move tank left">◀</button>
+                        <button type="button" class="touch-btn move repeat" data-touch-action="moveRight" aria-label="Move tank right">▶</button>
+                    </div>
+                    <div class="touch-cluster right-cluster">
+                        <button type="button" class="touch-btn aim repeat" data-touch-action="aimLeft" aria-label="Aim cannon left">↺</button>
+                        <button type="button" class="touch-btn aim repeat" data-touch-action="aimRight" aria-label="Aim cannon right">↻</button>
+                        <button type="button" class="touch-btn power repeat" data-touch-action="powerDown" aria-label="Decrease power">PWR-</button>
+                        <button type="button" class="touch-btn power repeat" data-touch-action="powerUp" aria-label="Increase power">PWR+</button>
+                        <button type="button" class="touch-btn fire" data-touch-action="fire" aria-label="Fire">FIRE</button>
+                    </div>
+                    <div class="touch-cluster utils-cluster">
+                        <button type="button" class="touch-btn util" data-touch-action="weapon" aria-label="Cycle weapon">WPN</button>
+                        <button type="button" class="touch-btn util" data-touch-action="restart" aria-label="Restart round">R</button>
+                        <button type="button" class="touch-btn util" data-touch-action="next" aria-label="Next round or continue">N</button>
+                        <button type="button" class="touch-btn util" data-touch-action="mute" aria-label="Mute or unmute">♪</button>
+                        <button type="button" class="touch-btn util" data-touch-action="menu" aria-label="Return to main menu">≡</button>
+                    </div>
+                </div>
             </div>
 
             <div id="smallWarning" class="small-warning hidden">Window is small; expand it for the clearest HUD and aiming view.</div>
+            <div id="orientationHint" class="orientation-hint hidden">Rotate to landscape for a wider view.</div>
+
+            <div id="rotateOverlay" class="rotate-overlay hidden" role="dialog" aria-modal="true" aria-label="Rotate device">
+                <div class="rotate-card">
+                    <div class="rotate-icon" aria-hidden="true">&#x21BB;</div>
+                    <h2>Rotate your phone</h2>
+                    <p>Rotate your phone to landscape for the playable layout. Portrait works in a compact pinch but landscape is the intended mobile mode.</p>
+                    <div class="rotate-actions">
+                        <button type="button" id="rotateContinueBtn" class="btn primary">Continue Anyway</button>
+                        <button type="button" id="rotateMenuBtn" class="btn">Back to Menu</button>
+                    </div>
+                </div>
+            </div>
 
             <div id="summaryOverlay" class="overlay hidden">
                 <div class="menu-card overlay-card">
@@ -145,14 +218,14 @@
                         <button id="summaryNewMatchBtn" class="btn">New Match</button>
                         <button id="summaryMenuBtn" class="btn">Main Menu</button>
                     </div>
-                    <p class="note">Keyboard: N continues when a shop is available, Escape returns to menu.</p>
+                    <p class="note">Keyboard: N continues when a shop is available, Escape returns to menu. On touch, use the on-screen N or ≡ buttons.</p>
                 </div>
             </div>
 
             <div id="shopOverlay" class="overlay hidden">
                 <div class="menu-card overlay-card wide-card">
                     <h1 class="title">Between-Round Shop</h1>
-                    <p class="subtitle">Buy ammo and defensive utilities before the next battlefield is generated.</p>
+                    <p class="subtitle">First Aid Kits fully heal between rounds. Ammo purchases refill that weapon to its carried max.</p>
                     <div id="shopContent" class="shop-grid"></div>
                     <div class="menu-actions">
                         <button id="startNextRoundBtn" class="btn primary">Start Next Round</button>

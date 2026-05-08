@@ -27,17 +27,52 @@ export class AudioManager {
         this._tone(360, 0.07, 'sine', 0.035);
     }
 
+    // v0.6: distinct firing voices per weapon.
     playFire(weapon) {
-        const low = weapon.id === 'heavy' ? 95 : 135;
-        this._tone(low, 0.11, 'sawtooth', 0.08);
-        this._tone(low * 1.8, 0.06, 'square', 0.035, 0.035);
-        this._noise(0.08, 0.05);
+        switch (weapon.id) {
+            case 'heavy':
+                // Deeper, louder, longer cannon boom.
+                this._tone(70, 0.34, 'sawtooth', 0.16);
+                this._tone(118, 0.22, 'square', 0.085, 0.02);
+                this._noise(0.18, 0.10);
+                break;
+            case 'dirt':
+                // Softer puffy launch with airy noise, no metallic ring.
+                this._tone(180, 0.10, 'sine', 0.05);
+                this._tone(110, 0.18, 'sine', 0.045, 0.02);
+                this._noise(0.22, 0.06, { lowPass: true });
+                break;
+            case 'standard':
+            default:
+                // Medium pop/thump.
+                this._tone(150, 0.13, 'sawtooth', 0.085);
+                this._tone(280, 0.07, 'square', 0.04, 0.025);
+                this._noise(0.09, 0.05);
+                break;
+        }
     }
 
+    // v0.6: distinct impact voices per weapon.
     playExplosion(weapon) {
-        const duration = weapon.id === 'dirt' ? 0.42 : 0.32;
-        this._noise(duration, weapon.id === 'heavy' ? 0.16 : 0.12);
-        this._tone(72, duration * 0.7, 'sawtooth', 0.08);
+        switch (weapon.id) {
+            case 'heavy':
+                // Larger boom with low-frequency rumble.
+                this._noise(0.45, 0.18);
+                this._tone(58, 0.42, 'sawtooth', 0.12);
+                this._tone(34, 0.55, 'sine', 0.09, 0.04);
+                break;
+            case 'dirt':
+                // Soil burst / thud, less fiery, no big rumble.
+                this._noise(0.32, 0.10, { lowPass: true });
+                this._tone(96, 0.14, 'sine', 0.06);
+                this._tone(60, 0.20, 'sine', 0.04, 0.05);
+                break;
+            case 'standard':
+            default:
+                this._noise(0.32, 0.13);
+                this._tone(72, 0.22, 'sawtooth', 0.08);
+                break;
+        }
     }
 
     playHit() {
@@ -45,13 +80,52 @@ export class AudioManager {
         this._tone(140, 0.12, 'square', 0.035, 0.055);
     }
 
+    // Shimmering/energy absorb tone for the shield.
+    playShieldAbsorb() {
+        this._tone(620, 0.10, 'sine', 0.05);
+        this._tone(880, 0.14, 'triangle', 0.04, 0.04);
+        this._tone(1240, 0.10, 'sine', 0.025, 0.07);
+    }
+
+    // Clean positive heal arpeggio for the First Aid Kit.
+    playHeal() {
+        this._tone(523, 0.12, 'sine', 0.05);
+        this._tone(659, 0.14, 'sine', 0.05, 0.10);
+        this._tone(784, 0.18, 'sine', 0.055, 0.20);
+    }
+
+    // Soft cushion/whoosh for parachute.
+    playParachute() {
+        this._noise(0.36, 0.05, { lowPass: true });
+        this._tone(220, 0.30, 'sine', 0.03);
+    }
+
+    // Satisfying click/chime when buying.
+    playPurchase() {
+        this._tone(880, 0.06, 'triangle', 0.05);
+        this._tone(1320, 0.10, 'sine', 0.045, 0.04);
+    }
+
+    // Subtle blocked sound for invalid purchases.
+    playBlocked() {
+        this._tone(180, 0.10, 'square', 0.04);
+        this._tone(140, 0.12, 'square', 0.035, 0.03);
+    }
+
     _ensureContext() {
         if (this.muted) return null;
         if (!this.context) {
             const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-            this.context = new AudioContextClass();
+            if (!AudioContextClass) return null;
+            try {
+                this.context = new AudioContextClass();
+            } catch (error) {
+                return null;
+            }
         }
-        if (this.context.state === 'suspended') this.context.resume();
+        if (this.context.state === 'suspended') {
+            try { this.context.resume(); } catch (_e) { /* ignore */ }
+        }
         return this.context;
     }
 
@@ -78,7 +152,7 @@ export class AudioManager {
         osc.stop(end + 0.02);
     }
 
-    _noise(duration, volume) {
+    _noise(duration, volume, { lowPass = false } = {}) {
         const ctx = this._ensureContext();
         if (!ctx) return;
 
@@ -100,7 +174,18 @@ export class AudioManager {
         gain.gain.exponentialRampToValueAtTime(0.0001, end);
 
         source.connect(gain);
-        gain.connect(ctx.destination);
+
+        if (lowPass) {
+            const filter = ctx.createBiquadFilter();
+            filter.type = 'lowpass';
+            filter.frequency.setValueAtTime(420, start);
+            filter.frequency.exponentialRampToValueAtTime(220, end);
+            gain.connect(filter);
+            filter.connect(ctx.destination);
+        } else {
+            gain.connect(ctx.destination);
+        }
+
         source.start(start);
         source.stop(end + 0.02);
     }

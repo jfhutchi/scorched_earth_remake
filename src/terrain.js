@@ -144,7 +144,9 @@ export class Terrain {
 
         this.mounds.push({ x: cx, y: cy, radius });
         if (this.mounds.length > 16) this.mounds.shift();
-        this._smoothRange(xMin - 10, xMax + 10, 3);
+        // v0.6: lighter smoothing so the larger mound stays visibly tall and
+        // does not get flattened back down by averaging.
+        this._smoothRange(xMin - 8, xMax + 8, 1);
     }
 
     draw(ctx) {

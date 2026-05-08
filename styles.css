@@ -14,15 +14,23 @@ body {
         linear-gradient(135deg, #17394a 0%, #192d33 44%, #1a1c1a 100%);
     color: #f3efe3;
     font-family: Georgia, "Trebuchet MS", serif;
+    /* Prevent iOS rubber-band scroll and double-tap zoom while playing. */
+    overscroll-behavior: none;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%;
 }
 
 button {
     font: inherit;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
 }
 
 #app {
     width: 100vw;
     height: 100vh;
+    height: 100dvh;
     position: relative;
 }
 
@@ -39,9 +47,20 @@ button {
     display: none !important;
 }
 
+/* Default: hide mobile-only widgets, show desktop. Phone media queries below
+   flip these. */
+.mobile-only { display: none !important; }
+.mobile-instructions { display: none; }
+
+/* Compact mobile HUD: hidden everywhere by default; shown only when the body
+   gets the .is-mobile-game class (phone-sized viewport on the game screen). */
+.mobile-hud { display: none; }
+.rotate-overlay { display: none; }
+
 .menu-card {
     width: min(760px, calc(100vw - 32px));
     max-height: calc(100vh - 32px);
+    max-height: calc(100dvh - 32px);
     overflow: auto;
     padding: 32px 38px;
     border: 1px solid rgba(255, 236, 190, 0.22);
@@ -51,6 +70,8 @@ button {
         repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.03) 0 1px, transparent 1px 12px);
     box-shadow: 0 22px 58px rgba(0, 0, 0, 0.42);
     text-align: center;
+    padding-top: max(32px, env(safe-area-inset-top));
+    padding-bottom: max(32px, env(safe-area-inset-bottom));
 }
 
 .eyebrow {
@@ -64,7 +85,7 @@ button {
 
 .title {
     color: #ffe8a6;
-    font-size: clamp(34px, 5vw, 58px);
+    font-size: clamp(28px, 5vw, 58px);
     line-height: 0.95;
     margin-bottom: 12px;
     text-shadow: 0 3px 0 rgba(89, 48, 25, 0.5);
@@ -114,11 +135,13 @@ button {
 .settings-grid select {
     width: 100%;
     margin-top: 5px;
-    padding: 8px;
+    padding: 10px;
     border: 1px solid rgba(255, 232, 166, 0.22);
     border-radius: 6px;
     background: #1f2b2a;
     color: #f8efd8;
+    min-height: 40px;
+    font-size: 14px;
 }
 
 .btn {
@@ -206,6 +229,10 @@ button {
     align-items: center;
     justify-content: center;
     background: #15272d;
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
 }
 
 #stage {
@@ -222,6 +249,9 @@ button {
     background: #8ccced;
     border-radius: 6px;
     box-shadow: 0 22px 55px rgba(0, 0, 0, 0.38);
+    max-width: 100%;
+    max-height: 100%;
+    touch-action: none;
 }
 
 #hud {
@@ -234,6 +264,7 @@ button {
     grid-template-columns: minmax(220px, 1fr) minmax(360px, 1.2fr) minmax(220px, 1fr);
     gap: 12px;
     pointer-events: none;
+    padding-top: env(safe-area-inset-top);
 }
 
 .hud-panel {
@@ -306,6 +337,8 @@ button {
     font-size: 12px;
     font-weight: 800;
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .label {
@@ -458,10 +491,14 @@ button {
     justify-content: center;
     background: rgba(10, 17, 19, 0.58);
     backdrop-filter: blur(4px);
+    z-index: 20;
 }
 
 .overlay-card {
     max-width: 780px;
+    max-height: calc(100vh - 24px);
+    max-height: calc(100dvh - 24px);
+    overflow: auto;
 }
 
 .wide-card {
@@ -519,6 +556,12 @@ button {
     cursor: not-allowed;
 }
 
+.shop-buy.full:disabled {
+    background: rgba(35, 108, 125, 0.28);
+    color: rgba(228, 220, 200, 0.62);
+    border-color: rgba(158, 219, 230, 0.24);
+}
+
 .small-warning {
     position: absolute;
     top: 8px;
@@ -532,6 +575,159 @@ button {
     font-size: 12px;
     font-weight: 800;
 }
+
+.orientation-hint {
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    z-index: 9;
+    transform: translateX(-50%);
+    padding: 7px 14px;
+    border-radius: 999px;
+    background: rgba(35, 108, 125, 0.88);
+    color: #f8efd8;
+    font-size: 12px;
+    font-weight: 800;
+    pointer-events: none;
+}
+
+/* ========================
+   Touch / on-screen controls
+   ======================== */
+
+.touch-controls {
+    position: absolute;
+    inset: auto 0 0 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto auto;
+    grid-template-areas:
+        "utils utils"
+        "left right";
+    gap: 10px;
+    padding: 8px 12px;
+    padding-bottom: max(8px, env(safe-area-inset-bottom));
+    padding-left: max(12px, env(safe-area-inset-left));
+    padding-right: max(12px, env(safe-area-inset-right));
+    pointer-events: none;
+    z-index: 6;
+    /* Hidden on desktop unless the device exposes a coarse pointer (touchscreen). */
+    display: none;
+}
+
+.touch-controls > * {
+    pointer-events: auto;
+}
+
+.touch-cluster {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}
+
+.touch-cluster.left-cluster {
+    grid-area: left;
+    justify-content: flex-start;
+}
+
+.touch-cluster.right-cluster {
+    grid-area: right;
+    justify-content: flex-end;
+}
+
+.touch-cluster.utils-cluster {
+    grid-area: utils;
+    justify-content: center;
+}
+
+.touch-btn {
+    min-width: 52px;
+    min-height: 52px;
+    padding: 6px 12px;
+    border: 1px solid rgba(255, 236, 190, 0.32);
+    border-radius: 12px;
+    background: rgba(28, 36, 36, 0.76);
+    color: #f8efd8;
+    font-size: 18px;
+    font-weight: 800;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    touch-action: none;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.32);
+}
+
+.touch-btn:active,
+.touch-btn.pressed {
+    background: rgba(199, 82, 47, 0.78);
+    border-color: rgba(255, 236, 190, 0.6);
+    transform: translateY(1px);
+}
+
+.touch-btn.fire {
+    min-width: 90px;
+    min-height: 64px;
+    background: rgba(199, 82, 47, 0.88);
+    border-color: #e08245;
+    font-size: 17px;
+    color: #fff4de;
+}
+
+.touch-btn.fire:active,
+.touch-btn.fire.pressed {
+    background: #d86637;
+}
+
+.touch-btn.power {
+    min-width: 60px;
+    font-size: 14px;
+}
+
+.touch-btn.aim {
+    font-size: 22px;
+}
+
+.touch-btn.move {
+    min-width: 64px;
+    font-size: 24px;
+}
+
+.touch-btn.util {
+    min-width: 48px;
+    min-height: 44px;
+    padding: 4px 10px;
+    font-size: 14px;
+    background: rgba(35, 108, 125, 0.78);
+    border-color: rgba(158, 219, 230, 0.42);
+}
+
+.touch-btn:disabled,
+.touch-btn.locked {
+    opacity: 0.42;
+    cursor: not-allowed;
+}
+
+/* Show touch controls when running on a coarse-pointer (touch) device,
+   regardless of viewport size, so tablets and Chromebooks get them too. */
+@media (pointer: coarse) {
+    .touch-controls:not(.hidden) {
+        display: grid;
+    }
+}
+
+/* Show touch controls on small-viewport browsers even when pointer is fine
+   (e.g. emulated phone in DevTools, narrow desktop window). */
+@media (max-width: 900px) {
+    .touch-controls:not(.hidden) {
+        display: grid;
+    }
+}
+
+/* ========================
+   Tablet / medium-viewport tweaks
+   ======================== */
 
 @media (max-width: 960px), (max-height: 660px) {
     #hud {
@@ -556,36 +752,429 @@ button {
     .settings-grid,
     .summary-grid,
     .shop-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: 1fr 1fr;
     }
 }
 
-@media (max-width: 720px) {
+/* ========================
+   Phone menu adjustments
+   ======================== */
+
+@media (max-width: 768px) {
+    .desktop-only { display: none !important; }
+    .mobile-only { display: inline-flex !important; }
+    .desktop-instructions { display: none; }
+    .mobile-instructions { display: block; }
+
     .menu-card {
-        padding: 24px 20px;
+        padding: 22px 18px;
+        padding-top: max(22px, env(safe-area-inset-top));
+        padding-bottom: max(22px, env(safe-area-inset-bottom));
+    }
+
+    .title {
+        font-size: clamp(28px, 8vw, 40px);
+    }
+
+    .subtitle {
+        font-size: 14px;
+        margin-bottom: 14px;
     }
 
     .menu-actions {
         flex-direction: column;
     }
 
-    #hud {
-        width: calc(100vw - 16px);
+    .menu-actions .btn {
+        width: 100%;
     }
 
-    .hud-panel {
-        padding: 8px;
+    .settings-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
     }
 
-    .player-name,
-    .turn-label {
-        font-size: 14px;
+    .settings-grid label {
+        font-size: 12px;
     }
 
-    .stat-grid,
-    .status-line,
-    .result-line,
-    #controlsHint {
-        font-size: 11px;
+    .summary-grid,
+    .shop-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .overlay-card {
+        max-width: calc(100vw - 12px);
+        padding: 18px 14px;
+    }
+}
+
+/* ========================
+   Phone gameplay layout (.is-mobile-game) — landscape-first
+   The body gets this class when a phone-sized viewport is on the game screen.
+   It hides the bulky desktop HUD, places the compact #mobileHud as a slim
+   translucent strip across the top, positions touch clusters into corner
+   thumb zones (left margin / right margin / top-right utilities), and lets
+   the canvas occupy near-full viewport in landscape.
+   ======================== */
+
+body.is-mobile-game #game {
+    padding: 0;
+    height: 100vh;
+    height: 100dvh;
+    height: 100svh;
+    width: 100%;
+}
+
+body.is-mobile-game #stage {
+    width: 100%;
+    height: 100%;
+}
+
+body.is-mobile-game #hud { display: none !important; }
+body.is-mobile-game #controlsHint { display: none !important; }
+body.is-mobile-game .mute-chip { display: none !important; }
+body.is-mobile-game .small-warning { display: none !important; }
+
+/* Hide the legacy bottom-left version chip on phone gameplay — version is
+   shown as the .mhud-version pill inside #mobileHud instead. */
+body.is-mobile-game .version-chip { display: none !important; }
+
+body.is-mobile-game .mobile-hud {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    position: absolute;
+    top: max(3px, env(safe-area-inset-top));
+    left: max(4px, env(safe-area-inset-left));
+    right: max(4px, env(safe-area-inset-right));
+    pointer-events: none;
+    z-index: 6;
+}
+
+body.is-mobile-game .mhud-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px 4px;
+    justify-content: flex-start;
+    align-items: center;
+}
+
+body.is-mobile-game .mhud-pill {
+    pointer-events: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 2px 6px;
+    min-height: 20px;
+    border: 1px solid rgba(255, 236, 190, 0.22);
+    border-radius: 999px;
+    background: rgba(20, 28, 30, 0.74);
+    color: #f5e8c9;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    font-size: clamp(9px, 2.4vw, 11px);
+    font-weight: 800;
+    line-height: 1;
+    white-space: nowrap;
+}
+
+body.is-mobile-game .mhud-pill b {
+    color: #9edbe6;
+    font-weight: 900;
+}
+
+body.is-mobile-game .mhud-turn {
+    background: rgba(199, 82, 47, 0.86);
+    border-color: #e08245;
+    color: #fff4de;
+}
+
+body.is-mobile-game .mhud-hp.p1 { background: rgba(199, 82, 47, 0.32); }
+body.is-mobile-game .mhud-hp.p2 { background: rgba(45, 117, 199, 0.32); }
+body.is-mobile-game .mhud-weapon { color: #ffe8a6; }
+body.is-mobile-game .mhud-version {
+    background: rgba(35, 108, 125, 0.42);
+    border-color: rgba(158, 219, 230, 0.30);
+    color: #d9f3f6;
+    font-size: clamp(8px, 2vw, 10px);
+    opacity: 0.85;
+}
+
+body.is-mobile-game .mhud-info {
+    border: 1px solid rgba(158, 219, 230, 0.42);
+    background: rgba(35, 108, 125, 0.6);
+    cursor: pointer;
+    font-style: italic;
+    min-width: 20px;
+    justify-content: center;
+    margin-left: auto;
+}
+
+/* Canvas: dominant element. JS sizes it close to viewport with minimal
+   reserves; controls overlay corner margins (translucent). */
+body.is-mobile-game #gameCanvas {
+    border-radius: 0;
+    box-shadow: none;
+    margin: 0 auto;
+    background: #8ccced;
+}
+
+/* In phone gameplay, treat the entire stage as a positioning frame.
+   Each cluster is absolutely positioned into a thumb zone so the canvas
+   keeps full vertical space. */
+body.is-mobile-game .touch-controls {
+    position: absolute;
+    inset: 0;
+    display: block;
+    grid-template-areas: none;
+    grid-template-columns: none;
+    grid-template-rows: none;
+    gap: 0;
+    padding: 0;
+    pointer-events: none;
+    z-index: 7;
+}
+
+body.is-mobile-game .touch-controls.hidden {
+    display: none !important;
+}
+
+body.is-mobile-game .touch-cluster {
+    position: absolute;
+    pointer-events: auto;
+    background: transparent;
+    gap: 4px;
+}
+
+/* Spec-compliant touch sizing using clamp() with dvh so buttons scale on
+   short landscape viewports without going under 42px. */
+body.is-mobile-game .touch-btn {
+    min-width: clamp(42px, 8dvh, 58px);
+    min-height: clamp(42px, 8dvh, 58px);
+    padding: 4px 6px;
+    font-size: clamp(13px, 3vh, 17px);
+    border-radius: 10px;
+    background: rgba(28, 36, 36, 0.62);
+    border-color: rgba(255, 236, 190, 0.28);
+    backdrop-filter: blur(2px);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.32);
+}
+
+body.is-mobile-game .touch-btn.fire {
+    min-width: clamp(58px, 11dvh, 78px);
+    min-height: clamp(50px, 9dvh, 66px);
+    font-size: clamp(13px, 2.8vh, 16px);
+    background: rgba(199, 82, 47, 0.78);
+    border-color: rgba(224, 130, 69, 0.85);
+}
+
+body.is-mobile-game .touch-btn.power {
+    min-width: clamp(42px, 8dvh, 58px);
+    font-size: clamp(11px, 2.4vh, 13px);
+}
+
+body.is-mobile-game .touch-btn.aim {
+    font-size: clamp(15px, 3.4vh, 20px);
+}
+
+body.is-mobile-game .touch-btn.move {
+    font-size: clamp(16px, 3.8vh, 22px);
+}
+
+body.is-mobile-game .touch-btn.util {
+    min-width: clamp(34px, 6dvh, 46px);
+    min-height: clamp(30px, 5dvh, 40px);
+    padding: 3px 5px;
+    font-size: clamp(10px, 2.2vh, 12px);
+    border-radius: 8px;
+    background: rgba(35, 108, 125, 0.62);
+    border-color: rgba(158, 219, 230, 0.36);
+}
+
+body.is-mobile-game .touch-btn:active,
+body.is-mobile-game .touch-btn.pressed {
+    background: rgba(199, 82, 47, 0.82);
+    border-color: rgba(255, 236, 190, 0.65);
+}
+
+body.is-mobile-game .touch-btn.fire:active,
+body.is-mobile-game .touch-btn.fire.pressed {
+    background: rgba(216, 102, 55, 0.92);
+}
+
+/* ----- LANDSCAPE-FIRST corner placement ----- */
+
+body.is-mobile-game.is-landscape .touch-cluster.left-cluster {
+    bottom: max(6px, env(safe-area-inset-bottom));
+    left: max(6px, env(safe-area-inset-left));
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: flex-end;
+}
+
+body.is-mobile-game.is-landscape .touch-cluster.right-cluster {
+    bottom: max(6px, env(safe-area-inset-bottom));
+    right: max(6px, env(safe-area-inset-right));
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    align-items: flex-end;
+    /* fits 2 normal buttons per row; FIRE then wraps to its own row */
+    max-width: clamp(110px, 28vw, 160px);
+}
+
+body.is-mobile-game.is-landscape .touch-cluster.utils-cluster {
+    top: max(3px, env(safe-area-inset-top));
+    right: max(3px, env(safe-area-inset-right));
+    bottom: auto;
+    left: auto;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    gap: 3px;
+}
+
+/* In landscape, the HUD only occupies the upper-left strip so the
+   utilities top-right have clear space and never overlap. */
+body.is-mobile-game.is-landscape .mobile-hud {
+    right: auto;
+    max-width: calc(100% - 230px);
+}
+
+/* Hide the legacy "Landscape recommended" chip in landscape — guidance is
+   only relevant in portrait, and the portrait branch shows the rotate
+   overlay anyway. */
+body.is-mobile-game.is-landscape #orientationHint { display: none !important; }
+
+/* ----- PORTRAIT compact layout (when user dismissed rotate overlay) ----- */
+
+body.is-mobile-game.is-portrait .touch-cluster.left-cluster {
+    bottom: max(6px, env(safe-area-inset-bottom));
+    left: max(6px, env(safe-area-inset-left));
+    flex-direction: row;
+}
+
+body.is-mobile-game.is-portrait .touch-cluster.right-cluster {
+    bottom: max(6px, env(safe-area-inset-bottom));
+    right: max(6px, env(safe-area-inset-right));
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    max-width: clamp(140px, 50vw, 220px);
+}
+
+body.is-mobile-game.is-portrait .touch-cluster.utils-cluster {
+    top: max(3px, env(safe-area-inset-top));
+    right: max(3px, env(safe-area-inset-right));
+    flex-direction: row;
+    flex-wrap: nowrap;
+    gap: 3px;
+}
+
+body.is-mobile-game.is-portrait .mobile-hud {
+    right: auto;
+    max-width: calc(100% - 220px);
+}
+
+body.is-mobile-game .orientation-hint {
+    top: auto;
+    bottom: max(4px, env(safe-area-inset-bottom));
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    font-size: 10px;
+    padding: 4px 8px;
+    background: rgba(35, 108, 125, 0.78);
+}
+
+/* ========================
+   Rotate-to-landscape overlay (phone portrait, on the game screen)
+   ======================== */
+
+body.is-mobile-game.is-portrait .rotate-overlay {
+    display: flex;
+}
+.rotate-overlay {
+    position: absolute;
+    inset: 0;
+    align-items: center;
+    justify-content: center;
+    background: rgba(10, 17, 19, 0.92);
+    backdrop-filter: blur(4px);
+    z-index: 30;
+    padding: 16px;
+    text-align: center;
+}
+.rotate-overlay.hidden { display: none !important; }
+
+.rotate-card {
+    max-width: 360px;
+    padding: 22px 18px;
+    border: 1px solid rgba(255, 236, 190, 0.22);
+    border-radius: 12px;
+    background: linear-gradient(180deg, rgba(34, 44, 43, 0.97), rgba(24, 30, 28, 0.98));
+    box-shadow: 0 22px 58px rgba(0, 0, 0, 0.4);
+}
+
+.rotate-icon {
+    font-size: 44px;
+    color: #ffe8a6;
+    margin-bottom: 8px;
+    animation: rotateHint 2.4s ease-in-out infinite;
+}
+
+@keyframes rotateHint {
+    0% { transform: rotate(-12deg); }
+    50% { transform: rotate(82deg); }
+    100% { transform: rotate(-12deg); }
+}
+
+.rotate-card h2 {
+    color: #ffe8a6;
+    margin-bottom: 8px;
+    font-size: 22px;
+}
+
+.rotate-card p {
+    color: #d8ceb8;
+    font-size: 14px;
+    line-height: 1.45;
+    margin-bottom: 16px;
+}
+
+.rotate-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.rotate-actions .btn { width: 100%; }
+
+/* When the user has chosen to play through portrait anyway, the rotate
+   overlay is dismissed but the HUD/controls remain compact. */
+body.is-mobile-game.allow-portrait .rotate-overlay { display: none !important; }
+
+/* ========================
+   Phone landscape gameplay tweaks
+   ======================== */
+
+body.is-mobile-game.is-landscape .mobile-hud {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 4px 6px;
+}
+
+body.is-mobile-game.is-landscape .mhud-row {
+    flex-wrap: wrap;
+}
+
+/* Very small phones: tighten everything further. */
+@media (max-width: 380px) {
+    body.is-mobile-game .mhud-pill {
+        font-size: 10px;
+        padding: 2px 6px;
+    }
+    body.is-mobile-game .touch-btn {
+        min-width: 40px;
+        min-height: 40px;
     }
 }
