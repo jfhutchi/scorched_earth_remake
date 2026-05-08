@@ -12,6 +12,7 @@ export class UI {
         this.shopContent = document.getElementById('shopContent');
         this.menuVersion = document.getElementById('menuVersion');
         this.versionChip = document.getElementById('versionChip');
+        this.mhudVersion = document.getElementById('mhudVersion');
 
         this.twoPlayerBtn = document.getElementById('twoPlayerBtn');
         this.cpuBtn = document.getElementById('cpuBtn');
@@ -115,6 +116,7 @@ export class UI {
     setVersion(version) {
         if (this.menuVersion) this.menuVersion.textContent = version;
         if (this.versionChip) this.versionChip.textContent = version;
+        if (this.mhudVersion) this.mhudVersion.textContent = version;
     }
 
     loadSettings() {

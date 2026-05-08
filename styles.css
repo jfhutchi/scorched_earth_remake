@@ -810,10 +810,12 @@ button {
 }
 
 /* ========================
-   Phone gameplay layout (.is-mobile-game)
+   Phone gameplay layout (.is-mobile-game) — landscape-first
    The body gets this class when a phone-sized viewport is on the game screen.
-   It hides the bulky desktop HUD entirely, shows the compact #mobileHud,
-   shrinks touch buttons, and lets the canvas dominate.
+   It hides the bulky desktop HUD, places the compact #mobileHud as a slim
+   translucent strip across the top, positions touch clusters into corner
+   thumb zones (left margin / right margin / top-right utilities), and lets
+   the canvas occupy near-full viewport in landscape.
    ======================== */
 
 body.is-mobile-game #game {
@@ -821,6 +823,7 @@ body.is-mobile-game #game {
     height: 100vh;
     height: 100dvh;
     height: 100svh;
+    width: 100%;
 }
 
 body.is-mobile-game #stage {
@@ -833,12 +836,16 @@ body.is-mobile-game #controlsHint { display: none !important; }
 body.is-mobile-game .mute-chip { display: none !important; }
 body.is-mobile-game .small-warning { display: none !important; }
 
+/* Hide the legacy bottom-left version chip on phone gameplay — version is
+   shown as the .mhud-version pill inside #mobileHud instead. */
+body.is-mobile-game .version-chip { display: none !important; }
+
 body.is-mobile-game .mobile-hud {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 3px;
     position: absolute;
-    top: max(4px, env(safe-area-inset-top));
+    top: max(3px, env(safe-area-inset-top));
     left: max(4px, env(safe-area-inset-left));
     right: max(4px, env(safe-area-inset-right));
     pointer-events: none;
@@ -848,7 +855,7 @@ body.is-mobile-game .mobile-hud {
 body.is-mobile-game .mhud-row {
     display: flex;
     flex-wrap: wrap;
-    gap: 4px;
+    gap: 3px 4px;
     justify-content: flex-start;
     align-items: center;
 }
@@ -857,15 +864,15 @@ body.is-mobile-game .mhud-pill {
     pointer-events: auto;
     display: inline-flex;
     align-items: center;
-    gap: 4px;
-    padding: 3px 7px;
-    min-height: 22px;
+    gap: 3px;
+    padding: 2px 6px;
+    min-height: 20px;
     border: 1px solid rgba(255, 236, 190, 0.22);
     border-radius: 999px;
-    background: rgba(20, 28, 30, 0.78);
+    background: rgba(20, 28, 30, 0.74);
     color: #f5e8c9;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
-    font-size: clamp(10px, 2.6vw, 12px);
+    font-size: clamp(9px, 2.4vw, 11px);
     font-weight: 800;
     line-height: 1;
     white-space: nowrap;
@@ -885,30 +892,26 @@ body.is-mobile-game .mhud-turn {
 body.is-mobile-game .mhud-hp.p1 { background: rgba(199, 82, 47, 0.32); }
 body.is-mobile-game .mhud-hp.p2 { background: rgba(45, 117, 199, 0.32); }
 body.is-mobile-game .mhud-weapon { color: #ffe8a6; }
+body.is-mobile-game .mhud-version {
+    background: rgba(35, 108, 125, 0.42);
+    border-color: rgba(158, 219, 230, 0.30);
+    color: #d9f3f6;
+    font-size: clamp(8px, 2vw, 10px);
+    opacity: 0.85;
+}
 
 body.is-mobile-game .mhud-info {
     border: 1px solid rgba(158, 219, 230, 0.42);
     background: rgba(35, 108, 125, 0.6);
     cursor: pointer;
     font-style: italic;
-    margin-left: auto;
-    min-width: 22px;
+    min-width: 20px;
     justify-content: center;
+    margin-left: auto;
 }
 
-body.is-mobile-game .version-chip {
-    top: auto;
-    bottom: max(4px, env(safe-area-inset-bottom));
-    left: max(4px, env(safe-area-inset-left));
-    right: auto;
-    font-size: 9px;
-    padding: 3px 6px;
-    opacity: 0.6;
-    z-index: 5;
-}
-
-/* Canvas should fill the available space between mobile HUD and touch
-   controls. JS computes the exact pixel size; these rules are presentation. */
+/* Canvas: dominant element. JS sizes it close to viewport with minimal
+   reserves; controls overlay corner margins (translucent). */
 body.is-mobile-game #gameCanvas {
     border-radius: 0;
     box-shadow: none;
@@ -916,89 +919,168 @@ body.is-mobile-game #gameCanvas {
     background: #8ccced;
 }
 
-/* Compact touch controls on phone gameplay */
+/* In phone gameplay, treat the entire stage as a positioning frame.
+   Each cluster is absolutely positioned into a thumb zone so the canvas
+   keeps full vertical space. */
 body.is-mobile-game .touch-controls {
-    grid-template-areas:
-        "utils utils"
-        "left right";
-    gap: 6px;
-    padding: 4px 6px;
-    padding-bottom: max(4px, env(safe-area-inset-bottom));
-    padding-left: max(6px, env(safe-area-inset-left));
-    padding-right: max(6px, env(safe-area-inset-right));
+    position: absolute;
+    inset: 0;
+    display: block;
+    grid-template-areas: none;
+    grid-template-columns: none;
+    grid-template-rows: none;
+    gap: 0;
+    padding: 0;
+    pointer-events: none;
+    z-index: 7;
 }
 
+body.is-mobile-game .touch-controls.hidden {
+    display: none !important;
+}
+
+body.is-mobile-game .touch-cluster {
+    position: absolute;
+    pointer-events: auto;
+    background: transparent;
+    gap: 4px;
+}
+
+/* Spec-compliant touch sizing using clamp() with dvh so buttons scale on
+   short landscape viewports without going under 42px. */
 body.is-mobile-game .touch-btn {
-    min-width: clamp(40px, 12vw, 56px);
-    min-height: clamp(40px, 11vw, 52px);
-    padding: 4px 8px;
-    font-size: clamp(13px, 3.2vw, 17px);
+    min-width: clamp(42px, 8dvh, 58px);
+    min-height: clamp(42px, 8dvh, 58px);
+    padding: 4px 6px;
+    font-size: clamp(13px, 3vh, 17px);
     border-radius: 10px;
+    background: rgba(28, 36, 36, 0.62);
+    border-color: rgba(255, 236, 190, 0.28);
+    backdrop-filter: blur(2px);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.32);
 }
 
 body.is-mobile-game .touch-btn.fire {
-    min-width: clamp(64px, 18vw, 84px);
-    min-height: clamp(48px, 13vw, 60px);
-    font-size: clamp(13px, 3.2vw, 16px);
+    min-width: clamp(58px, 11dvh, 78px);
+    min-height: clamp(50px, 9dvh, 66px);
+    font-size: clamp(13px, 2.8vh, 16px);
+    background: rgba(199, 82, 47, 0.78);
+    border-color: rgba(224, 130, 69, 0.85);
 }
 
 body.is-mobile-game .touch-btn.power {
-    min-width: clamp(46px, 13vw, 60px);
-    font-size: clamp(11px, 2.8vw, 13px);
+    min-width: clamp(42px, 8dvh, 58px);
+    font-size: clamp(11px, 2.4vh, 13px);
 }
 
 body.is-mobile-game .touch-btn.aim {
-    font-size: clamp(15px, 4vw, 20px);
+    font-size: clamp(15px, 3.4vh, 20px);
 }
 
 body.is-mobile-game .touch-btn.move {
-    min-width: clamp(46px, 13vw, 60px);
-    font-size: clamp(16px, 4.4vw, 22px);
+    font-size: clamp(16px, 3.8vh, 22px);
 }
 
 body.is-mobile-game .touch-btn.util {
-    min-width: clamp(34px, 10vw, 46px);
-    min-height: clamp(32px, 8vw, 40px);
-    padding: 3px 6px;
-    font-size: clamp(10px, 2.6vw, 12px);
+    min-width: clamp(34px, 6dvh, 46px);
+    min-height: clamp(30px, 5dvh, 40px);
+    padding: 3px 5px;
+    font-size: clamp(10px, 2.2vh, 12px);
     border-radius: 8px;
+    background: rgba(35, 108, 125, 0.62);
+    border-color: rgba(158, 219, 230, 0.36);
 }
 
-body.is-mobile-game .touch-cluster { gap: 5px; }
-body.is-mobile-game .touch-cluster.utils-cluster { gap: 4px; }
+body.is-mobile-game .touch-btn:active,
+body.is-mobile-game .touch-btn.pressed {
+    background: rgba(199, 82, 47, 0.82);
+    border-color: rgba(255, 236, 190, 0.65);
+}
 
-/* Phone landscape: utilities sit between the move/aim clusters along the
-   bottom so the canvas keeps a clean strip above them. */
-body.is-mobile-game.is-landscape .touch-controls {
-    grid-template-areas: "left utils right";
-    grid-template-columns: auto 1fr auto;
-    grid-template-rows: 1fr;
-    align-items: end;
+body.is-mobile-game .touch-btn.fire:active,
+body.is-mobile-game .touch-btn.fire.pressed {
+    background: rgba(216, 102, 55, 0.92);
+}
+
+/* ----- LANDSCAPE-FIRST corner placement ----- */
+
+body.is-mobile-game.is-landscape .touch-cluster.left-cluster {
+    bottom: max(6px, env(safe-area-inset-bottom));
+    left: max(6px, env(safe-area-inset-left));
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: flex-end;
+}
+
+body.is-mobile-game.is-landscape .touch-cluster.right-cluster {
+    bottom: max(6px, env(safe-area-inset-bottom));
+    right: max(6px, env(safe-area-inset-right));
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    align-items: flex-end;
+    /* fits 2 normal buttons per row; FIRE then wraps to its own row */
+    max-width: clamp(110px, 28vw, 160px);
 }
 
 body.is-mobile-game.is-landscape .touch-cluster.utils-cluster {
-    flex-wrap: wrap;
-    align-self: end;
-    justify-content: center;
+    top: max(3px, env(safe-area-inset-top));
+    right: max(3px, env(safe-area-inset-right));
+    bottom: auto;
+    left: auto;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    gap: 3px;
 }
 
-/* Phone portrait: stack vertically with utilities at top, move on left,
-   aim/power/fire on right. */
-body.is-mobile-game.is-portrait .touch-controls {
-    grid-template-areas:
-        "utils utils"
-        "left right";
+/* In landscape, the HUD only occupies the upper-left strip so the
+   utilities top-right have clear space and never overlap. */
+body.is-mobile-game.is-landscape .mobile-hud {
+    right: auto;
+    max-width: calc(100% - 230px);
 }
 
-/* Hide the small "rotate to landscape" chip when the rotate overlay is up
-   or when we're in landscape. */
+/* Hide the legacy "Landscape recommended" chip in landscape — guidance is
+   only relevant in portrait, and the portrait branch shows the rotate
+   overlay anyway. */
 body.is-mobile-game.is-landscape #orientationHint { display: none !important; }
+
+/* ----- PORTRAIT compact layout (when user dismissed rotate overlay) ----- */
+
+body.is-mobile-game.is-portrait .touch-cluster.left-cluster {
+    bottom: max(6px, env(safe-area-inset-bottom));
+    left: max(6px, env(safe-area-inset-left));
+    flex-direction: row;
+}
+
+body.is-mobile-game.is-portrait .touch-cluster.right-cluster {
+    bottom: max(6px, env(safe-area-inset-bottom));
+    right: max(6px, env(safe-area-inset-right));
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    max-width: clamp(140px, 50vw, 220px);
+}
+
+body.is-mobile-game.is-portrait .touch-cluster.utils-cluster {
+    top: max(3px, env(safe-area-inset-top));
+    right: max(3px, env(safe-area-inset-right));
+    flex-direction: row;
+    flex-wrap: nowrap;
+    gap: 3px;
+}
+
+body.is-mobile-game.is-portrait .mobile-hud {
+    right: auto;
+    max-width: calc(100% - 220px);
+}
+
 body.is-mobile-game .orientation-hint {
     top: auto;
     bottom: max(4px, env(safe-area-inset-bottom));
-    right: max(4px, env(safe-area-inset-right));
-    left: auto;
-    transform: none;
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
     font-size: 10px;
     padding: 4px 8px;
     background: rgba(35, 108, 125, 0.78);

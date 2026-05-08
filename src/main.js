@@ -89,13 +89,21 @@ function fitCanvas() {
     let availableWidth, availableHeight;
 
     if (mobileGame) {
-        // Reserve compact HUD (~44px in portrait, ~36px in landscape) and
-        // touch controls (~140-160 portrait, ~110 landscape).
-        const portrait = isPortrait();
-        const hudReserve = portrait ? 56 : 40;
-        const touchReserve = portrait ? 160 : 124;
-        availableWidth = viewW - 4;
-        availableHeight = viewH - hudReserve - touchReserve;
+        if (isPortrait()) {
+            // Phone portrait (only reached when user dismissed rotate overlay).
+            // Reserve enough room for compact HUD on top and bottom controls.
+            availableWidth = viewW - 6;
+            availableHeight = viewH - 48 /* HUD */ - 110 /* controls */;
+        } else {
+            // PHONE LANDSCAPE — landscape-first layout.
+            // Touch clusters live in the SIDE margins (left/right corners) and
+            // the utility row in the top-right corner. They are absolutely
+            // positioned and translucent, so the canvas can claim nearly the
+            // full viewport height; horizontal margins around the centered
+            // 16:9 canvas naturally house the side clusters.
+            availableWidth = viewW - 6;
+            availableHeight = viewH - 6;
+        }
     } else {
         const margin = 24;
         const baseReserve = viewH < 700 ? 8 : 0;

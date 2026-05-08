@@ -6,11 +6,49 @@ For mobile testing, either visit the LAN IP from a phone (`http://<your-laptop-i
 
 ## GitHub Pages / Version
 
-- [ ] Main menu visibly shows `v0.6.1`.
-- [ ] In-game HUD/footer visibly shows the `v0.6.1` chip.
-- [ ] GitHub Pages deployment shows `v0.6.1` after a hard refresh.
-- [ ] `window.GAME_VERSION` returns `"v0.6.1"` in the browser console.
+- [ ] Main menu visibly shows `v0.6.2`.
+- [ ] In-game HUD/footer visibly shows the `v0.6.2` chip.
+- [ ] GitHub Pages deployment shows `v0.6.2` after a hard refresh.
+- [ ] `window.GAME_VERSION` returns `"v0.6.2"` in the browser console.
 - [ ] No external assets are requested in the Network panel.
+
+## v0.6.2 Phone Landscape Hotfix
+
+Test these at phone-emulator viewports (DevTools Device Toolbar) and, where possible, on at least one real phone in landscape.
+
+- [ ] Main menu shows `v0.6.2`.
+- [ ] In phone gameplay, `v0.6.2` is visible inside the top-left HUD pill row (no more bottom-left version chip overlapping movement buttons).
+- [ ] In desktop gameplay (1280×720+), the bottom-left `v0.6.2` chip is still visible.
+- [ ] At 844×390 landscape, the canvas is visibly much larger than v0.6.1 and clearly shows both tanks, terrain, and shot arc.
+- [ ] At 932×430 landscape, the canvas uses most of the available width; horizontal dark margins around the canvas only host the touch clusters, not large empty space.
+- [ ] In phone landscape, utility buttons (`WPN R N ♪ ≡`) sit in a single small row in the top-right corner — NOT in the middle of the battlefield.
+- [ ] In phone landscape, move buttons (`◀ ▶`) sit in the bottom-left corner.
+- [ ] In phone landscape, aim/power/fire (`↺ ↻ PWR- PWR+ FIRE`) sit in the bottom-right corner in a compact 2-column stack with FIRE on its own row.
+- [ ] Touch buttons in landscape are translucent enough that terrain is visible behind them where they slightly overlap the canvas edges.
+- [ ] Touch buttons sized within spec: movement/aim/power approximately 42–58 px, FIRE approximately 58–78 px, utilities approximately 34–46 px.
+- [ ] In phone portrait, the rotate overlay appears with the message "Rotate your phone to landscape for the playable layout."
+- [ ] `Continue Anyway` dismisses the overlay and lets the user play in portrait with a compact layout.
+- [ ] `Back to Menu` returns to the main menu.
+- [ ] Rotating from portrait to landscape automatically hides the rotate overlay.
+- [ ] In phone landscape, the rotate overlay is NOT shown.
+- [ ] On desktop (≥768 px wide and pointer:fine), no rotate overlay appears.
+- [ ] FIRE fires exactly one shot per tap.
+- [ ] Hold for `↺`, `↻`, `PWR-`, `PWR+`, `◀`, `▶` repeats smoothly.
+- [ ] `WPN`, `R`, `N`, `♪`, `≡` each fire once per tap.
+- [ ] Touch controls are dimmed during CPU turn, projectile flight, explosion resolving, summary, and shop.
+- [ ] No accidental zoom from rapid taps on touch buttons.
+- [ ] No horizontal page scrolling at 390×844, 430×932, 844×390, 932×430.
+- [ ] Round summary opens correctly on phone, scrolls internally if it overflows, and `New Match` / `Main Menu` buttons remain reachable.
+- [ ] Shop opens on phone, items stack vertically, all `Buy` buttons are touch-sized, and `Start Next Round` is always reachable without horizontal scrolling.
+- [ ] Desktop layout at 1280×720, 1366×768, and 1920×1080 is unchanged from v0.6.1 (cream HUD cards, bottom-left version chip).
+- [ ] All desktop keyboard controls (arrows, `A`/`D`, `Space`, `Tab`/`W`, `R`, `N`, `M`, `Esc`) still work.
+- [ ] First Aid Kit fully heals between rounds (regression).
+- [ ] Heavy Shell and Dirt Bomb refill purchases still refill to max carried ammo (regression).
+- [ ] Dirt Bomb still creates a much larger mound than v0.5 (regression).
+- [ ] Each weapon still has a distinct fire and impact sound (regression).
+- [ ] Mobile Play still starts Single Player vs CPU (regression).
+- [ ] GitHub Pages deployment shows `v0.6.2` after a hard refresh.
+- [ ] No uncaught console errors in any of the above flows.
 
 ## v0.6.1 Mobile Hotfix
 
@@ -335,7 +373,7 @@ Note: only available from desktop layout (≥ 768 px wide).
 
 Open the local URL with `?debug=1` to expose optional helpers. They do not run automatically.
 
-- [ ] `window.GAME_VERSION` returns `"v0.6.1"`.
+- [ ] `window.GAME_VERSION` returns `"v0.6.2"`.
 - [ ] `window.render_game_to_text()` returns concise current game state.
 - [ ] `window.debugGameState()` returns parsed game state (with `?debug=1`).
 - [ ] `window.testWeaponImpact("standard")` creates a Standard Shell impact during a live aiming turn.
@@ -347,7 +385,7 @@ Open the local URL with `?debug=1` to expose optional helpers. They do not run a
 
 ## Final Regression Pass
 
-- [ ] Main menu loads and shows `v0.6.1`.
+- [ ] Main menu loads and shows `v0.6.2`.
 - [ ] Phone viewport shows `Play`; desktop shows `Two Player Local` + `Single Player vs CPU`.
 - [ ] Settings persist.
 - [ ] Two Player starts (desktop only).
