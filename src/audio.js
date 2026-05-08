@@ -92,8 +92,13 @@ export class AudioManager {
                 this._tone(210, 0.08, 'triangle', 0.032, 0.04);
                 break;
             case 'napalm':
-                this._noise(0.46, 0.12, { highPass: true });
-                this._tone(180, 0.20, 'sine', 0.035);
+                // Pressurized whoosh with a few small crackles, distinct from blast impacts.
+                this._noise(0.54, 0.115, { highPass: true });
+                this._noise(0.72, 0.045, { lowPass: true, delay: 0.08 });
+                this._tone(150, 0.18, 'sine', 0.026, 0.03);
+                this._tone(860, 0.025, 'square', 0.018, 0.20);
+                this._tone(620, 0.030, 'triangle', 0.014, 0.42);
+                this._tone(980, 0.022, 'square', 0.012, 0.62);
                 break;
             case 'cluster':
             case 'clusterBomblet':
@@ -124,6 +129,16 @@ export class AudioManager {
     playRollerRumble() {
         this._tone(88, 0.24, 'sawtooth', 0.035);
         this._noise(0.24, 0.035, { lowPass: true });
+    }
+
+    playTankDestroyed(delay = 0) {
+        this._noise(0.46, 0.15, { lowPass: true, delay });
+        this._tone(42, 0.62, 'sine', 0.12, delay);
+        this._tone(74, 0.42, 'sawtooth', 0.072, delay + 0.025);
+        this._tone(520, 0.055, 'square', 0.035, delay + 0.045);
+        this._tone(910, 0.040, 'triangle', 0.026, delay + 0.090);
+        this._noise(0.13, 0.050, { highPass: true, delay: delay + 0.055 });
+        this._noise(0.58, 0.042, { lowPass: true, delay: delay + 0.22 });
     }
 
     playHit() {
@@ -203,7 +218,7 @@ export class AudioManager {
         osc.stop(end + 0.02);
     }
 
-    _noise(duration, volume, { lowPass = false, highPass = false } = {}) {
+    _noise(duration, volume, { lowPass = false, highPass = false, delay = 0 } = {}) {
         const ctx = this._ensureContext();
         if (!ctx) return;
 
@@ -217,7 +232,7 @@ export class AudioManager {
 
         const source = ctx.createBufferSource();
         const gain = ctx.createGain();
-        const start = ctx.currentTime;
+        const start = ctx.currentTime + delay;
         const end = start + duration;
 
         source.buffer = buffer;

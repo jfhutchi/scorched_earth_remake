@@ -1,4 +1,4 @@
-export const GAME_VERSION = 'v0.6.4';
+export const GAME_VERSION = 'v0.6.5';
 
 export const CONFIG = {
     debug: false,
@@ -278,23 +278,24 @@ export const WEAPONS = [
         startingAmmo: 0,
         shopRefillPrice: 95,
         maxDamage: 36,
-        damageRadius: 70,
+        damageRadius: 78,
         damageFalloff: 1.05,
         terrainEffectType: 'scorch',
         explosionRadius: 74,
-        terrainEffectRadius: 10,
-        terrainEffectStrength: 0.18,
-        flameWidth: 120,
+        terrainEffectRadius: 0,
+        terrainEffectStrength: 0,
+        flameWidth: 152,
+        flameDuration: 2.35,
         speedScale: 0.94,
         projectileRadius: 5,
         color: '#ffb04f',
         trailColor: '255, 174, 84',
         impactVisual: 'napalmFlame',
-        visualType: 'flame patch',
+        visualType: 'terrain-hugging flame patch',
         fireSoundType: 'napalm',
         impactSoundType: 'napalm',
         terrainMessage: 'Napalm Canister scorched the ridge with minimal terrain damage.',
-        description: 'Spreads a short flame patch that damages nearby tanks with little crater damage.',
+        description: 'Spreads a short ground fire patch that damages nearby tanks with minimal terrain damage.',
     },
     {
         id: 'cluster',

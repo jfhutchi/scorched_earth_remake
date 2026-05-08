@@ -27,6 +27,9 @@ export class Tank {
         this.parachutes = 0;
         this.lastShieldAbsorbed = 0;
         this.shieldFlashTimer = 0;
+        this.deathEffectPlayed = false;
+        this.wreckSmokeTime = 0;
+        this.wreckSeed = Math.random() * 1000;
         this.ammo = {};
         this.resetForRound();
     }
@@ -42,6 +45,9 @@ export class Tank {
         this.movementFuel = CONFIG.tank.movementFuelPerTurn;
         this.lastShieldAbsorbed = 0;
         this.shieldFlashTimer = 0;
+        this.deathEffectPlayed = false;
+        this.wreckSmokeTime = 0;
+        this.wreckSeed = Math.random() * 1000;
         this.ammo = {};
 
         for (const weapon of WEAPONS) {
@@ -162,6 +168,9 @@ export class Tank {
     }
 
     update(dt) {
+        if (!this.alive) {
+            this.wreckSmokeTime += dt;
+        }
         if (this.damageTimer > 0) {
             this.damageTimer = Math.max(0, this.damageTimer - dt);
         }

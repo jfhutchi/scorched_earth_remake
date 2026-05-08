@@ -4,15 +4,39 @@ Use a local static server, open the game in a desktop or mobile browser, and kee
 
 For mobile testing, either visit the LAN IP from a phone (`http://<your-laptop-ip>:8000`), publish to GitHub Pages, or use browser DevTools device emulation.
 
-## v0.6.4 Version
+## v0.6.5 Version
 
-- [ ] Main menu visibly shows `v0.6.4`.
+- [ ] Main menu visibly shows `v0.6.5`.
 - [ ] Gameplay screen does not show a floating version badge over the battlefield, HUD, or controls.
-- [ ] `window.GAME_VERSION` returns `"v0.6.4"` in the browser console.
-- [ ] GitHub Pages deployment shows `v0.6.4` after a hard refresh.
+- [ ] `window.GAME_VERSION` returns `"v0.6.5"` in the browser console.
+- [ ] GitHub Pages deployment shows `v0.6.5` after a hard refresh.
 - [ ] No external assets are requested in the Network panel.
 
-## v0.6.4 Shield and Inventory Clarity
+## v0.6.5 Tank Destruction
+
+- [ ] Destroying a tank plays a distinct death explosion sound.
+- [ ] Tank death sound plays once for the destroyed tank.
+- [ ] Tank death sound respects mute.
+- [ ] Two tanks destroyed by one blast do not create an ugly overlapping audio mess.
+- [ ] Destroyed tank has a clear larger visual blast and debris flash.
+- [ ] Destroyed tank remains visibly disabled or wrecked.
+- [ ] Destroyed tank emits dark smoke.
+- [ ] Round summary still appears after the destruction effect resolves.
+
+## v0.6.5 Napalm Ground Fire
+
+- [ ] Napalm Canister creates visible ground fire on impact.
+- [ ] Napalm fire spreads horizontally along the terrain surface.
+- [ ] Napalm fire clings to the ground instead of expanding as a circular explosion.
+- [ ] Napalm fire flickers with orange, yellow, and red flame shapes.
+- [ ] Napalm fire has light smoke or dark wisps.
+- [ ] Napalm fire lingers briefly and fades.
+- [ ] Napalm does minimal terrain deformation and does not create a large crater.
+- [ ] Napalm damages tanks in the flame area.
+- [ ] Napalm impact sound differs from normal explosions.
+- [ ] Napalm sound respects mute.
+
+## v0.6.5 Shield and Inventory Clarity
 
 - [ ] Buying `Shield Charge` immediately updates the visible shield indicator.
 - [ ] Shield value is shown near HP on desktop as separate blue/cyan protection.
@@ -28,7 +52,7 @@ For mobile testing, either visit the LAN IP from a phone (`http://<your-laptop-i
 - [ ] Shop inventory uses `Money:`, `Heavy Shells:`, `Dirt Bombs:`, `Shield:`, `First Aid:`, and `Parachutes:`.
 - [ ] Summary inventory uses the same clear terminology.
 
-## v0.6.4 Mobile Controls
+## v0.6.5 Mobile Controls
 
 - [ ] Mobile angle up button displays `↑`.
 - [ ] Mobile angle down button displays `↓`.
@@ -43,7 +67,7 @@ For mobile testing, either visit the LAN IP from a phone (`http://<your-laptop-i
 - [ ] Touch hold still works for angle, power, and movement.
 - [ ] Desktop keyboard controls are unchanged.
 
-## v0.6.4 Shop Ammo
+## v0.6.5 Shop Ammo
 
 - [ ] Shop shows `Heavy Shell Ammo`.
 - [ ] Shop shows `Dirt Bomb Ammo`.
@@ -67,7 +91,7 @@ For mobile testing, either visit the LAN IP from a phone (`http://<your-laptop-i
 - [ ] CPU does not buy full ammo.
 - [ ] Mobile shop clearly shows disabled/full state.
 
-## v0.6.4 Weapons
+## v0.6.5 Weapons
 
 - [ ] Standard Shell fires and remains unlimited.
 - [ ] Heavy Shell fires, consumes ammo, creates a larger crater, and does higher damage than Standard Shell.
@@ -81,7 +105,7 @@ For mobile testing, either visit the LAN IP from a phone (`http://<your-laptop-i
 - [ ] Roller Shell does not break terrain collision.
 - [ ] Napalm Canister can be bought/refilled in the shop.
 - [ ] Napalm Canister can be selected and fired.
-- [ ] Napalm creates a flame visual.
+- [ ] Napalm creates a terrain-hugging flame visual.
 - [ ] Napalm damages tanks in the flame area.
 - [ ] Napalm does not create a large crater.
 - [ ] Napalm impact sound is distinct.
@@ -102,20 +126,22 @@ For mobile testing, either visit the LAN IP from a phone (`http://<your-laptop-i
 - [ ] Weapon cycling works on mobile with the expanded weapon list.
 - [ ] HUD selected weapon display handles longer names.
 
-## v0.6.4 Explosion Visuals
+## v0.6.5 Explosion Visuals
 
 - [ ] Expanding explosion rings are visible.
 - [ ] Standard Shell uses a medium expanding blast.
 - [ ] Heavy Shell uses a larger expanding blast than Standard Shell.
 - [ ] Dirt Bomb uses a brown/green dirt puff and does not look like a fireball.
 - [ ] Roller Shell has a small/medium expanding blast after rolling.
-- [ ] Napalm Canister looks like a fire/flame area, not a normal crater explosion.
+- [ ] Napalm Canister looks like ground fire along terrain, not a normal crater explosion.
 - [ ] Cluster Bomb shows multiple small expanding mini-blasts.
 - [ ] Mega Bomb is visually the biggest blast.
+- [ ] Tank death uses a larger tank-centered blast than a normal hit.
+- [ ] Destroyed tank smoke remains visible after the blast.
 - [ ] Visuals remain performant on desktop.
 - [ ] Visuals remain acceptable on mobile.
 
-## v0.6.4 Audio
+## v0.6.5 Audio
 
 - [ ] Standard Shell, Heavy Shell, Dirt Bomb, Roller Shell, Napalm Canister, Cluster Bomb, and Mega Bomb have distinct fire sounds.
 - [ ] Each weapon has a distinct impact/explosion sound.
@@ -123,6 +149,7 @@ For mobile testing, either visit the LAN IP from a phone (`http://<your-laptop-i
 - [ ] Mega Bomb sounds largest.
 - [ ] Dirt Bomb sounds like dirt/soil, not a fireball.
 - [ ] Napalm sounds like flame/air burst.
+- [ ] Tank death sounds bigger and more final than a normal weapon impact.
 - [ ] Cluster Bomb split and bomblet impacts sound distinct.
 - [ ] Shield absorb shimmer plays when shield blocks damage.
 - [ ] First Aid Kit heal tone plays when a kit is used.
@@ -134,7 +161,7 @@ For mobile testing, either visit the LAN IP from a phone (`http://<your-laptop-i
 - [ ] No sounds play while muted.
 - [ ] No console errors from audio.
 
-## v0.6.4 CPU Shop and Weapon Use
+## v0.6.5 CPU Shop and Weapon Use
 
 - [ ] CPU can buy Shield Charge.
 - [ ] CPU can buy First Aid Kit.
@@ -262,7 +289,7 @@ For mobile testing, either visit the LAN IP from a phone (`http://<your-laptop-i
 
 Open the local URL with `?debug=1` for optional helpers.
 
-- [ ] `window.GAME_VERSION` returns `"v0.6.4"`.
+- [ ] `window.GAME_VERSION` returns `"v0.6.5"`.
 - [ ] `window.render_game_to_text()` returns concise current game state.
 - [ ] `window.debugGameState()` returns parsed game state with `?debug=1`.
 - [ ] `window.testWeaponImpact("standard")` creates a Standard Shell impact during a live aiming turn.
@@ -278,7 +305,7 @@ Open the local URL with `?debug=1` for optional helpers.
 
 ## Final Regression Pass
 
-- [ ] Main menu loads and shows `v0.6.4`.
+- [ ] Main menu loads and shows `v0.6.5`.
 - [ ] Phone viewport shows `Play`; desktop shows `Two Player Local` and `Single Player vs CPU`.
 - [ ] Pre-round shop opens.
 - [ ] Full ammo buttons are disabled.

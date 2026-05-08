@@ -1,16 +1,16 @@
 # Tank Artillery Duel
 
-Current version: `v0.6.4`
+Current version: `v0.6.5`
 
 Tank Artillery Duel is a local browser-based 2D artillery game inspired by classic tank duel games. Two tanks fight across destructible hilly terrain with wind, turn-based aiming, movement fuel, limited special weapons, generated Web Audio effects, match scoring, money, a pre-round and between-round shop, and an optional CPU opponent.
 
-v0.6.4 focuses on clarity and classic artillery feel: clearer HUD/shop inventory labels, visible shield protection, a small expanded weapon set, full-ammo shop states, expanding blast visuals, more distinct generated weapon sounds, compact desktop HUD tuning, and no gameplay version badge.
+v0.6.5 is a focused polish pass: destroyed tanks now get a larger final blast, wreck smoke, and a distinct generated death sound, while Napalm Canister impacts create terrain-hugging ground fire that spreads along the ridge with minimal terrain damage.
 
 The project is pure HTML, CSS, vanilla JavaScript, HTML5 Canvas, and the Web Audio API. It has no backend, no build step, no paid services, and no external assets.
 
 ## GitHub Pages Note
 
-The live game displays `v0.6.4` on the main menu only. Gameplay intentionally does not show a floating version badge over the canvas, HUD, or touch controls. `window.GAME_VERSION` remains available and returns `"v0.6.4"`.
+The live game displays `v0.6.5` on the main menu only. Gameplay intentionally does not show a floating version badge over the canvas, HUD, or touch controls. `window.GAME_VERSION` remains available and returns `"v0.6.5"`.
 
 After a GitHub Pages deployment, hard refresh the page if the old version still appears:
 
@@ -49,14 +49,14 @@ To test from a phone on the same Wi-Fi, use your machine's LAN IP, for example `
 - Standard Shell, Heavy Shell, Dirt Bomb, Roller Shell, Napalm Canister, Cluster Bomb, and Mega Bomb.
 - Economy, round summaries, pre-round shop before Round 1, between-round shop, score tracking, and inventory HUD.
 - Shield charge, First Aid Kit full-heal behavior, parachutes, and ammo refill-to-max purchases.
-- Generated Web Audio firing, impact, shield, heal, parachute, purchase, and blocked-purchase sounds.
+- Generated Web Audio firing, impact, tank destruction, shield, heal, parachute, purchase, and blocked-purchase sounds.
 - `window.render_game_to_text()`, `window.advanceTime(ms)`, and `window.GAME_VERSION` for smoke testing.
 
 ## Version Display
 
-- Main menu shows `v0.6.4`.
+- Main menu shows `v0.6.5`.
 - Gameplay does not show a version chip or badge.
-- `window.GAME_VERSION` returns `"v0.6.4"`.
+- `window.GAME_VERSION` returns `"v0.6.5"`.
 
 ## Mobile Browser Support
 
@@ -130,7 +130,7 @@ Shield Charge adds separate blue/cyan protection. It is not normal HP.
 | `Heavy Shell` | 1 | 3 | `Heavy Shell Ammo` | Slower shell, larger crater, high damage. |
 | `Dirt Bomb` | 1 | 4 | `Dirt Bomb Ammo` | Adds a large dirt mound with low tank damage. |
 | `Roller Shell` | 0 | 3 | `Roller Shell Ammo` | Hits terrain, rolls along the slope, then explodes. |
-| `Napalm Canister` | 0 | 3 | `Napalm Canister Ammo` | Creates a flame patch with minimal terrain deformation. |
+| `Napalm Canister` | 0 | 3 | `Napalm Canister Ammo` | Creates a terrain-hugging ground fire patch with minimal terrain deformation. |
 | `Cluster Bomb` | 0 | 2 | `Cluster Bomb Ammo` | Splits into 5 bomblets with multiple small craters. |
 | `Mega Bomb` | 0 | 1 | `Mega Bomb Ammo` | Rare, expensive, large crater and high damage. |
 
@@ -138,15 +138,16 @@ Standard Shell is unlimited and has no ammo shop button. Every limited weapon ca
 
 ## Explosion Visuals
 
-v0.6.4 adds classic-inspired expanding Canvas blast visuals:
+v0.6.5 keeps the classic-inspired expanding Canvas blast visuals and adds final tank destruction feedback:
 
 - Standard Shell: medium expanding blast ring and flash.
 - Heavy Shell: larger ring, stronger flash, more debris.
 - Dirt Bomb: brown/green dirt puff and soft dust wave, not a fireball.
 - Roller Shell: small/medium expanding blast after rolling.
-- Napalm Canister: short flame patch, not a normal crater explosion.
+- Napalm Canister: short-lived ground fire that spreads horizontally along the terrain surface, not a normal crater explosion.
 - Cluster Bomb: several small expanding mini-blasts.
 - Mega Bomb: largest shock ring, bright center flash, and heavier debris.
+- Tank destruction: larger tank-centered final blast, debris flash, persistent wreck, and dark smoke.
 
 ## Generated Sounds
 
@@ -156,9 +157,10 @@ All sounds are generated locally with Web Audio. No audio files are used.
 - Heavy Shell: deeper launch and larger low-rumble impact.
 - Dirt Bomb: softer launch and soil burst.
 - Roller Shell: metallic launch, short rolling rumble, and medium explosion.
-- Napalm Canister: pressurized launch and flame burst.
+- Napalm Canister: pressurized launch and flame burst / whoosh with subtle crackles.
 - Cluster Bomb: hollow launch, split pop, and small bomblet impacts.
 - Mega Bomb: deepest launch and largest low-frequency explosion.
+- Tank destruction: deep final boom, low rumble, metallic crack/pop, and falling debris noise.
 - Shield absorption, First Aid Kit, parachute, purchase, and invalid purchase sounds remain distinct.
 
 Mute still suppresses all generated sounds.
@@ -247,7 +249,7 @@ src/touchInput.js   Pointer-event wiring for the on-screen touch control pad
 - If the port is busy, use another port such as `python -m http.server 8010`.
 - If sound does not play, click or tap once in the page first. Browsers require user interaction before starting audio.
 - If the sound button starts muted, localStorage has a saved mute preference. Press `M` or tap the sound button.
-- If GitHub Pages shows an older version, hard refresh and confirm the main menu says `v0.6.4`.
+- If GitHub Pages shows an older version, hard refresh and confirm the main menu says `v0.6.5`.
 - If match settings look wrong, clear `localStorage` for the site or change settings on the menu before starting a new match.
 
 ## Known Limitations

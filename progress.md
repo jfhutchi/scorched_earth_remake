@@ -37,3 +37,13 @@ Original prompt: Upgrade the existing local browser Scorched Earth-style artille
 - Moved ammo shop entries to weapon-driven generation so Heavy/Dirt remain in the shop as `Heavy Shell Ammo` and `Dirt Bomb Ammo`, with Roller/Napalm/Cluster/Mega added consistently.
 - Added Roller Shell, Napalm Canister, Cluster Bomb, and Mega Bomb definitions, CPU shop/weapon preferences, rolling projectile behavior, cluster bomblets, flame visuals, expanded blast rings, and distinct generated sounds.
 - Updated README.md and TESTING.md for v0.6.4.
+
+## v0.6.5 Notes
+
+- Updated the version target to `v0.6.5`; the main menu and `window.GAME_VERSION` now report v0.6.5 while gameplay remains free of a floating version chip.
+- Added generated tank destruction audio with a deep boom, low rumble, metallic crack/pop, and debris noise, triggered only on fresh death transitions.
+- Added tank death blast visuals, charred wreck drawing, and looping dark smoke so destroyed tanks are clearly disabled.
+- Reworked Napalm Canister impact visuals into terrain-sampled ground fire that spreads along the surface, flickers, smokes lightly, and lingers before fading.
+- Changed Napalm terrain behavior to avoid crater carving while preserving immediate flame-area damage.
+- Updated README.md and TESTING.md for v0.6.5.
+- Verification: `node --check` passed for edited JS files; the web-game Playwright smoke client reported `v0.6.5`; targeted browser checks covered menu version, no gameplay version chip, shop ammo entries, desktop keyboard separation, Napalm ground fire/damage, tank death wreck/blast, summary flow, mobile touch weapon cycling, and a CPU turn smoke pass with no console/page errors.

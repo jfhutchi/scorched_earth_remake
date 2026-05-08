@@ -383,13 +383,21 @@ export class Game {
 
         const result = this._applyExplosionDamage(x, y, weapon, 'terrain');
         const terrainMessage = this._applyTerrainEffect(x, y, weapon);
+        this._settleDestroyedTanks();
         const fallMessages = this._settleTanksWithFallDamage();
-        const explosion = new Explosion(x, y, weapon.explosionRadius, weapon);
+        const effectY = weapon.behavior === 'napalm' && this.terrain ? this.terrain.heightAt(x) : y;
+        const explosion = new Explosion(
+            x,
+            effectY,
+            weapon.explosionRadius,
+            weapon,
+            weapon.behavior === 'napalm' ? { surfacePoints: this._sampleNapalmSurface(x, weapon) } : undefined
+        );
         this.explosions.push(explosion);
         this.lastResult = `${result.message} ${terrainMessage}${fallMessages.length ? ` ${fallMessages.join(' ')}` : ''}`;
         this.statusMessage = `Debug impact: ${weapon.name}.`;
         this.phase = 'resolving';
-        this.phaseTimer = Math.max(CONFIG.turn.impactDelaySeconds, explosion.duration + 0.15);
+        this.phaseTimer = Math.max(CONFIG.turn.impactDelaySeconds, this._remainingExplosionTime() + 0.15);
         this._draw();
         this.ui.update(this._state());
 
@@ -1079,6 +1087,7 @@ export class Game {
 
         const result = this._applyExplosionDamage(x, y, weapon, collision, { accumulate: projectile.isBomblet });
         const terrainMessage = this._applyTerrainEffect(x, y, weapon);
+        this._settleDestroyedTanks();
         const fallMessages = this._settleTanksWithFallDamage();
         if (projectile.isBomblet) {
             this.shotInfo.clusterImpactCount += 1;
@@ -1087,7 +1096,14 @@ export class Game {
         }
         this.statusMessage = 'Impact resolving.';
 
-        const explosion = new Explosion(x, y, weapon.explosionRadius, weapon);
+        const effectY = weapon.behavior === 'napalm' && this.terrain ? this.terrain.heightAt(x) : y;
+        const explosion = new Explosion(
+            x,
+            effectY,
+            weapon.explosionRadius,
+            weapon,
+            weapon.behavior === 'napalm' ? { surfacePoints: this._sampleNapalmSurface(x, weapon) } : undefined
+        );
         this.explosions.push(explosion);
         this.audio.playExplosion(weapon);
         if (result.totalDamage > 0) this.audio.playHit();
@@ -1096,7 +1112,7 @@ export class Game {
         if (!final) return;
 
         this.phase = 'resolving';
-        this.phaseTimer = Math.max(CONFIG.turn.impactDelaySeconds, explosion.duration + 0.15);
+        this.phaseTimer = Math.max(CONFIG.turn.impactDelaySeconds, this._remainingExplosionTime() + 0.15);
     }
 
     _completeClusterShot() {
@@ -1113,8 +1129,7 @@ export class Game {
         this.lastResult = `${prefix} ${impacts} bomblets impacted. ${details.join(' ')} Cluster Bomb peppered the terrain with small craters.`;
         this.statusMessage = 'Cluster impacts resolving.';
         this.phase = 'resolving';
-        const longest = this.explosions.reduce((max, explosion) => Math.max(max, explosion.duration), 0);
-        this.phaseTimer = Math.max(CONFIG.turn.impactDelaySeconds, longest + 0.18);
+        this.phaseTimer = Math.max(CONFIG.turn.impactDelaySeconds, this._remainingExplosionTime() + 0.18);
     }
 
     _applyTerrainEffect(x, y, weapon) {
@@ -1123,7 +1138,6 @@ export class Game {
             return weapon.terrainMessage;
         }
         if (weapon.behavior === 'napalm') {
-            this.terrain.explode(x, y, weapon.terrainEffectRadius, weapon.terrainEffectStrength);
             return weapon.terrainMessage;
         }
 
@@ -1131,11 +1145,62 @@ export class Game {
         return weapon.terrainMessage;
     }
 
+    _sampleNapalmSurface(centerX, weapon) {
+        if (!this.terrain) return [];
+        const width = weapon.flameWidth || 140;
+        const step = 8;
+        const start = Math.max(0, Math.floor(centerX - width / 2));
+        const end = Math.min(this.width - 1, Math.ceil(centerX + width / 2));
+        const points = [];
+        for (let x = start; x <= end; x += step) {
+            points.push({
+                x,
+                y: this.terrain.heightAt(x),
+                seed: Math.random(),
+            });
+        }
+        const last = points[points.length - 1];
+        if (!last || last.x < end) {
+            points.push({ x: end, y: this.terrain.heightAt(end), seed: Math.random() });
+        }
+        return points;
+    }
+
+    _remainingExplosionTime() {
+        return this.explosions.reduce((max, explosion) => {
+            return Math.max(max, Math.max(0, explosion.duration - explosion.t));
+        }, 0);
+    }
+
+    _triggerTankDeathEffects(tankIndices) {
+        let triggered = 0;
+        let longest = 0;
+        for (const index of tankIndices) {
+            const tank = this.tanks[index];
+            if (!tank || tank.alive || tank.deathEffectPlayed) continue;
+            tank.deathEffectPlayed = true;
+            tank.wreckSmokeTime = 0;
+            const delay = triggered * 0.16;
+            const explosion = new Explosion(
+                tank.x,
+                tank.y - tank.height * 0.72,
+                92,
+                createTankDeathVisual(tank)
+            );
+            this.explosions.push(explosion);
+            this.audio.playTankDestroyed(delay);
+            longest = Math.max(longest, explosion.duration + delay);
+            triggered += 1;
+        }
+        return longest;
+    }
+
     _applyExplosionDamage(x, y, weapon, collision, { accumulate = false } = {}) {
         let totalDamage = 0;
         let enemyDamage = 0;
         let selfDamage = 0;
         let shieldAbsorbed = 0;
+        const newlyDestroyed = [];
         const shooter = this.tanks[this.shotInfo.shooterIndex];
         const target = this.tanks[this.shotInfo.targetIndex];
 
@@ -1144,26 +1209,40 @@ export class Game {
             if (!tank.alive) continue;
 
             const circle = tank.boundingCircle();
-            const dx = circle.x - x;
-            const dy = circle.y - y;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-            if (dist > weapon.damageRadius + circle.r * 0.35) continue;
+            let falloff = 0;
+            if (weapon.behavior === 'napalm') {
+                const halfWidth = (weapon.flameWidth || weapon.damageRadius * 2) / 2;
+                const horizontal = Math.abs(circle.x - x);
+                const groundY = this.terrain ? this.terrain.heightAt(circle.x) : y;
+                const verticalClearance = Math.max(0, Math.abs(circle.y - groundY) - circle.r);
+                if (horizontal > halfWidth + circle.r * 0.45 || verticalClearance > tank.height + 14) continue;
+                const normalized = clamp(1 - horizontal / Math.max(1, halfWidth), 0, 1);
+                falloff = Math.pow(normalized, weapon.damageFalloff);
+            } else {
+                const dx = circle.x - x;
+                const dy = circle.y - y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist > weapon.damageRadius + circle.r * 0.35) continue;
 
-            const normalized = clamp(1 - dist / weapon.damageRadius, 0, 1);
-            let falloff = Math.pow(normalized, weapon.damageFalloff);
+                const normalized = clamp(1 - dist / weapon.damageRadius, 0, 1);
+                falloff = Math.pow(normalized, weapon.damageFalloff);
+            }
             const directBonus = collision === 'tank' && i === this.shotInfo.targetIndex ? 1.08 : 1;
             if (collision === 'tank' && i === this.shotInfo.targetIndex) {
-                falloff = Math.max(falloff, 0.82);
+                falloff = Math.max(falloff, weapon.behavior === 'napalm' ? 0.78 : 0.82);
             }
             const rawDamage = Math.min(weapon.maxDamage, weapon.maxDamage * falloff * directBonus);
+            const wasAlive = tank.alive;
             const damage = tank.applyDamage(rawDamage, { useShield: true });
             shieldAbsorbed += tank.lastShieldAbsorbed;
             totalDamage += damage;
             this.roundStats[i].damageTaken += damage;
             if (i === this.shotInfo.targetIndex) enemyDamage += damage;
             if (i === this.shotInfo.shooterIndex) selfDamage += damage;
+            if (wasAlive && !tank.alive) newlyDestroyed.push(i);
             this._syncPlayerDataFromTank(i);
         }
+        const deathEffectDuration = this._triggerTankDeathEffects(newlyDestroyed);
 
         if (accumulate) {
             this.shotInfo.totalDamage += totalDamage;
@@ -1196,12 +1275,14 @@ export class Game {
         return {
             totalDamage,
             shieldAbsorbed,
+            deathEffectDuration,
             message: `${prefix} ${details.join(' ')}`,
         };
     }
 
     _settleTanksWithFallDamage() {
         const messages = [];
+        const newlyDestroyed = [];
         for (let i = 0; i < this.tanks.length; i++) {
             const tank = this.tanks[i];
             if (!tank.alive) continue;
@@ -1228,14 +1309,24 @@ export class Game {
             }
 
             if (fallDamage > 0) {
+                const wasAlive = tank.alive;
                 const actual = tank.applyDamage(fallDamage);
                 this.roundStats[i].damageTaken += actual;
                 this.roundStats[i].fallDamageTaken += actual;
                 messages.push(`${tank.name} took ${actual} fall damage.`);
+                if (wasAlive && !tank.alive) newlyDestroyed.push(i);
             }
             this._syncPlayerDataFromTank(i);
         }
+        this._triggerTankDeathEffects(newlyDestroyed);
         return messages;
+    }
+
+    _settleDestroyedTanks() {
+        if (!this.terrain) return;
+        for (const tank of this.tanks) {
+            if (!tank.alive) tank.settleOn(this.terrain);
+        }
     }
 
     _finishShotResolution() {
@@ -1417,16 +1508,70 @@ export class Game {
     }
 
     _drawWreck(ctx, tank) {
-        const bodyX = tank.x - tank.width / 2;
         const bodyY = tank.y - tank.height;
+        const smokeTime = tank.wreckSmokeTime || 0;
         ctx.save();
-        ctx.fillStyle = '#2a2a2a';
-        ctx.fillRect(bodyX, bodyY, tank.width, tank.height);
-        ctx.fillStyle = 'rgba(65, 65, 65, 0.55)';
+
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.32)';
         ctx.beginPath();
-        ctx.arc(tank.x - 5, bodyY - 8, 7, 0, Math.PI * 2);
-        ctx.arc(tank.x + 5, bodyY - 20, 10, 0, Math.PI * 2);
+        ctx.ellipse(tank.x, tank.y + 4, tank.width / 2 + 7, 5, 0, 0, Math.PI * 2);
         ctx.fill();
+
+        for (let i = 0; i < 5; i++) {
+            const cycle = (smokeTime * 0.32 + i * 0.21 + (tank.wreckSeed || 0) * 0.013) % 1;
+            const rise = 12 + cycle * 54;
+            const drift = Math.sin(smokeTime * 1.2 + i * 1.7 + (tank.wreckSeed || 0)) * (5 + cycle * 10);
+            const alpha = (1 - cycle) * 0.24;
+            const radius = 7 + cycle * 18;
+            ctx.fillStyle = `rgba(38, 37, 35, ${alpha})`;
+            ctx.beginPath();
+            ctx.ellipse(tank.x + drift, bodyY - rise, radius * 1.2, radius, 0, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        ctx.translate(tank.x, tank.y - tank.height / 2);
+        ctx.rotate(-0.08 * tank.facing);
+
+        ctx.fillStyle = '#17191a';
+        ctx.beginPath();
+        ctx.moveTo(-tank.width / 2 - 3, 2);
+        ctx.lineTo(tank.width / 2 - 2, -2);
+        ctx.lineTo(tank.width / 2 - 7, tank.height / 2 + 5);
+        ctx.lineTo(-tank.width / 2 + 5, tank.height / 2 + 4);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = '#2a2a2a';
+        ctx.fillRect(-tank.width / 2 + 3, -tank.height / 2 + 2, tank.width - 6, tank.height - 4);
+
+        ctx.fillStyle = '#111315';
+        ctx.beginPath();
+        ctx.arc(-2, -tank.height / 2 + 1, 10, Math.PI, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = '#111315';
+        ctx.lineWidth = 5;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(3, -tank.height / 2);
+        ctx.lineTo(20 * tank.facing, -tank.height / 2 + 10);
+        ctx.stroke();
+
+        ctx.strokeStyle = 'rgba(255, 95, 38, 0.45)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(-12, -2);
+        ctx.lineTo(-4, 6);
+        ctx.lineTo(4, 1);
+        ctx.lineTo(13, 8);
+        ctx.stroke();
+
+        ctx.fillStyle = 'rgba(255, 88, 32, 0.55)';
+        ctx.beginPath();
+        ctx.arc(-tank.width * 0.18, tank.height * 0.22, 3, 0, Math.PI * 2);
+        ctx.arc(tank.width * 0.25, tank.height * 0.08, 2.4, 0, Math.PI * 2);
+        ctx.fill();
+
         ctx.restore();
     }
 
@@ -1565,6 +1710,15 @@ function createBombletWeapon(parent) {
         trailColor: '255, 224, 138',
         impactVisual: 'clusterMiniBlast',
         terrainMessage: 'Cluster bomblet made a small crater.',
+    };
+}
+
+function createTankDeathVisual(tank) {
+    return {
+        id: 'tankDeath',
+        name: `${tank.name} destroyed`,
+        impactVisual: 'tankDeath',
+        color: tank.color,
     };
 }
 

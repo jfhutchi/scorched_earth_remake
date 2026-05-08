@@ -55,33 +55,38 @@ export class Projectile {
 }
 
 export class Explosion {
-    constructor(x, y, maxRadius, weapon) {
+    constructor(x, y, maxRadius, weapon, options = {}) {
         this.x = x;
         this.y = y;
         this.maxRadius = maxRadius;
         this.weapon = weapon;
+        this.surfacePoints = options.surfacePoints || null;
+        this.seed = Math.random() * 1000;
         this.t = 0;
         const visual = weapon.impactVisual;
-        this.duration = visual === 'megaBlast' ? 0.95
-            : (visual === 'heavyBlast' ? 0.78
-                : (visual === 'napalmFlame' ? 1.05
-                    : (visual === 'dirtPuff' ? 0.72 : 0.56)));
+        this.duration = visual === 'tankDeath' ? 1.32
+            : (visual === 'megaBlast' ? 0.95
+                : (visual === 'heavyBlast' ? 0.78
+                    : (visual === 'napalmFlame' ? (weapon.flameDuration || 2.2)
+                        : (visual === 'dirtPuff' ? 0.72 : 0.56))));
         this.alive = true;
-        const fragmentCount = visual === 'megaBlast' ? 34
-            : (visual === 'heavyBlast' ? 22
-                : (visual === 'dirtPuff' ? 28
-                    : (visual === 'napalmFlame' ? 24
-                        : (visual === 'clusterMiniBlast' ? 8 : 13))));
+        const fragmentCount = visual === 'tankDeath' ? 30
+            : (visual === 'megaBlast' ? 34
+                : (visual === 'heavyBlast' ? 22
+                    : (visual === 'dirtPuff' ? 28
+                        : (visual === 'napalmFlame' ? 20
+                            : (visual === 'clusterMiniBlast' ? 8 : 13)))));
         this.fragments = Array.from({ length: fragmentCount }, () => {
-            const upwardBias = visual === 'dirtPuff' || visual === 'napalmFlame'
+            const upwardBias = visual === 'dirtPuff' || visual === 'napalmFlame' || visual === 'tankDeath'
                 ? -Math.PI / 2 + (Math.random() - 0.5) * Math.PI * 0.95
                 : Math.random() * Math.PI * 2;
             return {
                 angle: upwardBias,
-                speed: 18 + Math.random() * maxRadius * (visual === 'megaBlast' ? 1.55 : (visual === 'heavyBlast' ? 1.35 : 1.1)),
-                size: 1.5 + Math.random() * (visual === 'dirtPuff' || visual === 'napalmFlame' ? 4.5 : 3),
-                drift: visual === 'dirtPuff' || visual === 'napalmFlame' ? (Math.random() - 0.5) * 18 : 0,
+                speed: 18 + Math.random() * maxRadius * (visual === 'tankDeath' ? 1.45 : (visual === 'megaBlast' ? 1.55 : (visual === 'heavyBlast' ? 1.35 : 1.1))),
+                size: 1.5 + Math.random() * (visual === 'dirtPuff' || visual === 'napalmFlame' ? 4.5 : (visual === 'tankDeath' ? 5.2 : 3)),
+                drift: visual === 'dirtPuff' || visual === 'napalmFlame' || visual === 'tankDeath' ? (Math.random() - 0.5) * 18 : 0,
                 soilTint: Math.random(),
+                spin: Math.random() * Math.PI,
             };
         });
     }
@@ -99,6 +104,10 @@ export class Explosion {
         }
         if (this.weapon.impactVisual === 'napalmFlame') {
             this._drawNapalm(ctx, k);
+            return;
+        }
+        if (this.weapon.impactVisual === 'tankDeath') {
+            this._drawTankDeath(ctx, k);
             return;
         }
 
@@ -194,40 +203,152 @@ export class Explosion {
     }
 
     _drawNapalm(ctx, k) {
-        const width = this.weapon.flameWidth || this.maxRadius * 1.6;
-        const height = this.maxRadius * (0.22 + k * 0.24);
-        const alpha = Math.max(0, 0.86 - k * 0.72);
+        const points = this.surfacePoints && this.surfacePoints.length
+            ? this.surfacePoints
+            : [{ x: this.x, y: this.y, seed: 0.5 }];
+        const width = this.weapon.flameWidth || this.maxRadius * 1.8;
+        const halfWidth = width / 2;
+        const spread = Math.min(1, 0.36 + k * 2.15);
+        const visibleHalf = halfWidth * spread;
+        const fade = k < 0.74 ? 1 : Math.max(0, (1 - k) / 0.26);
+        const alpha = 0.9 * fade;
 
         ctx.save();
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
 
-        const gradient = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, width * 0.62);
-        gradient.addColorStop(0, `rgba(255, 246, 176, ${alpha})`);
-        gradient.addColorStop(0.35, `rgba(255, 126, 36, ${alpha * 0.86})`);
-        gradient.addColorStop(0.72, `rgba(195, 44, 25, ${alpha * 0.45})`);
-        gradient.addColorStop(1, 'rgba(80, 18, 12, 0)');
-        ctx.fillStyle = gradient;
-        ctx.beginPath();
-        ctx.ellipse(this.x, this.y - height * 0.16, width * (0.42 + k * 0.15), height, 0, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.strokeStyle = `rgba(255, 198, 74, ${0.62 - k * 0.48})`;
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.ellipse(this.x, this.y, width * (0.42 + k * 0.2), this.maxRadius * 0.28, 0, 0, Math.PI * 2);
-        ctx.stroke();
-
-        for (const fragment of this.fragments) {
-            const d = fragment.speed * k * 0.72;
-            const fx = this.x + Math.cos(fragment.angle) * d + fragment.drift * k;
-            const fy = this.y + Math.sin(fragment.angle) * d * 0.62 + this.maxRadius * 0.2 * k;
-            ctx.fillStyle = fragment.soilTint > 0.5
-                ? `rgba(255, 212, 86, ${0.74 - k * 0.56})`
-                : `rgba(224, 68, 28, ${0.72 - k * 0.54})`;
+        const visiblePoints = points.filter((point) => Math.abs(point.x - this.x) <= visibleHalf + 2);
+        if (visiblePoints.length > 1) {
             ctx.beginPath();
-            ctx.arc(fx, fy, fragment.size * (1 - k * 0.32), 0, Math.PI * 2);
+            visiblePoints.forEach((point, index) => {
+                const y = point.y + 2;
+                if (index === 0) ctx.moveTo(point.x, y);
+                else ctx.lineTo(point.x, y);
+            });
+            ctx.strokeStyle = `rgba(125, 24, 12, ${alpha * 0.46})`;
+            ctx.lineWidth = 18;
+            ctx.stroke();
+
+            ctx.beginPath();
+            visiblePoints.forEach((point, index) => {
+                const y = point.y - 1;
+                if (index === 0) ctx.moveTo(point.x, y);
+                else ctx.lineTo(point.x, y);
+            });
+            ctx.strokeStyle = `rgba(255, 92, 24, ${alpha * 0.58})`;
+            ctx.lineWidth = 10;
+            ctx.stroke();
+
+            ctx.beginPath();
+            visiblePoints.forEach((point, index) => {
+                const y = point.y - 3;
+                if (index === 0) ctx.moveTo(point.x, y);
+                else ctx.lineTo(point.x, y);
+            });
+            ctx.strokeStyle = `rgba(255, 208, 72, ${alpha * 0.42})`;
+            ctx.lineWidth = 4;
+            ctx.stroke();
+        }
+
+        for (let i = 0; i < visiblePoints.length; i += 2) {
+            const point = visiblePoints[i];
+            const distanceFactor = clamp01(1 - Math.abs(point.x - this.x) / Math.max(1, halfWidth));
+            const flicker = 0.72 + Math.sin(this.t * 17 + point.seed * 13 + this.seed) * 0.22;
+            const flameHeight = (16 + point.seed * 26) * distanceFactor * flicker * (0.76 + spread * 0.24);
+            const baseWidth = 5 + distanceFactor * 7;
+            const lean = Math.sin(this.t * 9 + point.seed * 8) * 5;
+            const outerAlpha = alpha * (0.32 + distanceFactor * 0.54);
+            if (outerAlpha <= 0.01) continue;
+
+            ctx.fillStyle = `rgba(204, 42, 20, ${outerAlpha})`;
+            ctx.beginPath();
+            ctx.moveTo(point.x - baseWidth, point.y + 1);
+            ctx.quadraticCurveTo(point.x - baseWidth * 0.55 + lean, point.y - flameHeight * 0.42, point.x + lean, point.y - flameHeight);
+            ctx.quadraticCurveTo(point.x + baseWidth * 0.64 + lean * 0.35, point.y - flameHeight * 0.38, point.x + baseWidth, point.y + 1);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.fillStyle = `rgba(255, 185, 56, ${outerAlpha * 0.78})`;
+            ctx.beginPath();
+            ctx.moveTo(point.x - baseWidth * 0.45, point.y);
+            ctx.quadraticCurveTo(point.x + lean * 0.26, point.y - flameHeight * 0.42, point.x + lean * 0.55, point.y - flameHeight * 0.72);
+            ctx.quadraticCurveTo(point.x + baseWidth * 0.38, point.y - flameHeight * 0.32, point.x + baseWidth * 0.45, point.y);
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        for (let i = 1; i < visiblePoints.length; i += 4) {
+            const point = visiblePoints[i];
+            const distanceFactor = clamp01(1 - Math.abs(point.x - this.x) / Math.max(1, halfWidth));
+            const smokeAlpha = alpha * distanceFactor * (0.10 + k * 0.16);
+            if (smokeAlpha <= 0.01) continue;
+            const rise = 14 + k * 54 + point.seed * 12;
+            const drift = Math.sin(this.t * 2.5 + point.seed * 10) * 10;
+            const radius = 6 + point.seed * 8 + k * 5;
+            ctx.fillStyle = `rgba(48, 43, 38, ${smokeAlpha})`;
+            ctx.beginPath();
+            ctx.ellipse(point.x + drift, point.y - rise, radius * 1.25, radius, 0, 0, Math.PI * 2);
             ctx.fill();
         }
 
         ctx.restore();
     }
+
+    _drawTankDeath(ctx, k) {
+        const flash = Math.max(0, 1 - k * 3.1);
+        const smokeAlpha = Math.max(0, 0.58 - k * 0.42);
+        const ringRadius = this.maxRadius * (0.18 + k * 0.92);
+
+        ctx.save();
+
+        if (flash > 0) {
+            const gradient = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.maxRadius * 0.72);
+            gradient.addColorStop(0, `rgba(255, 245, 205, ${flash})`);
+            gradient.addColorStop(0.38, `rgba(255, 118, 42, ${flash * 0.72})`);
+            gradient.addColorStop(1, 'rgba(120, 36, 18, 0)');
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.maxRadius * (0.48 + k * 0.12), 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        ctx.strokeStyle = `rgba(255, 214, 112, ${0.78 - k * 0.68})`;
+        ctx.lineWidth = 5;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, ringRadius, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.strokeStyle = `rgba(44, 36, 30, ${0.62 - k * 0.46})`;
+        ctx.lineWidth = 9;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y + this.maxRadius * 0.08, this.maxRadius * (0.12 + k * 0.56), Math.PI * 1.04, Math.PI * 1.96);
+        ctx.stroke();
+
+        ctx.fillStyle = `rgba(42, 38, 34, ${smokeAlpha})`;
+        ctx.beginPath();
+        ctx.ellipse(this.x, this.y - this.maxRadius * (0.08 + k * 0.58), this.maxRadius * (0.36 + k * 0.26), this.maxRadius * (0.22 + k * 0.34), 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        for (const fragment of this.fragments) {
+            const d = fragment.speed * k;
+            const gravityDrop = this.maxRadius * 0.28 * k * k;
+            const fx = this.x + Math.cos(fragment.angle) * d + fragment.drift * k;
+            const fy = this.y + Math.sin(fragment.angle) * d + gravityDrop;
+            const alpha = Math.max(0, 0.82 - k * 0.7);
+            ctx.save();
+            ctx.translate(fx, fy);
+            ctx.rotate(fragment.angle + fragment.spin);
+            ctx.fillStyle = fragment.soilTint > 0.55
+                ? `rgba(32, 33, 34, ${alpha})`
+                : `rgba(115, 78, 48, ${alpha})`;
+            ctx.fillRect(-fragment.size * 0.75, -fragment.size * 0.36, fragment.size * 1.5, fragment.size * 0.72);
+            ctx.restore();
+        }
+
+        ctx.restore();
+    }
+}
+
+function clamp01(value) {
+    return Math.max(0, Math.min(1, value));
 }
