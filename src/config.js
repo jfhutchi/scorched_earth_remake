@@ -12,6 +12,12 @@ export const CONFIG = {
         min: -3,
         max: 3,
     },
+    windModes: {
+        off: { label: 'Off', min: 0, max: 0 },
+        light: { label: 'Light', min: -1.2, max: 1.2 },
+        normal: { label: 'Normal', min: -3, max: 3 },
+        wild: { label: 'Wild', min: -5, max: 5 },
+    },
     tank: {
         maxHealth: 100,
         width: 44,
@@ -32,6 +38,11 @@ export const CONFIG = {
     terrain: {
         padHalfWidth: 32,
         minSpawnDistance: 460,
+        roughness: {
+            smooth: { label: 'Smooth', variation: 42, rolling: 20, small: 6, smoothing: 6 },
+            normal: { label: 'Normal', variation: 70, rolling: 32, small: 13, smoothing: 4 },
+            rough: { label: 'Rough', variation: 92, rolling: 46, small: 20, smoothing: 2 },
+        },
     },
     turn: {
         cpuThinkSeconds: 0.85,
@@ -43,6 +54,83 @@ export const CONFIG = {
         basePowerError: 8,
         missLearning: 0.13,
         lastMissPowerCorrection: 0.032,
+    },
+    economy: {
+        damageMoneyDivisor: 2,
+        winBonus: 75,
+        survivalBonus: 25,
+        baseAllowance: 50,
+        startingMoney: {
+            low: 100,
+            normal: 150,
+            high: 250,
+        },
+    },
+    utilities: {
+        shieldPurchaseCharge: 60,
+        shieldAbsorbRatio: 0.5,
+        repairHeal: 25,
+        fallDamageDropThreshold: 45,
+        fallDamageScale: 0.6,
+        fallDamageMax: 40,
+        parachuteReduction: 0.8,
+        rebuildHealthAfterDeath: 50,
+    },
+    shop: {
+        heavyAmmo: { label: 'Heavy Shell Ammo', price: 45 },
+        dirtAmmo: { label: 'Dirt Bomb Ammo', price: 35 },
+        shield: { label: 'Shield Charge', price: 80 },
+        repair: { label: 'Repair Kit', price: 70 },
+        parachute: { label: 'Parachute', price: 60 },
+    },
+    settings: {
+        storageKey: 'tank-artillery-settings',
+        defaults: {
+            roundsToWin: 3,
+            cpuDifficulty: 'normal',
+            windMode: 'normal',
+            startingMoney: 'normal',
+            terrainRoughness: 'normal',
+        },
+    },
+};
+
+export const CPU_DIFFICULTY = {
+    easy: {
+        label: 'Easy',
+        aimErrorDegrees: [10, 16],
+        powerErrorPercent: [18, 28],
+        thinkingDelayMs: [900, 1400],
+        shotSamples: 4,
+        heavyShellUseChance: 0.10,
+        dirtBombUseChance: 0.12,
+        shieldBuyChance: 0.15,
+        repairBuyChance: 0.25,
+        ammoBuyChance: 0.30,
+    },
+    normal: {
+        label: 'Normal',
+        aimErrorDegrees: [5, 9],
+        powerErrorPercent: [10, 16],
+        thinkingDelayMs: [700, 1100],
+        shotSamples: 8,
+        heavyShellUseChance: 0.25,
+        dirtBombUseChance: 0.08,
+        shieldBuyChance: 0.35,
+        repairBuyChance: 0.55,
+        ammoBuyChance: 0.55,
+    },
+    hard: {
+        label: 'Hard',
+        aimErrorDegrees: [2, 5],
+        powerErrorPercent: [4, 9],
+        thinkingDelayMs: [500, 900],
+        shotSamples: 14,
+        heavyShellUseChance: 0.45,
+        dirtBombUseChance: 0.05,
+        shieldBuyChance: 0.65,
+        repairBuyChance: 0.80,
+        ammoBuyChance: 0.75,
     },
 };
 
