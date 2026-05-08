@@ -1,374 +1,749 @@
 import { Terrain } from './terrain.js';
 import { Tank } from './tank.js';
 import { Projectile, Explosion } from './projectile.js';
-
-// Tunables
-const GRAVITY = 520;            // px/s^2
-const WIND_ACCEL_SCALE = 30;    // wind value -> px/s^2
-const EXPLOSION_RADIUS = 45;
-const MAX_DAMAGE = 55;
-const PROJECTILE_DT_CAP = 1 / 60; // sub-step cap for stable collisions
+import { AudioManager } from './audio.js';
+import { CPUController } from './cpu.js';
+import { CONFIG, WEAPONS, clamp, getWeaponById } from './config.js';
 
 export class Game {
     constructor(canvas, ui) {
         this.canvas = canvas;
         this.ctx = canvas.getContext('2d');
         this.ui = ui;
+        this.audio = new AudioManager();
+        this.cpu = new CPUController();
 
         this.width = canvas.width;
         this.height = canvas.height;
-
         this.keys = new Set();
         this.lastFrame = performance.now();
         this.running = false;
+        this.gameMode = 'two-player';
+        this.roundNumber = 0;
+        this.score = [0, 0];
+        this.phase = 'menu';
+        this.phaseTimer = 0;
+        this.cpuTimer = 0;
         this.gameOver = false;
-
         this.terrain = null;
         this.tanks = [];
         this.currentPlayer = 0;
         this.projectile = null;
         this.explosions = [];
-        this.wind = 0; // signed value, randomised each turn
-
-        // Per-frame angle/power adjust accumulators.
-        this._angleAcc = 0;
-        this._powerAcc = 0;
+        this.wind = 0;
+        this.lastResult = 'Choose a mode to start.';
+        this.statusMessage = 'Main menu';
+        this.shotInfo = null;
 
         this._setupInput();
+        this.ui.setMuted(this.audio.muted);
     }
 
-    start() {
-        this.reset();
-        this.running = true;
-        this.lastFrame = performance.now();
-        requestAnimationFrame(this.loop);
+    start(mode = 'two-player') {
+        this.gameMode = mode;
+        this.score = [0, 0];
+        this.roundNumber = 0;
+        this._setupRound({ incrementRound: true });
+
+        if (!this.running) {
+            this.running = true;
+            this.lastFrame = performance.now();
+            requestAnimationFrame(this.loop);
+        }
     }
 
     stop() {
         this.running = false;
+        this.phase = 'menu';
+        this.keys.clear();
     }
 
-    reset() {
+    returnToMenu() {
+        this.stop();
+        this.ui.showMenu();
+    }
+
+    startNewMatch(mode = this.gameMode) {
+        this.gameMode = mode;
+        this.score = [0, 0];
+        this.roundNumber = 0;
+        this._setupRound({ incrementRound: true });
+
+        if (!this.running) {
+            this.running = true;
+            this.lastFrame = performance.now();
+            requestAnimationFrame(this.loop);
+        }
+    }
+
+    resetCurrentRound() {
+        if (this.phase === 'menu') return;
+        this._setupRound({ incrementRound: false });
+    }
+
+    nextRound() {
+        if (!this.gameOver) return;
+        this._setupRound({ incrementRound: true });
+    }
+
+    toggleMute() {
+        const muted = this.audio.toggleMute();
+        this.ui.setMuted(muted);
+        return muted;
+    }
+
+    advanceTime(ms) {
+        if (!this.terrain) return;
+        const steps = Math.max(1, Math.round(ms / (1000 / 60)));
+        for (let i = 0; i < steps; i++) this._update(1 / 60);
+        this._draw();
+    }
+
+    renderTextState() {
+        const active = this.tanks[this.currentPlayer] || null;
+        const payload = {
+            coordinateSystem: 'Canvas pixels, origin top-left, x right, y down.',
+            mode: this.gameMode,
+            phase: this.phase,
+            round: this.roundNumber,
+            score: {
+                player1: this.score[0],
+                player2: this.score[1],
+            },
+            currentPlayer: active ? active.name : null,
+            controlsLocked: !this._canHumanControl(),
+            wind: this.wind,
+            lastResult: this.lastResult,
+            status: this.statusMessage,
+            tanks: this.tanks.map((tank) => ({
+                name: tank.name,
+                x: Math.round(tank.x),
+                y: Math.round(tank.y),
+                health: tank.health,
+                alive: tank.alive,
+                angle: Math.round(tank.angle),
+                power: Math.round(tank.power),
+                isCpu: tank.isCpu,
+                selectedWeapon: tank.selectedWeapon().name,
+                ammo: tank.weaponSnapshot().map((weapon) => ({
+                    name: weapon.name,
+                    ammo: Number.isFinite(weapon.ammo) ? weapon.ammo : 'unlimited',
+                    selected: weapon.selected,
+                })),
+            })),
+            projectile: this.projectile
+                ? {
+                    x: Math.round(this.projectile.x),
+                    y: Math.round(this.projectile.y),
+                    weapon: this.projectile.weapon.name,
+                }
+                : null,
+        };
+        return JSON.stringify(payload);
+    }
+
+    _setupRound({ incrementRound }) {
+        if (incrementRound || this.roundNumber === 0) this.roundNumber += 1;
+
         this.terrain = new Terrain(this.width, this.height);
-        const t1 = new Tank({ id: 1, x: this.width * 0.12, color: '#ff7b3a', facing: +1 });
-        const t2 = new Tank({ id: 2, x: this.width * 0.88, color: '#58a6ff', facing: -1 });
-        // Player 2's default angle should arc to the left.
-        t2.angle = 45;
+        const x1 = this.terrain.findStableSpawn(0.11, 0.33);
+        this.terrain.flattenPad(x1);
+        let x2 = this.terrain.findStableSpawn(0.67, 0.89, x1);
+        if (Math.abs(x2 - x1) < CONFIG.terrain.minSpawnDistance) {
+            x2 = clamp(x1 + CONFIG.terrain.minSpawnDistance, this.width * 0.62, this.width * 0.9);
+        }
+        this.terrain.flattenPad(x2);
 
-        // Make sure tanks sit on something flat-ish — flatten a small pad
-        // under each tank so they don't spawn on a steep slope.
-        this._flattenAround(t1.x, 24);
-        this._flattenAround(t2.x, 24);
+        const p2IsCpu = this.gameMode === 'cpu';
+        const p1 = new Tank({ id: 1, name: 'Player 1', x: x1, color: '#f16f45', facing: 1 });
+        const p2 = new Tank({
+            id: 2,
+            name: p2IsCpu ? 'CPU' : 'Player 2',
+            x: x2,
+            color: '#3b87d6',
+            facing: -1,
+            isCpu: p2IsCpu,
+        });
 
-        t1.settleOn(this.terrain);
-        t2.settleOn(this.terrain);
-        this.tanks = [t1, t2];
+        p1.settleOn(this.terrain);
+        p2.settleOn(this.terrain);
+
+        this.tanks = [p1, p2];
         this.currentPlayer = 0;
         this.projectile = null;
         this.explosions = [];
+        this.phaseTimer = 0;
+        this.cpuTimer = 0;
         this.gameOver = false;
+        this.shotInfo = null;
+        this.cpu.resetRound();
+        this.keys.clear();
         this._rollWind();
+
+        this.lastResult = `Round ${this.roundNumber} ready.`;
+        this.statusMessage = 'Player 1 is aiming.';
         this.ui.hideWin();
+        this._startTurn(false);
+        this._draw();
         this.ui.update(this._state());
     }
 
-    _flattenAround(x, halfWidth) {
-        const xMin = Math.max(0, Math.floor(x - halfWidth));
-        const xMax = Math.min(this.width - 1, Math.ceil(x + halfWidth));
-        let avg = 0;
-        for (let i = xMin; i <= xMax; i++) avg += this.terrain.heights[i];
-        avg /= (xMax - xMin + 1);
-        for (let i = xMin; i <= xMax; i++) this.terrain.heights[i] = avg;
-    }
-
     _rollWind() {
-        // Wind in [-3, 3], rounded to one decimal.
-        this.wind = Math.round((Math.random() * 6 - 3) * 10) / 10;
+        const raw = CONFIG.wind.min + Math.random() * (CONFIG.wind.max - CONFIG.wind.min);
+        this.wind = Math.round(raw * 10) / 10;
+        if (Math.abs(this.wind) < 0.15) this.wind = 0;
     }
 
     _state() {
+        const active = this.tanks[this.currentPlayer] || null;
+        const selectedWeapon = active ? active.selectedWeapon() : WEAPONS[0];
         return {
             tanks: this.tanks,
             currentPlayer: this.currentPlayer,
+            active,
+            selectedWeapon,
+            gameMode: this.gameMode,
+            roundNumber: this.roundNumber,
+            score: this.score,
+            phase: this.phase,
             wind: this.wind,
+            lastResult: this.lastResult,
+            statusMessage: this.statusMessage,
+            gameOver: this.gameOver,
+            muted: this.audio.muted,
         };
     }
 
     _setupInput() {
         window.addEventListener('keydown', (e) => {
-            // Only handle keys when game is running and visible.
-            if (!this.running) return;
-            if (e.repeat) {
-                this.keys.add(e.key);
+            if (e.key === 'm' || e.key === 'M') {
+                e.preventDefault();
+                this.toggleMute();
                 return;
             }
-            this.keys.add(e.key);
+
+            if (!this.running) return;
+
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                this.returnToMenu();
+                return;
+            }
+
+            if ((e.key === 'r' || e.key === 'R') && !e.repeat) {
+                e.preventDefault();
+                this.resetCurrentRound();
+                return;
+            }
+
+            if ((e.key === 'n' || e.key === 'N') && !e.repeat) {
+                e.preventDefault();
+                this.nextRound();
+                return;
+            }
+
+            if ((e.key === 'Tab' || e.key === 'w' || e.key === 'W') && !e.repeat) {
+                e.preventDefault();
+                this._cycleWeapon();
+                return;
+            }
 
             if (e.key === ' ' || e.code === 'Space') {
                 e.preventDefault();
-                this._tryFire();
-            } else if (e.key === 'r' || e.key === 'R') {
-                this.reset();
-            } else if (e.key === 'Escape') {
-                this._returnToMenu();
-            } else if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) {
+                if (!e.repeat && this._canHumanControl()) this._fireSelectedWeapon();
+                return;
+            }
+
+            if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) {
                 e.preventDefault();
+                this.keys.add(e.key);
             }
         });
+
         window.addEventListener('keyup', (e) => {
             this.keys.delete(e.key);
         });
     }
 
-    _returnToMenu() {
-        this.running = false;
-        this.ui.showMenu();
+    _cycleWeapon() {
+        if (!this._canHumanControl()) return;
+        const tank = this._activeTank();
+        const weapon = tank.cycleWeapon();
+        this.statusMessage = `${tank.name} selected ${weapon.name}.`;
+        this.ui.update(this._state());
     }
 
     _activeTank() {
         return this.tanks[this.currentPlayer];
     }
 
-    _tryFire() {
-        if (this.gameOver) return;
-        if (this.projectile) return; // already mid-shot
-        const tank = this._activeTank();
-        if (!tank.alive) return;
-        const muzzle = tank.muzzlePosition();
-        const v = tank.fireVelocity();
-        this.projectile = new Projectile(muzzle.x, muzzle.y, v.vx, v.vy);
+    _canHumanControl() {
+        const active = this._activeTank();
+        return Boolean(
+            this.running &&
+            !this.gameOver &&
+            this.phase === 'aiming' &&
+            active &&
+            active.alive &&
+            !active.isCpu &&
+            !this.projectile
+        );
     }
 
-    _endTurn() {
+    _startTurn(playSound = true) {
         if (this.gameOver) return;
-        this.currentPlayer = (this.currentPlayer + 1) % 2;
-        this._rollWind();
-        // Tanks may shift if terrain changed beneath them.
-        this.tanks.forEach((t) => t.settleOn(this.terrain));
-        this._checkWinCondition();
-    }
+        const active = this._activeTank();
+        active.ensureAvailableWeapon();
 
-    _checkWinCondition() {
-        const alive = this.tanks.filter((t) => t.alive);
-        if (alive.length === 1) {
-            this.gameOver = true;
-            const winner = alive[0];
-            this.ui.showWin(`Player ${winner.id} Wins!`);
-        } else if (alive.length === 0) {
-            this.gameOver = true;
-            this.ui.showWin(`Draw!`);
+        if (active.isCpu) {
+            this.phase = 'cpuThinking';
+            this.cpuTimer = CONFIG.turn.cpuThinkSeconds + Math.random() * CONFIG.turn.cpuThinkJitterSeconds;
+            this.statusMessage = `${active.name} is thinking.`;
+        } else {
+            this.phase = 'aiming';
+            this.statusMessage = `${active.name} is aiming.`;
         }
+
+        if (playSound) this.audio.playTurn();
+        this.ui.update(this._state());
     }
 
-    // --- Frame loop ---
     loop = (now) => {
         if (!this.running) return;
+
         let dt = (now - this.lastFrame) / 1000;
         this.lastFrame = now;
-        if (dt > 0.05) dt = 0.05; // avoid huge dt after tab switch
+        if (dt > 0.05) dt = 0.05;
+
         this._update(dt);
         this._draw();
         requestAnimationFrame(this.loop);
     };
 
     _update(dt) {
-        // Aim controls only apply when no projectile is in flight.
-        if (!this.projectile && !this.gameOver) {
-            const tank = this._activeTank();
-            const angleSpeed = 60;  // deg/sec
-            const powerSpeed = 50;  // pwr/sec
+        if (!this.terrain) return;
 
-            // Angle is stored in the tank's local frame (0 = forward along
-            // facing, 90 = straight up). Left arrow = raise barrel, right
-            // arrow = lower barrel for both players. This means each player's
-            // controls feel mirrored on screen, but consistent ("left = up,
-            // right = down") regardless of which side they're on.
-            let angleDelta = 0;
-            if (this.keys.has('ArrowLeft')) angleDelta += 1;
-            if (this.keys.has('ArrowRight')) angleDelta -= 1;
-            tank.adjustAngle(angleDelta * angleSpeed * dt);
-
-            let powerDelta = 0;
-            if (this.keys.has('ArrowUp')) powerDelta += 1;
-            if (this.keys.has('ArrowDown')) powerDelta -= 1;
-            tank.adjustPower(powerDelta * powerSpeed * dt);
+        if (this.phase === 'aiming' && this._canHumanControl()) {
+            this._updateHumanAim(dt);
         }
 
-        // Tank damage popups
-        this.tanks.forEach((t) => t.update(dt));
-
-        // Projectile + collisions (sub-step for fast shots so we don't tunnel).
-        if (this.projectile) {
-            const wind = this.wind * WIND_ACCEL_SCALE;
-            let remaining = dt;
-            while (remaining > 0 && this.projectile) {
-                const step = Math.min(remaining, PROJECTILE_DT_CAP);
-                this.projectile.update(step, GRAVITY, wind);
-                this._checkProjectileCollision();
-                remaining -= step;
-            }
+        if (this.phase === 'cpuThinking') {
+            this.cpuTimer -= dt;
+            if (this.cpuTimer <= 0) this._fireCpuShot();
         }
 
-        // Explosions
-        for (const ex of this.explosions) ex.update(dt);
-        this.explosions = this.explosions.filter((e) => e.alive);
+        this.tanks.forEach((tank) => tank.update(dt));
+
+        if (this.projectile && this.phase === 'projectile') {
+            this._updateProjectile(dt);
+        }
+
+        this.explosions.forEach((explosion) => explosion.update(dt));
+        this.explosions = this.explosions.filter((explosion) => explosion.alive);
+
+        if (this.phase === 'resolving') {
+            this.phaseTimer -= dt;
+            if (this.phaseTimer <= 0) this._finishShotResolution();
+        }
 
         this.ui.update(this._state());
     }
 
-    _checkProjectileCollision() {
-        const p = this.projectile;
-        if (!p) return;
+    _updateHumanAim(dt) {
+        const tank = this._activeTank();
+        const angleSpeed = 60;
+        const powerSpeed = 50;
 
-        // Out of bounds (off sides or above sky beyond a margin we ignore;
-        // top is fine, bottom counts as terrain below screen).
-        if (p.x < -50 || p.x > this.width + 50 || p.y > this.height + 50) {
-            this.projectile = null;
-            this._endTurn();
+        let angleDelta = 0;
+        if (this.keys.has('ArrowLeft')) angleDelta += 1;
+        if (this.keys.has('ArrowRight')) angleDelta -= 1;
+        if (angleDelta !== 0) tank.adjustAngle(angleDelta * angleSpeed * dt);
+
+        let powerDelta = 0;
+        if (this.keys.has('ArrowUp')) powerDelta += 1;
+        if (this.keys.has('ArrowDown')) powerDelta -= 1;
+        if (powerDelta !== 0) tank.adjustPower(powerDelta * powerSpeed * dt);
+    }
+
+    _fireCpuShot() {
+        if (this.gameOver || this.phase !== 'cpuThinking') return;
+        const shooter = this._activeTank();
+        if (!shooter || !shooter.isCpu || !shooter.alive) return;
+
+        const target = this.tanks[0];
+        const action = this.cpu.chooseAction({
+            shooter,
+            target,
+            terrain: this.terrain,
+            wind: this.wind,
+        });
+
+        shooter.selectWeaponById(action.weaponId);
+        shooter.angle = action.angle;
+        shooter.power = action.power;
+        this.phase = 'aiming';
+        this._fireSelectedWeapon();
+    }
+
+    _fireSelectedWeapon() {
+        if (this.gameOver || this.projectile) return false;
+        const shooter = this._activeTank();
+        if (!shooter || !shooter.alive) return false;
+
+        const weapon = shooter.selectedWeapon();
+        if (!shooter.canUseWeapon(weapon.id)) {
+            shooter.ensureAvailableWeapon();
+            this.statusMessage = `${shooter.name} has no ammo for that weapon.`;
+            return false;
+        }
+
+        if (!shooter.consumeSelectedAmmo()) return false;
+
+        const muzzle = shooter.muzzlePosition();
+        const velocity = shooter.fireVelocity(weapon);
+        this.projectile = new Projectile(muzzle.x, muzzle.y, velocity.vx, velocity.vy, weapon);
+        this.shotInfo = {
+            shooterIndex: this.currentPlayer,
+            targetIndex: this.currentPlayer === 0 ? 1 : 0,
+            weaponId: weapon.id,
+            collision: 'miss',
+            impactX: muzzle.x,
+            impactY: muzzle.y,
+            enemyDamage: 0,
+            selfDamage: 0,
+            totalDamage: 0,
+            minTargetDistance: Infinity,
+        };
+        this.phase = 'projectile';
+        this.statusMessage = `${shooter.name} fired ${weapon.name}.`;
+        this.audio.playFire(weapon);
+        this.ui.update(this._state());
+        return true;
+    }
+
+    _updateProjectile(dt) {
+        const windAccel = this.wind * CONFIG.physics.windAccelScale;
+        let remaining = dt;
+
+        while (remaining > 0 && this.projectile) {
+            const step = Math.min(remaining, CONFIG.physics.projectileStep);
+            this.projectile.update(step, CONFIG.physics.gravity, windAccel);
+            this._trackProjectileDistance();
+            this._checkProjectileCollision();
+            remaining -= step;
+        }
+    }
+
+    _trackProjectileDistance() {
+        if (!this.projectile || !this.shotInfo) return;
+        const target = this.tanks[this.shotInfo.targetIndex];
+        if (!target) return;
+        const circle = target.boundingCircle();
+        const dx = this.projectile.x - circle.x;
+        const dy = this.projectile.y - circle.y;
+        this.shotInfo.minTargetDistance = Math.min(this.shotInfo.minTargetDistance, Math.sqrt(dx * dx + dy * dy));
+    }
+
+    _checkProjectileCollision() {
+        if (this.gameOver || !this.projectile) return;
+
+        const p = this.projectile;
+        if (p.x < -80 || p.x > this.width + 80 || p.y > this.height + 90) {
+            this._resolveMiss(p.x, p.y);
             return;
         }
 
-        // Tank collision
-        for (const tank of this.tanks) {
+        for (let i = 0; i < this.tanks.length; i++) {
+            const tank = this.tanks[i];
             if (!tank.alive) continue;
-            const c = tank.boundingCircle();
-            const dx = p.x - c.x;
-            const dy = p.y - c.y;
-            if (dx * dx + dy * dy <= (c.r + p.radius) * (c.r + p.radius)) {
-                this._explodeAt(p.x, p.y);
-                this.projectile = null;
-                this._endTurn();
+            if (this.shotInfo && i === this.shotInfo.shooterIndex && p.age < 0.2) continue;
+
+            const circle = tank.boundingCircle();
+            const dx = p.x - circle.x;
+            const dy = p.y - circle.y;
+            const hitRadius = circle.r + p.radius;
+            if (dx * dx + dy * dy <= hitRadius * hitRadius) {
+                this._resolveImpact(p.x, p.y, 'tank');
                 return;
             }
         }
 
-        // Terrain collision: hit when projectile is at or below ground top.
         if (p.x >= 0 && p.x < this.width) {
             const groundY = this.terrain.heightAt(p.x);
             if (p.y >= groundY) {
-                this._explodeAt(p.x, groundY);
-                this.projectile = null;
-                this._endTurn();
-                return;
+                this._resolveImpact(p.x, groundY, 'terrain');
             }
         }
     }
 
-    _explodeAt(x, y) {
-        const radius = EXPLOSION_RADIUS;
-        // Carve terrain
-        this.terrain.explode(x, y, radius);
-        // Damage tanks within radius (distance-based falloff)
-        for (const tank of this.tanks) {
+    _resolveMiss(x, y) {
+        if (!this.shotInfo) return;
+        this.shotInfo.impactX = x;
+        this.shotInfo.impactY = y;
+        this.shotInfo.collision = 'miss';
+        this.projectile = null;
+        this.phase = 'resolving';
+        this.phaseTimer = 0.55;
+        this.lastResult = 'Missed. No damage.';
+        this.statusMessage = 'Shot missed.';
+    }
+
+    _resolveImpact(x, y, collision) {
+        if (!this.projectile || !this.shotInfo) return;
+
+        const weapon = this.projectile.weapon;
+        this.shotInfo.impactX = x;
+        this.shotInfo.impactY = y;
+        this.shotInfo.collision = collision;
+        this.projectile = null;
+
+        this.terrain.explode(x, y, weapon.craterRadius);
+        const result = this._applyExplosionDamage(x, y, weapon, collision);
+        this.lastResult = result.message;
+        this.statusMessage = 'Impact resolving.';
+
+        const explosion = new Explosion(x, y, weapon.craterRadius, weapon);
+        this.explosions.push(explosion);
+        this.phase = 'resolving';
+        this.phaseTimer = Math.max(CONFIG.turn.impactDelaySeconds, explosion.duration + 0.15);
+
+        this.audio.playExplosion(weapon);
+        if (result.totalDamage > 0) this.audio.playHit();
+    }
+
+    _applyExplosionDamage(x, y, weapon, collision) {
+        let totalDamage = 0;
+        let enemyDamage = 0;
+        let selfDamage = 0;
+        const shooter = this.tanks[this.shotInfo.shooterIndex];
+        const target = this.tanks[this.shotInfo.targetIndex];
+
+        for (let i = 0; i < this.tanks.length; i++) {
+            const tank = this.tanks[i];
             if (!tank.alive) continue;
-            const tx = tank.x;
-            const ty = tank.y - tank.height / 2;
-            const dx = tx - x;
-            const dy = ty - y;
+
+            const circle = tank.boundingCircle();
+            const dx = circle.x - x;
+            const dy = circle.y - y;
             const dist = Math.sqrt(dx * dx + dy * dy);
-            if (dist <= radius) {
-                const dmg = MAX_DAMAGE * (1 - dist / radius);
-                tank.applyDamage(dmg);
-            }
+            if (dist > weapon.craterRadius + circle.r * 0.35) continue;
+
+            const falloff = clamp(1 - dist / weapon.craterRadius, 0.15, 1);
+            const directBonus = collision === 'tank' && i === this.shotInfo.targetIndex ? 1.08 : 1;
+            const damage = tank.applyDamage(weapon.damage * falloff * directBonus);
+            totalDamage += damage;
+            if (i === this.shotInfo.targetIndex) enemyDamage += damage;
+            if (i === this.shotInfo.shooterIndex) selfDamage += damage;
         }
-        // Visual
-        this.explosions.push(new Explosion(x, y, radius));
+
+        this.shotInfo.totalDamage = totalDamage;
+        this.shotInfo.enemyDamage = enemyDamage;
+        this.shotInfo.selfDamage = selfDamage;
+
+        const prefix = collision === 'tank' || enemyDamage >= weapon.damage * 0.55
+            ? 'Direct hit!'
+            : (enemyDamage > 0 || this.shotInfo.minTargetDistance <= weapon.craterRadius + 48)
+                ? 'Near miss!'
+                : 'Missed.';
+
+        let detail = ' No damage.';
+        if (enemyDamage > 0) {
+            detail = ` ${target.name} took ${enemyDamage} damage.`;
+        } else if (selfDamage > 0) {
+            detail = ` ${shooter.name} took ${selfDamage} self-damage.`;
+        }
+
+        return {
+            totalDamage,
+            message: `${prefix}${detail}`,
+        };
+    }
+
+    _finishShotResolution() {
+        this.tanks.forEach((tank) => tank.settleOn(this.terrain));
+
+        if (this.shotInfo && this.shotInfo.shooterIndex === 1 && this.tanks[1].isCpu) {
+            this.cpu.recordShot({
+                hit: this.shotInfo.enemyDamage > 0,
+                impactX: this.shotInfo.impactX,
+                targetX: this.tanks[0].x,
+            });
+        }
+
+        if (this._checkWinCondition()) {
+            this.ui.update(this._state());
+            return;
+        }
+
+        this.currentPlayer = this.currentPlayer === 0 ? 1 : 0;
+        this.shotInfo = null;
+        this._rollWind();
+        this._startTurn(true);
+    }
+
+    _checkWinCondition() {
+        const alive = this.tanks
+            .map((tank, index) => ({ tank, index }))
+            .filter((entry) => entry.tank.alive);
+
+        if (alive.length === this.tanks.length) return false;
+
+        this.gameOver = true;
+        this.phase = 'gameOver';
+        this.projectile = null;
+        this.keys.clear();
+
+        if (alive.length === 1) {
+            const winner = alive[0];
+            this.score[winner.index] += 1;
+            this.lastResult = `${winner.tank.name} wins round ${this.roundNumber}.`;
+            this.statusMessage = 'Round over.';
+            this.ui.showWin(`${winner.tank.name} Wins!`, this._state());
+        } else {
+            this.lastResult = `Round ${this.roundNumber} ended in a draw.`;
+            this.statusMessage = 'Round over.';
+            this.ui.showWin('Draw!', this._state());
+        }
+
+        this.audio.playTurn();
+        return true;
     }
 
     _draw() {
+        if (!this.terrain) return;
         const ctx = this.ctx;
         const w = this.width;
         const h = this.height;
 
-        // Sky gradient
         const sky = ctx.createLinearGradient(0, 0, 0, h);
-        sky.addColorStop(0, '#7ec4f0');
-        sky.addColorStop(1, '#cfe9fb');
+        sky.addColorStop(0, '#80c8ed');
+        sky.addColorStop(0.58, '#d3ecf7');
+        sky.addColorStop(1, '#edf8fa');
         ctx.fillStyle = sky;
         ctx.fillRect(0, 0, w, h);
 
-        // Decorative sun
-        ctx.fillStyle = 'rgba(255, 240, 180, 0.9)';
-        ctx.beginPath();
-        ctx.arc(w * 0.85, h * 0.18, 36, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Terrain
+        this._drawSkyDetails(ctx);
         this.terrain.draw(ctx);
 
-        // Tanks
-        for (const t of this.tanks) {
-            if (t.alive) t.draw(ctx);
-            else this._drawWreck(ctx, t);
+        for (const tank of this.tanks) {
+            if (tank.alive) tank.draw(ctx);
+            else this._drawWreck(ctx, tank);
         }
 
-        // Aim indicator on active tank (dashed faint line) when idle.
-        if (!this.projectile && !this.gameOver) {
-            this._drawAimGuide(ctx, this._activeTank());
+        if (this._canHumanControl()) {
+            this._drawTrajectoryPreview(ctx, this._activeTank());
         }
 
-        // Projectile
         if (this.projectile) this.projectile.draw(ctx);
+        for (const explosion of this.explosions) explosion.draw(ctx);
 
-        // Explosions
-        for (const ex of this.explosions) ex.draw(ctx);
-
-        // Wind indicator (subtle arrow at top center of canvas)
         this._drawWindIndicator(ctx);
     }
 
-    _drawWreck(ctx, tank) {
-        // Burnt-out tank silhouette + smoke wisp
-        const bodyX = tank.x - tank.width / 2;
-        const bodyY = tank.y - tank.height;
-        ctx.fillStyle = '#3a3a3a';
-        ctx.fillRect(bodyX, bodyY, tank.width, tank.height);
-        ctx.fillStyle = 'rgba(80,80,80,0.5)';
+    _drawSkyDetails(ctx) {
+        const w = this.width;
+        const h = this.height;
+
+        ctx.fillStyle = 'rgba(255, 236, 166, 0.95)';
         ctx.beginPath();
-        ctx.arc(tank.x, bodyY - 8, 6, 0, Math.PI * 2);
-        ctx.arc(tank.x + 4, bodyY - 18, 8, 0, Math.PI * 2);
+        ctx.arc(w * 0.84, h * 0.16, 38, 0, Math.PI * 2);
         ctx.fill();
+
+        drawCloud(ctx, w * 0.16, h * 0.16, 1.1);
+        drawCloud(ctx, w * 0.44, h * 0.12, 0.8);
+        drawCloud(ctx, w * 0.68, h * 0.24, 0.95);
     }
 
-    _drawAimGuide(ctx, tank) {
-        const muzzle = tank.muzzlePosition();
-        const rad = tank.angle * Math.PI / 180;
-        const len = 30 + tank.power * 0.4;
-        const ex = muzzle.x + Math.cos(rad) * len * tank.facing;
-        const ey = muzzle.y - Math.sin(rad) * len;
+    _drawWreck(ctx, tank) {
+        const bodyX = tank.x - tank.width / 2;
+        const bodyY = tank.y - tank.height;
         ctx.save();
-        ctx.strokeStyle = 'rgba(255,255,255,0.65)';
-        ctx.lineWidth = 2;
-        ctx.setLineDash([6, 5]);
+        ctx.fillStyle = '#2a2a2a';
+        ctx.fillRect(bodyX, bodyY, tank.width, tank.height);
+        ctx.fillStyle = 'rgba(65, 65, 65, 0.55)';
         ctx.beginPath();
-        ctx.moveTo(muzzle.x, muzzle.y);
-        ctx.lineTo(ex, ey);
-        ctx.stroke();
+        ctx.arc(tank.x - 5, bodyY - 8, 7, 0, Math.PI * 2);
+        ctx.arc(tank.x + 5, bodyY - 20, 10, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    }
+
+    _drawTrajectoryPreview(ctx, tank) {
+        const weapon = tank.selectedWeapon();
+        const muzzle = tank.muzzlePosition();
+        const velocity = tank.fireVelocity(weapon);
+        let x = muzzle.x;
+        let y = muzzle.y;
+        let vx = velocity.vx;
+        let vy = velocity.vy;
+        const dt = 1 / 30;
+        const points = [];
+
+        for (let i = 0; i < 68; i++) {
+            vy += CONFIG.physics.gravity * dt;
+            vx += this.wind * CONFIG.physics.windAccelScale * dt;
+            x += vx * dt;
+            y += vy * dt;
+            if (x < 0 || x >= this.width || y >= this.height) break;
+            if (i % 3 === 0) points.push({ x, y, alpha: 1 - i / 78 });
+            if (y >= this.terrain.heightAt(x)) break;
+        }
+
+        ctx.save();
+        for (const point of points) {
+            ctx.fillStyle = `rgba(255, 255, 255, ${0.1 + point.alpha * 0.35})`;
+            ctx.beginPath();
+            ctx.arc(point.x, point.y, 2.2, 0, Math.PI * 2);
+            ctx.fill();
+        }
         ctx.restore();
     }
 
     _drawWindIndicator(ctx) {
-        const w = this.width;
-        const cx = w / 2;
-        const cy = 92;
-        if (this.wind === 0) return;
-        const dir = Math.sign(this.wind);
-        const len = 20 + Math.abs(this.wind) * 10;
+        const cx = this.width / 2;
+        const cy = 88;
+        const direction = Math.sign(this.wind);
+        const length = 24 + Math.abs(this.wind) * 13;
+
         ctx.save();
-        ctx.strokeStyle = 'rgba(255,255,255,0.85)';
-        ctx.fillStyle = 'rgba(255,255,255,0.85)';
+        ctx.font = 'bold 13px Georgia, serif';
+        ctx.textAlign = 'center';
+        ctx.fillStyle = 'rgba(28, 38, 48, 0.72)';
+        ctx.fillText(`Wind ${this.wind === 0 ? '0' : Math.abs(this.wind).toFixed(1)}`, cx, cy - 16);
+
+        ctx.strokeStyle = 'rgba(28, 38, 48, 0.7)';
+        ctx.fillStyle = 'rgba(28, 38, 48, 0.7)';
         ctx.lineWidth = 2;
         ctx.beginPath();
-        ctx.moveTo(cx - dir * len / 2, cy);
-        ctx.lineTo(cx + dir * len / 2, cy);
-        ctx.stroke();
-        // Arrowhead
-        ctx.beginPath();
-        ctx.moveTo(cx + dir * len / 2, cy);
-        ctx.lineTo(cx + dir * (len / 2 - 6), cy - 4);
-        ctx.lineTo(cx + dir * (len / 2 - 6), cy + 4);
-        ctx.closePath();
-        ctx.fill();
+
+        if (direction === 0) {
+            ctx.moveTo(cx - 14, cy);
+            ctx.lineTo(cx + 14, cy);
+            ctx.stroke();
+        } else {
+            ctx.moveTo(cx - direction * length / 2, cy);
+            ctx.lineTo(cx + direction * length / 2, cy);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(cx + direction * length / 2, cy);
+            ctx.lineTo(cx + direction * (length / 2 - 8), cy - 5);
+            ctx.lineTo(cx + direction * (length / 2 - 8), cy + 5);
+            ctx.closePath();
+            ctx.fill();
+        }
+
         ctx.restore();
     }
+}
+
+function drawCloud(ctx, x, y, scale) {
+    ctx.save();
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.72)';
+    ctx.beginPath();
+    ctx.arc(x - 24 * scale, y + 8 * scale, 16 * scale, 0, Math.PI * 2);
+    ctx.arc(x - 6 * scale, y, 21 * scale, 0, Math.PI * 2);
+    ctx.arc(x + 18 * scale, y + 8 * scale, 16 * scale, 0, Math.PI * 2);
+    ctx.rect(x - 28 * scale, y + 7 * scale, 58 * scale, 14 * scale);
+    ctx.fill();
+    ctx.restore();
 }
