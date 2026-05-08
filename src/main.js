@@ -10,39 +10,53 @@ const ui = new UI();
 const game = new Game(canvas, ui);
 const smallWarning = document.getElementById('smallWarning');
 
-ui.twoPlayerBtn.addEventListener('click', (e) => {
-    e.currentTarget.blur();
+function startMatch(mode) {
     ui.showGame();
     game.audio.playMenu();
-    game.start('two-player');
+    game.start(mode, ui.getSettings());
+}
+
+ui.twoPlayerBtn.addEventListener('click', (e) => {
+    e.currentTarget.blur();
+    startMatch('two-player');
 });
 
 ui.cpuBtn.addEventListener('click', (e) => {
     e.currentTarget.blur();
-    ui.showGame();
-    game.audio.playMenu();
-    game.start('cpu');
+    startMatch('cpu');
 });
 
-ui.restartBtn.addEventListener('click', (e) => {
+ui.continueShopBtn.addEventListener('click', (e) => {
     e.currentTarget.blur();
     game.audio.playMenu();
-    game.resetCurrentRound();
+    game.openShop();
 });
 
-ui.nextRoundBtn.addEventListener('click', (e) => {
+ui.startNextRoundBtn.addEventListener('click', (e) => {
     e.currentTarget.blur();
     game.audio.playMenu();
-    game.nextRound();
+    game.startNextRoundFromShop();
 });
 
-ui.newMatchBtn.addEventListener('click', (e) => {
+ui.summaryNewMatchBtn.addEventListener('click', (e) => {
     e.currentTarget.blur();
     game.audio.playMenu();
-    game.startNewMatch(game.gameMode);
+    game.startNewMatch(game.gameMode, ui.getSettings());
 });
 
-ui.menuBtn.addEventListener('click', (e) => {
+ui.shopNewMatchBtn.addEventListener('click', (e) => {
+    e.currentTarget.blur();
+    game.audio.playMenu();
+    game.startNewMatch(game.gameMode, ui.getSettings());
+});
+
+ui.summaryMenuBtn.addEventListener('click', (e) => {
+    e.currentTarget.blur();
+    game.audio.playMenu();
+    game.returnToMenu();
+});
+
+ui.shopMenuBtn.addEventListener('click', (e) => {
     e.currentTarget.blur();
     game.audio.playMenu();
     game.returnToMenu();
@@ -56,6 +70,15 @@ ui.muteBtn.addEventListener('click', (e) => {
 ui.menuMuteBtn.addEventListener('click', (e) => {
     e.currentTarget.blur();
     game.toggleMute();
+});
+
+ui.shopContent.addEventListener('click', (e) => {
+    const button = e.target.closest('button[data-player][data-item]');
+    if (!button) return;
+    button.blur();
+    const playerIndex = Number(button.dataset.player);
+    const itemId = button.dataset.item;
+    if (game.buyShopItem(playerIndex, itemId)) game.audio.playMenu();
 });
 
 function fitCanvas() {

@@ -20,6 +20,45 @@
                     <button id="menuMuteBtn" class="btn small">Sound: On</button>
                 </div>
 
+                <section class="settings-grid" aria-label="Match settings">
+                    <label>Rounds to Win
+                        <select id="roundsToWinSelect">
+                            <option value="1">1</option>
+                            <option value="3">3</option>
+                            <option value="5">5</option>
+                        </select>
+                    </label>
+                    <label>CPU Difficulty
+                        <select id="cpuDifficultySelect">
+                            <option value="easy">Easy</option>
+                            <option value="normal">Normal</option>
+                            <option value="hard">Hard</option>
+                        </select>
+                    </label>
+                    <label>Wind
+                        <select id="windModeSelect">
+                            <option value="off">Off</option>
+                            <option value="light">Light</option>
+                            <option value="normal">Normal</option>
+                            <option value="wild">Wild</option>
+                        </select>
+                    </label>
+                    <label>Starting Money
+                        <select id="startingMoneySelect">
+                            <option value="low">Low</option>
+                            <option value="normal">Normal</option>
+                            <option value="high">High</option>
+                        </select>
+                    </label>
+                    <label>Terrain
+                        <select id="terrainRoughnessSelect">
+                            <option value="smooth">Smooth</option>
+                            <option value="normal">Normal</option>
+                            <option value="rough">Rough</option>
+                        </select>
+                    </label>
+                </section>
+
                 <section class="instructions" aria-label="Instructions">
                     <h2>Controls</h2>
                     <ul>
@@ -53,6 +92,7 @@
                             <div class="health-bar"><div class="health-fill" id="p1Health"></div></div>
                             <span class="health-text" id="p1HealthText">100/100</span>
                         </div>
+                        <div class="inventory-row" id="p1Inventory">$150 | H 3 D 4 | Sh 0 R 0 P 0</div>
                     </section>
 
                     <section class="hud-panel center" id="turnPanel">
@@ -83,6 +123,7 @@
                             <div class="health-bar"><div class="health-fill" id="p2Health"></div></div>
                             <span class="health-text" id="p2HealthText">100/100</span>
                         </div>
+                        <div class="inventory-row" id="p2Inventory">$150 | H 3 D 4 | Sh 0 R 0 P 0</div>
                     </section>
                 </div>
 
@@ -92,17 +133,30 @@
 
             <div id="smallWarning" class="small-warning hidden">Window is small; expand it for the clearest HUD and aiming view.</div>
 
-            <div id="winOverlay" class="overlay hidden">
-                <div class="menu-card win-card">
-                    <h1 id="winText" class="title">Player 1 Wins!</h1>
-                    <p id="winDetails" class="subtitle">Score: Player 1 0 - Player 2 0</p>
+            <div id="summaryOverlay" class="overlay hidden">
+                <div class="menu-card overlay-card">
+                    <h1 id="summaryTitle" class="title">Round Summary</h1>
+                    <p id="summaryScore" class="subtitle">Score: Player 1 0 - Player 2 0</p>
+                    <div id="summaryStats" class="summary-grid"></div>
                     <div class="menu-actions">
-                        <button id="nextRoundBtn" class="btn primary">Next Round</button>
-                        <button id="restartBtn" class="btn">Restart Round</button>
-                        <button id="newMatchBtn" class="btn">New Match</button>
-                        <button id="menuBtn" class="btn">Main Menu</button>
+                        <button id="continueShopBtn" class="btn primary">Continue to Shop</button>
+                        <button id="summaryNewMatchBtn" class="btn">New Match</button>
+                        <button id="summaryMenuBtn" class="btn">Main Menu</button>
                     </div>
-                    <p class="note">Keyboard: N for next round, R to restart this round, Escape for menu.</p>
+                    <p class="note">Keyboard: N continues when a shop is available, Escape returns to menu.</p>
+                </div>
+            </div>
+
+            <div id="shopOverlay" class="overlay hidden">
+                <div class="menu-card overlay-card wide-card">
+                    <h1 class="title">Between-Round Shop</h1>
+                    <p class="subtitle">Buy ammo and defensive utilities before the next battlefield is generated.</p>
+                    <div id="shopContent" class="shop-grid"></div>
+                    <div class="menu-actions">
+                        <button id="startNextRoundBtn" class="btn primary">Start Next Round</button>
+                        <button id="shopNewMatchBtn" class="btn">New Match</button>
+                        <button id="shopMenuBtn" class="btn">Main Menu</button>
+                    </div>
                 </div>
             </div>
         </div>

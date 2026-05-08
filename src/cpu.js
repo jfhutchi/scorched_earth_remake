@@ -1,4 +1,4 @@
-import { CONFIG, WEAPONS, clamp } from './config.js';
+import { CONFIG, CPU_DIFFICULTY, WEAPONS, clamp } from './config.js';
 
 export class CPUController {
     constructor() {
@@ -24,45 +24,53 @@ export class CPUController {
         }
     }
 
-    chooseAction({ shooter, target, terrain, wind }) {
-        const weapon = this._chooseWeapon(shooter, target);
-        const solution = this._findAimSolution(shooter, target, terrain, wind, weapon);
+    chooseAction({ shooter, target, terrain, wind, difficulty = 'normal' }) {
+        const profile = CPU_DIFFICULTY[difficulty] || CPU_DIFFICULTY.normal;
+        const weapon = this._chooseWeapon(shooter, target, profile);
+        const solution = this._findAimSolution(shooter, target, terrain, wind, weapon, profile);
         const learningScale = Math.max(0.45, 1 - this.missStreak * CONFIG.cpu.missLearning);
         const learnedPower = this.lastMissX * CONFIG.cpu.lastMissPowerCorrection;
+        const aimError = randomRange(profile.aimErrorDegrees[0], profile.aimErrorDegrees[1]);
+        const powerErrorPercent = randomRange(profile.powerErrorPercent[0], profile.powerErrorPercent[1]) / 100;
 
         return {
             weaponId: weapon.id,
             angle: clamp(
-                solution.angle + randomRange(-CONFIG.cpu.baseAngleError, CONFIG.cpu.baseAngleError) * learningScale,
+                solution.angle + randomRange(-aimError, aimError) * learningScale,
                 CONFIG.tank.minAngle,
                 CONFIG.tank.maxAngle
             ),
             power: clamp(
-                solution.power + learnedPower + randomRange(-CONFIG.cpu.basePowerError, CONFIG.cpu.basePowerError) * learningScale,
+                solution.power + learnedPower + solution.power * randomRange(-powerErrorPercent, powerErrorPercent) * learningScale,
                 CONFIG.tank.minPower,
                 CONFIG.tank.maxPower
             ),
         };
     }
 
-    _chooseWeapon(shooter, target) {
+    _chooseWeapon(shooter, target, profile) {
         const available = WEAPONS.filter((weapon) => shooter.ammoFor(weapon.id) > 0);
         const heavy = available.find((weapon) => weapon.id === 'heavy');
         const dirt = available.find((weapon) => weapon.id === 'dirt');
         const standard = available.find((weapon) => weapon.id === 'standard') || available[0];
 
-        if (heavy && target.health <= 68 && Math.random() < 0.58) return heavy;
-        if (heavy && this.missStreak <= 1 && Math.random() < 0.22) return heavy;
-        if (dirt && this.missStreak >= 3 && Math.random() < 0.18) return dirt;
-        if (dirt && Math.random() < 0.05) return dirt;
+        if (heavy && target.health <= 68 && Math.random() < profile.heavyShellUseChance + 0.2) return heavy;
+        if (heavy && this.missStreak <= 1 && Math.random() < profile.heavyShellUseChance) return heavy;
+        if (dirt && this.missStreak >= 3 && Math.random() < profile.dirtBombUseChance) return dirt;
+        if (dirt && Math.random() < profile.dirtBombUseChance * 0.4) return dirt;
         return standard;
     }
 
-    _findAimSolution(shooter, target, terrain, wind, weapon) {
+    _findAimSolution(shooter, target, terrain, wind, weapon, profile) {
         let best = { angle: shooter.angle, power: shooter.power, score: Infinity };
+        const samples = Math.max(4, profile.shotSamples);
+        const angleStep = (78 - 18) / Math.max(1, samples - 1);
+        const powerStep = (100 - 24) / Math.max(1, samples - 1);
 
-        for (let angle = 18; angle <= 78; angle += 2.5) {
-            for (let power = 24; power <= 100; power += 3.5) {
+        for (let ai = 0; ai < samples; ai++) {
+            const angle = 18 + ai * angleStep;
+            for (let pi = 0; pi < samples; pi++) {
+                const power = 24 + pi * powerStep;
                 const score = simulateShot({ shooter, target, terrain, wind, weapon, angle, power });
                 if (score < best.score) {
                     best = { angle, power, score };

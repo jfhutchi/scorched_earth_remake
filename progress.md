@@ -9,15 +9,18 @@ Original prompt: Upgrade the existing local browser Scorched Earth-style artille
 - Started v0.3 correction pass: split weapon terrain/damage stats, changed Dirt Bomb to add terrain, added movement fuel fields and A/D movement handling, and improved trajectory preview contrast.
 - Updated README and TESTING for v0.3 weapon, movement, Dirt Bomb, and preview behavior.
 - Browser verification covered A/D movement fuel, weapon cycling, Dirt Bomb terrain addition and ammo use, CPU turn flow after movement changes, direct-damage values, crater-vs-mound height changes, preview visibility, and 1280x720 / 1920x1080 HUD screenshots with no console errors.
+- Started v0.4 replayability pass: added match settings controls, settings persistence plumbing, economy/player inventories, round summary and shop overlays, CPU shop purchases, shield/repair/parachute utilities, fall damage, wind/terrain setting hooks, and event-code based input separation.
+- Completed v0.4 input-control fix: `ArrowLeft`/`ArrowRight` adjust cannon angle only, while `A`/`D` move the active human tank only.
+- Completed v0.4 replayability systems: economy, summary screen, between-round shop, player and CPU purchases, defensive utilities, CPU difficulty profiles, saved match settings, HUD inventory display, and documentation updates.
+- Browser verification covered two-player input separation, firing control lockout, CPU turn progression, settings persistence, economy/shop math, shield absorb, repair kit healing, parachute fall mitigation, summary/shop overlays, and dedicated web-game Playwright client smoke testing with no console errors.
 
 ## Notes
 
 - No dependencies or build step are present.
 - Use a local static server for testing because ES modules are blocked by some browsers on `file://`.
-- Browser verification is still pending.
 - Browser verification covered two-player smoke play, CPU smoke play, HUD screenshots, mute persistence, forced win scoring, next-round state, new-match state, and 1280x720 / 1366x768 / 1920x1080 screenshots with no console errors.
 
 ## TODO
 
-- No known functional blockers remain.
-- Suggested next pass after v0.3: hand-play a full best-of-three match and tune CPU error values if it feels too strong or too weak.
+- Optional next pass: hand-play full best-of-three matches on each CPU difficulty and tune aim errors, shop preferences, and money pacing if needed.
+- Optional future feature: add Bouncer Shell once core economy and utility balance feel stable.

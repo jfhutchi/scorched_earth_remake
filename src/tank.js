@@ -21,6 +21,12 @@ export class Tank {
         this.damageTimer = 0;
         this.selectedWeaponIndex = 0;
         this.movementFuel = CONFIG.tank.movementFuelPerTurn;
+        this.money = 0;
+        this.shieldCharge = 0;
+        this.repairKits = 0;
+        this.parachutes = 0;
+        this.lastShieldAbsorbed = 0;
+        this.shieldFlashTimer = 0;
         this.ammo = {};
         this.resetForRound();
     }
@@ -34,6 +40,8 @@ export class Tank {
         this.power = 50;
         this.selectedWeaponIndex = 0;
         this.movementFuel = CONFIG.tank.movementFuelPerTurn;
+        this.lastShieldAbsorbed = 0;
+        this.shieldFlashTimer = 0;
         this.ammo = {};
 
         for (const weapon of WEAPONS) {
@@ -128,8 +136,20 @@ export class Tank {
         return true;
     }
 
-    applyDamage(amount) {
-        const dmg = Math.max(0, Math.round(amount));
+    applyDamage(amount, { useShield = false } = {}) {
+        let adjustedAmount = Math.max(0, amount);
+        this.lastShieldAbsorbed = 0;
+
+        if (useShield && this.shieldCharge > 0 && adjustedAmount > 0) {
+            const requestedAbsorb = adjustedAmount * CONFIG.utilities.shieldAbsorbRatio;
+            const absorbed = Math.min(this.shieldCharge, requestedAbsorb);
+            this.shieldCharge = Math.max(0, this.shieldCharge - absorbed);
+            adjustedAmount = Math.max(0, adjustedAmount - absorbed);
+            this.lastShieldAbsorbed = Math.round(absorbed);
+            this.shieldFlashTimer = 0.45;
+        }
+
+        const dmg = Math.max(0, Math.round(adjustedAmount));
         if (dmg <= 0 || !this.alive) return 0;
 
         const before = this.health;
@@ -144,6 +164,9 @@ export class Tank {
     update(dt) {
         if (this.damageTimer > 0) {
             this.damageTimer = Math.max(0, this.damageTimer - dt);
+        }
+        if (this.shieldFlashTimer > 0) {
+            this.shieldFlashTimer = Math.max(0, this.shieldFlashTimer - dt);
         }
     }
 
@@ -235,6 +258,16 @@ export class Tank {
             ctx.font = 'bold 19px Georgia, serif';
             ctx.textAlign = 'center';
             ctx.fillText(`-${this.recentDamage}`, this.x, bodyY - 22 - (1 - alpha) * 18);
+        }
+
+        if (this.shieldCharge > 0 || this.shieldFlashTimer > 0) {
+            const chargeAlpha = Math.min(0.45, 0.14 + this.shieldCharge / 220);
+            const flashAlpha = this.shieldFlashTimer > 0 ? this.shieldFlashTimer / 0.45 * 0.35 : 0;
+            ctx.strokeStyle = `rgba(110, 210, 255, ${chargeAlpha + flashAlpha})`;
+            ctx.lineWidth = 2 + Math.min(3, this.shieldCharge / 35);
+            ctx.beginPath();
+            ctx.ellipse(this.x, this.y - this.height / 2, this.width / 2 + 14, this.height + 12, 0, 0, Math.PI * 2);
+            ctx.stroke();
         }
 
         ctx.restore();

@@ -3,9 +3,10 @@ import { CONFIG, clamp } from './config.js';
 // Terrain is a height map: heights[x] is the top of the ground at canvas x.
 // Smaller y is higher terrain because canvas coordinates grow downward.
 export class Terrain {
-    constructor(width, height) {
+    constructor(width, height, roughness = 'normal') {
         this.width = width;
         this.height = height;
+        this.roughness = roughness;
         this.heights = new Float32Array(width);
         this.craters = [];
         this.mounds = [];
@@ -16,13 +17,14 @@ export class Terrain {
     }
 
     generate() {
+        const profile = CONFIG.terrain.roughness[this.roughness] || CONFIG.terrain.roughness.normal;
         const controlSpacing = 96;
         const controlCount = Math.ceil(this.width / controlSpacing) + 3;
         const controls = [];
         let current = this.height * randomRange(0.57, 0.73);
 
         for (let i = 0; i < controlCount; i++) {
-            current += randomRange(-70, 70);
+            current += randomRange(-profile.variation, profile.variation);
             current = clamp(current, this.height * 0.42, this.height * 0.83);
             controls.push(current);
         }
@@ -35,12 +37,12 @@ export class Terrain {
             const i = Math.floor(scaled);
             const t = smoothstep(scaled - i);
             const base = lerp(controls[i], controls[i + 1], t);
-            const rolling = Math.sin(x * 0.008 + wavePhaseA) * 32;
-            const small = Math.sin(x * 0.024 + wavePhaseB) * 13;
+            const rolling = Math.sin(x * 0.008 + wavePhaseA) * profile.rolling;
+            const small = Math.sin(x * 0.024 + wavePhaseB) * profile.small;
             this.heights[x] = clamp(base + rolling + small, this.height * 0.34, this.height - 36);
         }
 
-        this._smooth(4);
+        this._smooth(profile.smoothing);
         this.craters = [];
         this.mounds = [];
     }
