@@ -1,0 +1,247 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html, body {
+    width: 100%;
+    height: 100%;
+    background: #0d1117;
+    color: #e6edf3;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    overflow: hidden;
+}
+
+#app {
+    width: 100vw;
+    height: 100vh;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.screen {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* ----- Menu ----- */
+.menu-card {
+    background: rgba(22, 27, 34, 0.95);
+    border: 1px solid #30363d;
+    border-radius: 12px;
+    padding: 36px 48px;
+    max-width: 560px;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+    text-align: center;
+}
+
+.title {
+    font-size: 42px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+    background: linear-gradient(90deg, #58a6ff, #d2a8ff);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+.subtitle {
+    font-size: 16px;
+    color: #8b949e;
+    margin-bottom: 24px;
+}
+
+.btn {
+    display: inline-block;
+    padding: 12px 28px;
+    margin: 8px 6px;
+    font-size: 16px;
+    font-weight: 600;
+    border-radius: 8px;
+    border: 1px solid #30363d;
+    background: #21262d;
+    color: #e6edf3;
+    cursor: pointer;
+    transition: transform 0.08s ease, background 0.15s ease;
+}
+
+.btn:hover { background: #30363d; }
+.btn:active { transform: translateY(1px); }
+
+.btn.primary {
+    background: #238636;
+    border-color: #2ea043;
+}
+.btn.primary:hover { background: #2ea043; }
+
+.instructions {
+    text-align: left;
+    margin-top: 22px;
+    padding-top: 18px;
+    border-top: 1px solid #30363d;
+}
+
+.instructions h2 {
+    font-size: 16px;
+    margin-bottom: 10px;
+    color: #c9d1d9;
+}
+
+.instructions ul {
+    list-style: none;
+    margin-bottom: 12px;
+}
+
+.instructions li {
+    padding: 4px 0;
+    color: #c9d1d9;
+    font-size: 14px;
+}
+
+.instructions b { color: #58a6ff; }
+
+.note {
+    font-size: 13px;
+    color: #8b949e;
+    line-height: 1.5;
+}
+
+/* ----- Game ----- */
+#game {
+    width: 100%;
+    height: 100%;
+    background: #0d1117;
+    overflow: hidden;
+}
+
+#gameCanvas {
+    display: block;
+    margin: auto;
+    max-width: 100%;
+    max-height: 100%;
+    background: #87ceeb;
+    border-radius: 4px;
+    box-shadow: 0 0 24px rgba(0, 0, 0, 0.6);
+}
+
+#hud {
+    position: absolute;
+    top: 12px;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: space-between;
+    padding: 0 24px;
+    pointer-events: none;
+}
+
+.hud-panel {
+    background: rgba(13, 17, 23, 0.85);
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    padding: 10px 14px;
+    min-width: 200px;
+    backdrop-filter: blur(4px);
+}
+
+.hud-panel.center {
+    text-align: center;
+    min-width: 320px;
+}
+
+.player-name {
+    font-weight: 700;
+    font-size: 15px;
+    margin-bottom: 6px;
+}
+
+#p1Panel .player-name { color: #f78166; }
+#p2Panel .player-name { color: #58a6ff; }
+
+.hud-panel.active {
+    border-color: #f0c36b;
+    box-shadow: 0 0 0 2px rgba(240, 195, 107, 0.35);
+}
+
+.health-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+}
+
+.label { color: #8b949e; }
+
+.health-bar {
+    flex: 1;
+    height: 10px;
+    background: #21262d;
+    border-radius: 5px;
+    overflow: hidden;
+}
+
+.health-fill {
+    height: 100%;
+    width: 100%;
+    background: linear-gradient(90deg, #2ea043, #56d364);
+    transition: width 0.3s ease;
+}
+
+.health-text {
+    min-width: 28px;
+    text-align: right;
+    font-weight: 700;
+}
+
+.turn-label {
+    font-weight: 800;
+    font-size: 17px;
+    margin-bottom: 4px;
+    color: #f0c36b;
+}
+
+.stat-row {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    font-size: 13px;
+    color: #c9d1d9;
+}
+
+.stat-row b { color: #58a6ff; }
+
+#controlsHint {
+    position: absolute;
+    bottom: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(13, 17, 23, 0.85);
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    padding: 6px 16px;
+    font-size: 13px;
+    color: #8b949e;
+}
+
+/* ----- Win overlay ----- */
+.overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(4px);
+}

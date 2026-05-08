@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tank Artillery Duel</title>
+    <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+    <div id="app">
+        <!-- Main Menu -->
+        <div id="menu" class="screen">
+            <div class="menu-card">
+                <h1 class="title">Tank Artillery Duel</h1>
+                <p class="subtitle">A 2-player turn-based artillery game</p>
+                <button id="startBtn" class="btn primary">Start New Game</button>
+                <div class="instructions">
+                    <h2>How to Play</h2>
+                    <ul>
+                        <li><b>Left / Right Arrow</b> &mdash; adjust cannon angle</li>
+                        <li><b>Up / Down Arrow</b> &mdash; adjust shot power</li>
+                        <li><b>Spacebar</b> &mdash; fire projectile</li>
+                        <li><b>R</b> &mdash; restart match</li>
+                        <li><b>Escape</b> &mdash; return to main menu</li>
+                    </ul>
+                    <p class="note">
+                        Two tanks face off across procedurally generated terrain.
+                        Aim, account for wind, and blow up the other tank!
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="game" class="screen hidden">
+            <canvas id="gameCanvas" width="1280" height="720"></canvas>
+
+            <!-- HUD overlay -->
+            <div id="hud">
+                <div class="hud-panel left" id="p1Panel">
+                    <div class="player-name" id="p1Name">Player 1</div>
+                    <div class="health-row">
+                        <span class="label">HP</span>
+                        <div class="health-bar"><div class="health-fill" id="p1Health"></div></div>
+                        <span class="health-text" id="p1HealthText">100</span>
+                    </div>
+                </div>
+
+                <div class="hud-panel center" id="turnPanel">
+                    <div class="turn-label" id="turnLabel">Player 1's Turn</div>
+                    <div class="stat-row">
+                        <span>Angle:</span><b id="angleVal">45&deg;</b>
+                        <span>Power:</span><b id="powerVal">50</b>
+                        <span>Wind:</span><b id="windVal">0</b>
+                    </div>
+                </div>
+
+                <div class="hud-panel right" id="p2Panel">
+                    <div class="player-name" id="p2Name">Player 2</div>
+                    <div class="health-row">
+                        <span class="label">HP</span>
+                        <div class="health-bar"><div class="health-fill" id="p2Health"></div></div>
+                        <span class="health-text" id="p2HealthText">100</span>
+                    </div>
+                </div>
+            </div>
+
+            <div id="controlsHint">
+                &larr;/&rarr; Angle &nbsp; &uarr;/&darr; Power &nbsp; Space: Fire &nbsp; R: Restart &nbsp; Esc: Menu
+            </div>
+
+            <!-- Win overlay -->
+            <div id="winOverlay" class="overlay hidden">
+                <div class="menu-card">
+                    <h1 id="winText" class="title">Player 1 Wins!</h1>
+                    <button id="restartBtn" class="btn primary">Play Again</button>
+                    <button id="menuBtn" class="btn">Main Menu</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="src/main.js"></script>
+</body>
+</html>
