@@ -27,3 +27,13 @@ Original prompt: Upgrade the existing local browser Scorched Earth-style artille
 - v0.5 browser verification covered version display, debug-helper gating, Arrow vs A/D control separation, Standard/Heavy/Dirt impact helpers, summary -> shop -> next round flow, shop purchase prices, wind off, shield absorb, repair messages, parachute fall mitigation, 1280x720 / 1366x768 / 1920x1080 screenshots, and the dedicated web-game Playwright client with no console errors.
 - Optional next pass: hand-play full best-of-three matches on each CPU difficulty and tune aim errors, shop preferences, and money pacing if needed.
 - Optional future feature: add Bouncer Shell once core economy and utility balance feel stable.
+
+## v0.6.4 Notes
+
+- Updated the version target to `v0.6.4` and removed the gameplay version badge; only the main menu shows the version while `window.GAME_VERSION` remains available.
+- Added clear shield display in player panels, mobile HUD, shop inventory, and summary inventory.
+- Replaced cryptic HUD/shop inventory abbreviations with clear labels.
+- Changed mobile angle controls to up/down arrows and kept power buttons adjacent.
+- Moved ammo shop entries to weapon-driven generation so Heavy/Dirt remain in the shop as `Heavy Shell Ammo` and `Dirt Bomb Ammo`, with Roller/Napalm/Cluster/Mega added consistently.
+- Added Roller Shell, Napalm Canister, Cluster Bomb, and Mega Bomb definitions, CPU shop/weapon preferences, rolling projectile behavior, cluster bomblets, flame visuals, expanded blast rings, and distinct generated sounds.
+- Updated README.md and TESTING.md for v0.6.4.

@@ -42,6 +42,25 @@ export class AudioManager {
                 this._tone(110, 0.18, 'sine', 0.045, 0.02);
                 this._noise(0.22, 0.06, { lowPass: true });
                 break;
+            case 'roller':
+                this._tone(118, 0.16, 'square', 0.08);
+                this._tone(390, 0.10, 'triangle', 0.04, 0.03);
+                this._noise(0.12, 0.045);
+                break;
+            case 'napalm':
+                this._tone(170, 0.12, 'sine', 0.045);
+                this._noise(0.30, 0.07, { highPass: true });
+                break;
+            case 'cluster':
+                this._tone(105, 0.18, 'triangle', 0.08);
+                this._tone(230, 0.10, 'sine', 0.045, 0.04);
+                this._noise(0.14, 0.05, { lowPass: true });
+                break;
+            case 'mega':
+                this._tone(46, 0.42, 'sawtooth', 0.18);
+                this._tone(82, 0.32, 'square', 0.09, 0.02);
+                this._noise(0.24, 0.11, { lowPass: true });
+                break;
             case 'standard':
             default:
                 // Medium pop/thump.
@@ -67,12 +86,44 @@ export class AudioManager {
                 this._tone(96, 0.14, 'sine', 0.06);
                 this._tone(60, 0.20, 'sine', 0.04, 0.05);
                 break;
+            case 'roller':
+                this._noise(0.30, 0.13, { lowPass: true });
+                this._tone(72, 0.24, 'sawtooth', 0.065);
+                this._tone(210, 0.08, 'triangle', 0.032, 0.04);
+                break;
+            case 'napalm':
+                this._noise(0.46, 0.12, { highPass: true });
+                this._tone(180, 0.20, 'sine', 0.035);
+                break;
+            case 'cluster':
+            case 'clusterBomblet':
+                this._noise(0.18, 0.07);
+                this._tone(120, 0.12, 'triangle', 0.035);
+                this._tone(260, 0.06, 'square', 0.022, 0.02);
+                break;
+            case 'mega':
+                this._noise(0.62, 0.20, { lowPass: true });
+                this._tone(38, 0.72, 'sine', 0.13);
+                this._tone(62, 0.50, 'sawtooth', 0.12, 0.04);
+                this._tone(110, 0.22, 'square', 0.05, 0.08);
+                break;
             case 'standard':
             default:
                 this._noise(0.32, 0.13);
                 this._tone(72, 0.22, 'sawtooth', 0.08);
                 break;
         }
+    }
+
+    playClusterSplit() {
+        this._tone(520, 0.055, 'triangle', 0.04);
+        this._tone(740, 0.06, 'triangle', 0.03, 0.035);
+        this._noise(0.08, 0.025);
+    }
+
+    playRollerRumble() {
+        this._tone(88, 0.24, 'sawtooth', 0.035);
+        this._noise(0.24, 0.035, { lowPass: true });
     }
 
     playHit() {
@@ -152,7 +203,7 @@ export class AudioManager {
         osc.stop(end + 0.02);
     }
 
-    _noise(duration, volume, { lowPass = false } = {}) {
+    _noise(duration, volume, { lowPass = false, highPass = false } = {}) {
         const ctx = this._ensureContext();
         if (!ctx) return;
 
@@ -175,11 +226,11 @@ export class AudioManager {
 
         source.connect(gain);
 
-        if (lowPass) {
+        if (lowPass || highPass) {
             const filter = ctx.createBiquadFilter();
-            filter.type = 'lowpass';
-            filter.frequency.setValueAtTime(420, start);
-            filter.frequency.exponentialRampToValueAtTime(220, end);
+            filter.type = lowPass ? 'lowpass' : 'highpass';
+            filter.frequency.setValueAtTime(lowPass ? 420 : 650, start);
+            filter.frequency.exponentialRampToValueAtTime(lowPass ? 220 : 980, end);
             gain.connect(filter);
             filter.connect(ctx.destination);
         } else {

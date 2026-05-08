@@ -1,35 +1,27 @@
 # Tank Artillery Duel
 
-Current version: `v0.6.3`
+Current version: `v0.6.4`
 
-Tank Artillery Duel is a local browser-based 2D artillery game inspired by classic tank duel games. Two tanks fight across destructible hilly terrain with wind, turn-based aiming, movement fuel, distinct weapons, generated sound effects, match scoring, money, a pre-round and between-round shop, and an optional CPU opponent. v0.6.2 made phone landscape the primary mobile gameplay mode. **v0.6.3 adds a pre-round shop before Round 1** so starting money is meaningful: Heavy Shells and Dirt Bombs now start at 1 each (max 3 / 4) and can be refilled in the shop, and the menu's old "Local artillery duel" eyebrow is gone for a cleaner mobile menu.
+Tank Artillery Duel is a local browser-based 2D artillery game inspired by classic tank duel games. Two tanks fight across destructible hilly terrain with wind, turn-based aiming, movement fuel, limited special weapons, generated Web Audio effects, match scoring, money, a pre-round and between-round shop, and an optional CPU opponent.
 
-The project is pure HTML, CSS, vanilla JavaScript, HTML5 Canvas, and the Web Audio API. It has no backend, no build step, no paid services, and no remote assets.
+v0.6.4 focuses on clarity and classic artillery feel: clearer HUD/shop inventory labels, visible shield protection, a small expanded weapon set, full-ammo shop states, expanding blast visuals, more distinct generated weapon sounds, compact desktop HUD tuning, and no gameplay version badge.
+
+The project is pure HTML, CSS, vanilla JavaScript, HTML5 Canvas, and the Web Audio API. It has no backend, no build step, no paid services, and no external assets.
 
 ## GitHub Pages Note
 
-The live game displays `v0.6.3` on the main menu and in the in-game HUD. After a GitHub Pages deployment, hard refresh the page if the old version still appears:
+The live game displays `v0.6.4` on the main menu only. Gameplay intentionally does not show a floating version badge over the canvas, HUD, or touch controls. `window.GAME_VERSION` remains available and returns `"v0.6.4"`.
+
+After a GitHub Pages deployment, hard refresh the page if the old version still appears:
 
 - Windows/Linux: `Ctrl` + `F5`
 - macOS: `Cmd` + `Shift` + `R`
-- iOS Safari: tap the address bar, hold the reload icon, then tap `Request Website Without Cache` if available, or close and reopen the tab.
+- iOS Safari: close and reopen the tab, or use a reload without cache if available.
 - Android Chrome: tap menu, then `Reload`.
-
-This helps bypass cached JavaScript and CSS.
-
-## Browser Support
-
-The game targets modern browsers from roughly 2022 onward:
-
-- Desktop: Chrome, Edge, Firefox, Safari.
-- Mobile: iPhone Safari and Chrome, Android Chrome and Firefox.
-- Tablets: iPad Safari, Android Chrome.
 
 ## How to Run Locally
 
-Because the game uses ES modules, use a local static server instead of opening `index.html` directly in Chrome or Edge.
-
-### Python
+Because the game uses ES modules, use a local static server instead of opening `index.html` directly.
 
 ```bash
 cd path/to/scorched_earth_remake
@@ -38,108 +30,63 @@ python -m http.server 8000
 
 Open `http://localhost:8000`.
 
-### Node
+Node also works:
 
 ```bash
 cd path/to/scorched_earth_remake
 npx --yes serve .
 ```
 
-Open the local URL printed by the command. To test mobile from a phone on the same Wi-Fi, use your machine's LAN IP (for example `http://192.168.1.10:8000`).
+To test from a phone on the same Wi-Fi, use your machine's LAN IP, for example `http://192.168.1.10:8000`.
 
 ## Current Features
 
 - Two Player Local and Single Player vs CPU modes.
-- Single-button **Play** entry on phone-sized screens that starts Single Player vs CPU.
-- On-screen touch controls for mobile and tablet browsers, with full keyboard controls preserved on desktop.
-- Destructible heightmap terrain with craters and Dirt Bomb mounds.
+- Single-button `Play` entry on phone-sized screens that starts Single Player vs CPU.
+- Desktop keyboard controls and mobile/tablet touch controls.
+- Destructible heightmap terrain with craters, Dirt Bomb mounds, and tank settling/fall damage.
 - Projectile physics with gravity and wind.
-- Angle, power, weapon selection, and pre-shot tank movement.
-- Standard Shell, Heavy Shell, and a buffed Dirt Bomb that builds substantially larger mounds.
-- Match settings for rounds to win, CPU difficulty, wind, starting money, and terrain roughness.
-- Economy, round summaries, between-round shop, score tracking, and inventory HUD.
-- Defensive utilities: shield, **First Aid Kit** (full heal between rounds), and parachute.
-- Distinct generated Web Audio fire and impact sounds per weapon, plus shield, heal, parachute, and shop click sounds.
-- Persistent mute toggle (keyboard `M` or the on-screen ♪ button).
-- Optional debug helpers for local testing.
+- Standard Shell, Heavy Shell, Dirt Bomb, Roller Shell, Napalm Canister, Cluster Bomb, and Mega Bomb.
+- Economy, round summaries, pre-round shop before Round 1, between-round shop, score tracking, and inventory HUD.
+- Shield charge, First Aid Kit full-heal behavior, parachutes, and ammo refill-to-max purchases.
+- Generated Web Audio firing, impact, shield, heal, parachute, purchase, and blocked-purchase sounds.
+- `window.render_game_to_text()`, `window.advanceTime(ms)`, and `window.GAME_VERSION` for smoke testing.
+
+## Version Display
+
+- Main menu shows `v0.6.4`.
+- Gameplay does not show a version chip or badge.
+- `window.GAME_VERSION` returns `"v0.6.4"`.
 
 ## Mobile Browser Support
 
-v0.6 made the game playable in a phone or tablet browser without a physical keyboard. v0.6.1 introduced the compact mobile HUD and rotate overlay. **v0.6.2 makes phone landscape the primary mobile gameplay mode** and fixes the cramped layout reported on real Android phones.
+Phone landscape remains the intended mobile gameplay mode.
 
-### Phone menu
+- Phones show one primary `Play` button that starts Single Player vs CPU.
+- Desktop and larger layouts still show both `Two Player Local` and `Single Player vs CPU`.
+- Phone portrait shows the rotate overlay unless the player chooses to continue.
+- The mobile HUD uses compact pills for turn, HP, shield when charged, wind, selected weapon, angle, power, and ammo.
+- The extra info row shows readable inventory labels instead of unexplained abbreviations.
+- Touch controls remain translucent and corner-positioned for phone landscape playability.
 
-Phones (viewports under 768 pixels wide) show a single primary `Play` button that starts Single Player vs CPU. Two Player Local is hidden because shared-keyboard play does not make sense on a single small touchscreen. CPU difficulty and the rest of the match settings remain visible. On desktop and large tablets, both `Two Player Local` and `Single Player vs CPU` buttons are still shown.
-
-If you resize a desktop browser window down to phone width, the menu automatically swaps to the single Play button. Resizing back up restores the full menu.
-
-### Phone landscape gameplay (v0.6.2)
-
-Phone landscape is the intended mobile gameplay mode:
-
-- The canvas/battlefield occupies nearly the full viewport (only ~6 px reserved at the edges).
-- The compact pill HUD lives at the top-left as a slim translucent strip (turn, P1 HP, P2 HP, wind, weapon, angle, power, ammo, version).
-- Utility buttons (`WPN R N ♪ ≡`) form a single small row in the top-right corner — they no longer sit in the middle of the play area.
-- Move buttons (`◀ ▶`) sit in the bottom-left corner.
-- Aim/Power/Fire (`↺ ↻ PWR- PWR+ FIRE`) form a compact 2-column stack in the bottom-right corner.
-- All buttons are translucent so terrain remains visible behind the side margins.
-- Touch buttons follow the v0.6.2 sizing spec: movement/aim/power use `clamp(42px, 8dvh, 58px)`, FIRE uses `clamp(58px, 11dvh, 78px)`, utilities use `clamp(34px, 6dvh, 46px)`.
-- The version chip is now a HUD pill (`v0.6.2`) — the old bottom-left chip that overlapped the move buttons is hidden during phone gameplay.
-
-### Phone portrait: rotate overlay
-
-In phone portrait on the gameplay screen, a clean full-screen rotate overlay reads:
-
-> **Rotate your phone to landscape for the playable layout.**
-
-Two buttons:
-
-- `Continue Anyway` keeps the compact layout in portrait.
-- `Back to Menu` returns to the main menu.
-
-In landscape the overlay is hidden automatically and the optimized layout is used.
-
-### Fullscreen and orientation lock
-
-Tapping `Play` on a phone makes a best-effort `requestFullscreen()` call on the document so the browser chrome retracts. It also attempts `screen.orientation.lock('landscape')`. Both calls are wrapped in `try/catch` so failure is silent. The layout is designed to be playable even when fullscreen is denied and the browser chrome stays visible.
-
-### On-screen controls
-
-The mobile control pad is shown on coarse-pointer (touch) devices and on viewports under 900 pixels wide. It is automatically hidden when the device has only a fine pointer (mouse) and the viewport is large enough for a desktop layout.
+### On-Screen Controls
 
 | Control | Action |
 | --- | --- |
-| `◀` `▶` (left side) | Move active tank left/right while held |
-| `↺` `↻` (right side) | Adjust cannon angle while held |
+| Left/right move buttons | Move active tank left/right while held |
+| `↑` | Increase cannon angle while held |
+| `↓` | Decrease cannon angle while held |
 | `PWR-` / `PWR+` | Decrease/increase shot power while held |
 | `FIRE` | Fire one shot per tap |
 | `WPN` | Cycle weapons one tap at a time |
-| `R` | Restart the current round |
+| `R` | Restart current round during live play |
 | `N` | Continue from summary, or start the next round from the shop |
-| `≡` | Return to the main menu |
-| `♪` | Toggle mute |
+| Menu button | Return to the main menu |
+| Sound button | Toggle mute |
 
-Hold-to-repeat works for aim, power, and movement just like keyboard arrow keys. Fire and weapon-cycle each fire only once per tap. Touch controls are dimmed when the human player cannot act (CPU turn, projectile in flight, explosion resolving, summary, or shop).
-
-### Mobile orientation
-
-Both portrait and landscape are playable. Landscape is recommended on small phones because the canvas can use more horizontal pixels. In portrait, the rotate overlay appears first; once dismissed, the compact layout still gives a usable canvas plus controls.
-
-## Match Settings
-
-Settings are saved in `localStorage` and reused for the next match:
-
-- `Rounds to Win`: 1, 3, or 5.
-- `CPU Difficulty`: Easy, Normal, or Hard.
-- `Wind`: Off, Light, Normal, or Wild.
-- `Starting Money`: Low `$100`, Normal `$150`, or High `$250`.
-- `Terrain`: Smooth, Normal, or Rough.
-
-Starting a new match resets score, money, inventory, terrain, and tank health using these settings. Active match state does not persist across reloads.
+Hold-to-repeat works for angle, power, and movement. Fire and weapon-cycle each trigger once per tap.
 
 ## Desktop Controls
-
-Keyboard controls are preserved exactly as they were in v0.5:
 
 | Key | Action |
 | --- | --- |
@@ -153,37 +100,72 @@ Keyboard controls are preserved exactly as they were in v0.5:
 | `N` | Continue from summary to shop, or start next round from shop |
 | `Escape` | Return to main menu |
 
-Controls are locked while a projectile is flying, an explosion is resolving, the CPU is thinking, the summary is open, the shop is open, or the match is over. Touch controls are also locked under those same conditions.
+Controls are locked while a projectile is flying, an explosion is resolving, the CPU is thinking, the summary is open, the shop is open, or the match is over.
+
+## HUD and Inventory Clarity
+
+The desktop HUD uses clear labels such as:
+
+`$65 | Heavy 1 | Dirt 1 | Roller 0 | Napalm 0 | Cluster 0 | Mega 0 | Shield 60 | Aid 0 | Chute 0`
+
+The mobile HUD uses compact but understandable labels such as `Hvy`, `Dirt`, `Roller`, `Napalm`, `Cluster`, `Mega`, `Shield`, `Aid`, and `Chute`.
+
+Standard Shell ammo is not shown in inventory because it is unlimited. HP is shown in the health bar, not duplicated in the HUD inventory line.
+
+## Shield Indicator
+
+Shield Charge adds separate blue/cyan protection. It is not normal HP.
+
+- Desktop player panels show HP plus a blue shield bar and numeric shield value.
+- Mobile HP pills show `+Shield N` when shield is charged.
+- Shop and summary inventory show `Shield: N`.
+- Shield value decreases as it absorbs damage.
+- The tank still draws a blue shield outline while charged.
 
 ## Weapons
 
-| Weapon | Starting Ammo | Max Carried | Projectile | Terrain Effect | Damage |
-| --- | --- | --- | --- | --- | --- |
-| `Standard Shell` | Unlimited | Unlimited | Normal speed | Medium crater, radius 42 | Medium, max 38 |
-| `Heavy Shell` | 1 | 3 | Slower and larger | Larger, deeper crater, radius 66 | High, max 70 |
-| `Dirt Bomb` | 1 | 4 | Slightly slower | Builds a much bigger mound, radius 88 | Low, max 10 |
+| Weapon | Starting Ammo | Max Carried | Shop Ammo Item | Behavior |
+| --- | ---: | ---: | --- | --- |
+| `Standard Shell` | Unlimited | Unlimited | None | Balanced crater and damage. |
+| `Heavy Shell` | 1 | 3 | `Heavy Shell Ammo` | Slower shell, larger crater, high damage. |
+| `Dirt Bomb` | 1 | 4 | `Dirt Bomb Ammo` | Adds a large dirt mound with low tank damage. |
+| `Roller Shell` | 0 | 3 | `Roller Shell Ammo` | Hits terrain, rolls along the slope, then explodes. |
+| `Napalm Canister` | 0 | 3 | `Napalm Canister Ammo` | Creates a flame patch with minimal terrain deformation. |
+| `Cluster Bomb` | 0 | 2 | `Cluster Bomb Ammo` | Splits into 5 bomblets with multiple small craters. |
+| `Mega Bomb` | 0 | 1 | `Mega Bomb Ammo` | Rare, expensive, large crater and high damage. |
 
-Heavy Shell and Dirt Bomb start at 1 carried each as of v0.6.3 — the pre-round shop is where you decide whether to top them up before the first battle. Standard Shell remains unlimited so you can always play even if you spend all your starting money on utilities.
+Standard Shell is unlimited and has no ammo shop button. Every limited weapon can be selected only when it has ammo.
 
-The v0.6 Dirt Bomb is meaningfully stronger as a terrain-builder. Its mound radius is wider, its mound is much taller, and post-impact terrain smoothing is reduced so the pile actually sticks. The mound visibly fills craters and creates usable cover, while damage to tanks remains low.
+## Explosion Visuals
 
-Each weapon has a distinct firing voice and a distinct impact voice generated through the Web Audio API:
+v0.6.4 adds classic-inspired expanding Canvas blast visuals:
 
-- Standard Shell: medium pop on fire, normal explosion on impact.
-- Heavy Shell: deeper, louder cannon boom on fire, larger boom with low rumble on impact.
-- Dirt Bomb: softer airy puff on fire, dirt thud / soil burst (no fireball) on impact.
+- Standard Shell: medium expanding blast ring and flash.
+- Heavy Shell: larger ring, stronger flash, more debris.
+- Dirt Bomb: brown/green dirt puff and soft dust wave, not a fireball.
+- Roller Shell: small/medium expanding blast after rolling.
+- Napalm Canister: short flame patch, not a normal crater explosion.
+- Cluster Bomb: several small expanding mini-blasts.
+- Mega Bomb: largest shock ring, bright center flash, and heavier debris.
 
-Shield absorption, First Aid Kit use, parachute use, shop purchases, and blocked purchases each have their own short sound.
+## Generated Sounds
 
-## Movement
+All sounds are generated locally with Web Audio. No audio files are used.
 
-During a human aiming phase, press `A` or `D` (or hold the on-screen `◀` / `▶`) to drive the active tank left or right. Movement follows the terrain surface, consumes fuel by distance moved, and is blocked by steep slopes, battlefield edges, or the other tank. Fuel resets at the start of each turn.
+- Standard Shell: medium cannon thump and normal explosion.
+- Heavy Shell: deeper launch and larger low-rumble impact.
+- Dirt Bomb: softer launch and soil burst.
+- Roller Shell: metallic launch, short rolling rumble, and medium explosion.
+- Napalm Canister: pressurized launch and flame burst.
+- Cluster Bomb: hollow launch, split pop, and small bomblet impacts.
+- Mega Bomb: deepest launch and largest low-frequency explosion.
+- Shield absorption, First Aid Kit, parachute, purchase, and invalid purchase sounds remain distinct.
 
-`Left Arrow` and `Right Arrow` are reserved for cannon angle adjustment and never move the tank.
+Mute still suppresses all generated sounds.
 
 ## Economy and Shop
 
-Players keep money and inventory across rounds in a match. A new match resets both.
+Players keep money and inventory across rounds in a match. A new match resets both and opens the pre-round shop before Round 1.
 
 Money earned after each round:
 
@@ -192,84 +174,69 @@ Money earned after each round:
 - `$75` round win bonus.
 - `$25` survival bonus.
 
-### Shop prices and behavior (v0.6)
+### Shop Items
 
 | Item | Price | Effect |
-| --- | --- | --- |
-| `Refill Heavy Shells` | `$100` | Refills Heavy Shell ammo to its max carried 3. Disabled when full. |
-| `Refill Dirt Bombs` | `$80` | Refills Dirt Bomb ammo to its max carried 4. Disabled when full. |
+| --- | ---: | --- |
+| `Heavy Shell Ammo` | `$100` | Refills Heavy Shell ammo to 3. Disabled when full. |
+| `Dirt Bomb Ammo` | `$80` | Refills Dirt Bomb ammo to 4. Disabled when full. |
+| `Roller Shell Ammo` | `$90` | Refills Roller Shell ammo to 3. Disabled when full. |
+| `Napalm Canister Ammo` | `$95` | Refills Napalm Canister ammo to 3. Disabled when full. |
+| `Cluster Bomb Ammo` | `$130` | Refills Cluster Bomb ammo to 2. Disabled when full. |
+| `Mega Bomb Ammo` | `$175` | Refills Mega Bomb ammo to 1. Disabled when full. |
 | `Shield Charge` | `$85` | Adds 60 shield charge, capped at 180. |
 | `First Aid Kit` | `$110` | Fully heals to 100 HP at the start of the next round if damaged. |
 | `Parachute` | `$45` | Reduces one fall-damage event. |
 
-Notes:
-
-- Ammo purchases now refill that weapon to its max carried ammo rather than adding one round at a time. Buying when already full is blocked, no money is spent, and a subtle blocked sound plays.
-- The First Aid Kit replaces the old Repair Kit and is consumed only when the player is below 100 HP. One kit fully heals to 100 HP.
-- The CPU shop logic understands the new ammo and heal behavior and will not waste money on a full ammo type or a full-health repair.
+Ammo purchases refill the weapon to max carried ammo. If ammo is already full, the button is greyed out, says `Full`, cannot be bought, and does not charge money. The CPU uses the same money, inventory, and full-ammo rules as the human player.
 
 ## Defensive Utilities
 
-- `Shield`: visible around the tank while charged. It absorbs 50% of incoming explosion damage while charge remains, spends charge by the absorbed amount, flashes when it absorbs damage, and plays a brief shimmering tone.
-- `First Aid Kit`: consumed at the start of a round if that player is below 100 HP, fully restoring health to 100. The round-start message reports the heal and a clean heal tone plays.
-- `Parachute`: consumed when a tank drops far enough after terrain is destroyed, reducing that fall damage by 80%. The shot result reports parachute use and plays a soft cushion sound.
-
-Fall damage only triggers when a tank settles downward more than 45 pixels after terrain changes.
+- `Shield Charge`: separate protection that absorbs 50% of incoming explosion damage while charge remains.
+- `First Aid Kit`: consumed at round start only if the player is below 100 HP, fully restoring health to 100.
+- `Parachute`: consumed when a tank drops far enough after terrain changes, reducing fall damage by 80%.
 
 ## Round and Match Flow
 
-- **Pre-round shop (v0.6.3)**: starting a new match opens the shop *before* Round 1 so each player can spend starting money. The shop title reads `Pre-Round Shop` and the primary button reads `Start Round`. In Single Player vs CPU, the CPU auto-buys before Round 1 using its difficulty profile.
-- Destroying a tank ends the round and awards 1 point to the surviving player.
-- The round summary appears before the between-round shop.
-- The between-round shop title reads `Between-Round Shop` and the button reads `Start Next Round`.
-- The shop appears between rounds unless the match winner has reached the rounds-to-win target.
-- `Start Next Round` regenerates terrain and keeps score, money, inventory, and remaining tank health.
-- `New Match` resets score, terrain, health, money, ammo, and utilities, and opens the pre-round shop again.
-- `Restart Round` restarts the current battlefield without awarding score or shop money. It does NOT open the pre-round shop.
+- Starting a new match opens the Pre-Round Shop before Round 1.
+- In Single Player vs CPU, the CPU auto-shops before Round 1 and between rounds.
+- `Start Round` begins Round 1 from the pre-round shop.
+- The round summary appears after a tank is destroyed.
+- `Continue to Shop` opens the Between-Round Shop unless the match is complete.
+- `Start Next Round` regenerates terrain and preserves score, money, inventory, and remaining tank health.
+- `New Match` resets score, terrain, health, money, ammo, utilities, and opens the pre-round shop again.
+- `Restart Round` restarts the current battlefield without awarding score, money, or opening the pre-round shop.
 
 ## Debug Helpers
 
-Normal play does not expose extra debug helpers. Add `?debug=1` to the local URL to enable:
+Normal play does not expose extra debug helpers. Add `?debug=1` to enable:
 
 - `window.debugGameState()`
 - `window.testWeaponImpact("standard")`
 - `window.testWeaponImpact("heavy")`
 - `window.testWeaponImpact("dirt")`
+- `window.testWeaponImpact("roller")`
+- `window.testWeaponImpact("napalm")`
+- `window.testWeaponImpact("cluster")`
+- `window.testWeaponImpact("mega")`
 - `window.forceRoundWin(0)`
 - `window.forceRoundWin(1)`
 
-`window.render_game_to_text()`, `window.advanceTime(ms)`, and `window.GAME_VERSION` remain available for smoke testing without `?debug`.
-
-## Testing
-
-Use `TESTING.md` for the manual checklist. At minimum before publishing, verify:
-
-- Main menu shows `v0.6.3`.
-- In-game HUD shows the `v0.6.3` chip (HUD pill on phone, bottom-left chip on desktop).
-- Phone-sized viewport shows a single `Play` button (Two Player Local hidden).
-- Desktop viewport still shows both `Two Player Local` and `Single Player vs CPU` buttons.
-- Arrow keys adjust angle only; `A`/`D` move only.
-- Touch buttons hold-to-repeat for aim/power/move; `FIRE` fires once per tap; `WPN` cycles once per tap.
-- Standard, Heavy, and Dirt Bomb sound different on fire and on impact.
-- Dirt Bomb visibly creates a much larger mound than v0.5.
-- Buying `Refill Heavy Shells` sets Heavy Shell ammo to 3; refill button disables when full.
-- Buying `Refill Dirt Bombs` sets Dirt Bomb ammo to 4; refill button disables when full.
-- Buying `First Aid Kit` while below 100 HP fully heals at the next round start; one kit consumed.
-- Browser console has no normal gameplay errors.
+`window.render_game_to_text()`, `window.advanceTime(ms)`, and `window.GAME_VERSION` are always available for smoke testing.
 
 ## Project Structure
 
 ```text
 index.html          Page shell, menu, HUD, settings, summary, shop, touch pad
-styles.css          Responsive layout, touch button styling, safe-area handling
-src/config.js       Version, tunables, weapon definitions, economy, shop, CPU difficulty
+styles.css          Responsive layout, HUD, touch button styling, safe-area handling
+src/config.js       Version, tunables, weapon definitions, economy, CPU difficulty
 src/main.js         Entry point, DOM wiring, canvas sizing, touch wiring, debug hooks
-src/game.js         Game loop, state flow, economy, shop, scoring, collisions, rendering
+src/game.js         Game loop, turn flow, economy, shop, scoring, collisions, rendering
 src/terrain.js      Heightmap terrain, spawn pads, crater carving, dirt mounds
-src/tank.js         Tank state, health, ammo, utilities, aiming, drawing
-src/projectile.js   Projectile physics, trails, explosion and dirt-puff effects
+src/tank.js         Tank state, health, shield, ammo, utilities, aiming, drawing
+src/projectile.js   Projectile physics, rolling/split behavior support, explosion visuals
 src/cpu.js          CPU weapon choice, aiming simulation, difficulty tuning
-src/audio.js        Per-weapon Web Audio sound effects and mute persistence
+src/audio.js        Generated Web Audio effects and mute persistence
 src/ui.js           Menu, HUD, settings persistence, summary and shop updates
 src/touchInput.js   Pointer-event wiring for the on-screen touch control pad
 ```
@@ -279,24 +246,22 @@ src/touchInput.js   Pointer-event wiring for the on-screen touch control pad
 - If the page is blank, serve it over `http://localhost` instead of `file://`.
 - If the port is busy, use another port such as `python -m http.server 8010`.
 - If sound does not play, click or tap once in the page first. Browsers require user interaction before starting audio.
-- If the sound button starts muted, localStorage has a saved mute preference. Press `M` or tap the sound button to toggle it.
-- If GitHub Pages shows an older version, hard refresh (`Ctrl+F5` on Windows/Linux, `Cmd+Shift+R` on macOS) and confirm the menu says `v0.6.3`.
-- If match settings look wrong, clear `localStorage` for the site or change the settings on the menu before starting a new match.
-- If a phone keeps zooming on double-tap, ensure the page is loaded fresh after the v0.6 update — it sets `user-scalable=no` and `touch-action: manipulation` to prevent that behavior on the controls.
+- If the sound button starts muted, localStorage has a saved mute preference. Press `M` or tap the sound button.
+- If GitHub Pages shows an older version, hard refresh and confirm the main menu says `v0.6.4`.
+- If match settings look wrong, clear `localStorage` for the site or change settings on the menu before starting a new match.
 
 ## Known Limitations
 
 - CPU aiming is intentionally simple and does not drive the tank.
-- Tank health persists between rounds for strategy. The First Aid Kit fully heals at the start of the next round, so kits are very strong but require a slot in the inventory and money to buy.
+- Roller Shell follows the heightmap surface and uses conservative rolling limits so it cannot roll forever.
+- Cluster Bomb uses a small fixed bomblet count for performance.
 - Terrain is a heightmap, so it cannot represent caves or overhangs.
-- There are no online, networked, or persistent profiles.
-- Active match state does not persist across page reloads.
-- Two Player Local is intentionally hidden on phone-sized viewports because shared local play is impractical on a single small touchscreen.
+- There are no online, networked, campaign, save-file, backend, or persistent-profile features.
+- Two Player Local is intentionally hidden on phone-sized viewports.
 
 ## Suggested Future Improvements
 
-- Add optional weapons such as a Bouncer Shell, roller, or cluster shell.
+- Tune CPU weapon preferences after longer full-match playtests.
 - Add optional mouse/finger drag aiming and power drag.
 - Add CPU driving logic that uses movement fuel.
 - Add local match presets for short, standard, and economy-heavy games.
-- Add a lightweight automated smoke-test page for GitHub Pages deployments.
