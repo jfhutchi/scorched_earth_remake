@@ -1,14 +1,14 @@
 # Tank Artillery Duel
 
-Current version: `v0.6.0`
+Current version: `v0.6.1`
 
-Tank Artillery Duel is a local browser-based 2D artillery game inspired by classic tank duel games. Two tanks fight across destructible hilly terrain with wind, turn-based aiming, movement fuel, distinct weapons, generated sound effects, match scoring, money, a between-round shop, and an optional CPU opponent. v0.6 adds full mobile-browser support, on-screen touch controls, a phone-first menu, balance updates, and richer per-weapon audio.
+Tank Artillery Duel is a local browser-based 2D artillery game inspired by classic tank duel games. Two tanks fight across destructible hilly terrain with wind, turn-based aiming, movement fuel, distinct weapons, generated sound effects, match scoring, money, a between-round shop, and an optional CPU opponent. v0.6 added full mobile-browser support and on-screen touch controls. v0.6.1 is a focused mobile usability hotfix that replaces the cluttered phone gameplay layout with a compact mobile HUD, smaller touch buttons, a clean rotate-to-landscape overlay, and a best-effort fullscreen attempt on phone Play.
 
 The project is pure HTML, CSS, vanilla JavaScript, HTML5 Canvas, and the Web Audio API. It has no backend, no build step, no paid services, and no remote assets.
 
 ## GitHub Pages Note
 
-The live game displays `v0.6.0` on the main menu and in the in-game HUD. After a GitHub Pages deployment, hard refresh the page if the old version still appears:
+The live game displays `v0.6.1` on the main menu and in the in-game HUD. After a GitHub Pages deployment, hard refresh the page if the old version still appears:
 
 - Windows/Linux: `Ctrl` + `F5`
 - macOS: `Cmd` + `Shift` + `R`
@@ -65,13 +65,37 @@ Open the local URL printed by the command. To test mobile from a phone on the sa
 
 ## Mobile Browser Support
 
-v0.6 makes the game playable in a phone or tablet browser without a physical keyboard.
+v0.6 made the game playable in a phone or tablet browser without a physical keyboard. v0.6.1 reworks the phone gameplay layout so the battlefield is actually playable on a small screen.
 
 ### Phone menu
 
 Phones (viewports under 768 pixels wide) show a single primary `Play` button that starts Single Player vs CPU. Two Player Local is hidden because shared-keyboard play does not make sense on a single small touchscreen. CPU difficulty and the rest of the match settings remain visible. On desktop and large tablets, both `Two Player Local` and `Single Player vs CPU` buttons are still shown.
 
 If you resize a desktop browser window down to phone width, the menu automatically swaps to the single Play button. Resizing back up restores the full menu.
+
+### Phone gameplay layout (v0.6.1)
+
+Phones use a dedicated compact gameplay layout instead of the desktop HUD:
+
+- The desktop HUD cards (P1 / Center / P2 cream panels) are completely hidden on phone gameplay.
+- A slim two-row chip HUD sits at the top of the screen with: current turn, P1 HP, P2 HP, wind, weapon, angle, power, and ammo.
+- An `i` button on the HUD reveals an extra row with money, inventory, round, and last result.
+- The canvas occupies the visible area between the compact HUD and the touch controls.
+- The touch buttons are sized with `clamp()` so they stay tap-safe (~44–60 px) without dominating the screen.
+- The version chip moves to the bottom-left and shrinks so it does not block the HUD.
+
+### Phone portrait: rotate overlay
+
+When a phone is in portrait on the gameplay screen, a clean full-screen rotate overlay appears with two buttons:
+
+- `Continue Anyway` keeps the compact layout in portrait for the rest of the match.
+- `Back to Menu` returns to the main menu.
+
+This replaces the v0.6 floating "Landscape is recommended" bubble that overlapped the HUD. In landscape the overlay is hidden automatically; only a tiny non-blocking chip appears in extreme cases (very short landscape viewports).
+
+### Fullscreen and orientation lock
+
+Tapping `Play` on a phone makes a best-effort `requestFullscreen()` call on the document so the browser chrome retracts. It also attempts `screen.orientation.lock('landscape')`. Both calls are wrapped in `try/catch` so failure (denied permission, unsupported browser, desktop) is silent and the game still runs.
 
 ### On-screen controls
 
@@ -93,7 +117,7 @@ Hold-to-repeat works for aim, power, and movement just like keyboard arrow keys.
 
 ### Mobile orientation
 
-Both portrait and landscape are playable. Landscape is recommended on small phones because the canvas can use more horizontal pixels. A small "Landscape recommended" hint appears on phone-sized portrait viewports.
+Both portrait and landscape are playable. Landscape is recommended on small phones because the canvas can use more horizontal pixels. In portrait, the rotate overlay appears first; once dismissed, the compact layout still gives a usable canvas plus controls.
 
 ## Match Settings
 
@@ -210,8 +234,8 @@ Normal play does not expose extra debug helpers. Add `?debug=1` to the local URL
 
 Use `TESTING.md` for the manual checklist. At minimum before publishing, verify:
 
-- Main menu shows `v0.6.0`.
-- In-game HUD shows the `v0.6.0` chip.
+- Main menu shows `v0.6.1`.
+- In-game HUD shows the `v0.6.1` chip.
 - Phone-sized viewport shows a single `Play` button (Two Player Local hidden).
 - Desktop viewport still shows both `Two Player Local` and `Single Player vs CPU` buttons.
 - Arrow keys adjust angle only; `A`/`D` move only.
@@ -246,7 +270,7 @@ src/touchInput.js   Pointer-event wiring for the on-screen touch control pad
 - If the port is busy, use another port such as `python -m http.server 8010`.
 - If sound does not play, click or tap once in the page first. Browsers require user interaction before starting audio.
 - If the sound button starts muted, localStorage has a saved mute preference. Press `M` or tap the sound button to toggle it.
-- If GitHub Pages shows an older version, hard refresh and confirm the menu says `v0.6.0`.
+- If GitHub Pages shows an older version, hard refresh and confirm the menu says `v0.6.1`.
 - If match settings look wrong, clear `localStorage` for the site or change the settings on the menu before starting a new match.
 - If a phone keeps zooming on double-tap, ensure the page is loaded fresh after the v0.6 update — it sets `user-scalable=no` and `touch-action: manipulation` to prevent that behavior on the controls.
 

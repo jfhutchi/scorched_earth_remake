@@ -6,11 +6,46 @@ For mobile testing, either visit the LAN IP from a phone (`http://<your-laptop-i
 
 ## GitHub Pages / Version
 
-- [ ] Main menu visibly shows `v0.6.0`.
-- [ ] In-game HUD/footer visibly shows the `v0.6.0` chip.
-- [ ] GitHub Pages deployment shows `v0.6.0` after a hard refresh.
-- [ ] `window.GAME_VERSION` returns `"v0.6.0"` in the browser console.
+- [ ] Main menu visibly shows `v0.6.1`.
+- [ ] In-game HUD/footer visibly shows the `v0.6.1` chip.
+- [ ] GitHub Pages deployment shows `v0.6.1` after a hard refresh.
+- [ ] `window.GAME_VERSION` returns `"v0.6.1"` in the browser console.
 - [ ] No external assets are requested in the Network panel.
+
+## v0.6.1 Mobile Hotfix
+
+Test these at phone-emulator viewports (DevTools Device Toolbar) and, where possible, on at least one real phone.
+
+- [ ] At a 390 px wide viewport (phone), the menu shows only the single `Play` button.
+- [ ] Phone `Play` starts Single Player vs CPU.
+- [ ] Desktop (1280 px wide) menu still shows both `Two Player Local` and `Single Player vs CPU`.
+- [ ] In phone portrait (390×844), the gameplay screen shows the full-screen `Rotate your phone` overlay with `Continue Anyway` and `Back to Menu` buttons.
+- [ ] `Continue Anyway` dismisses the rotate overlay and leaves the compact layout in place; the user can still play in portrait.
+- [ ] `Back to Menu` returns to the main menu.
+- [ ] In phone landscape (844×390), the rotate overlay does not appear.
+- [ ] In phone landscape, the compact mobile HUD chips appear at the top of the screen (turn, P1 HP, P2 HP, wind, weapon, angle, power, ammo).
+- [ ] The desktop HUD cards (cream P1/center/P2 panels) are NOT shown during phone gameplay.
+- [ ] Tapping the `i` chip toggles an extra HUD row with P1 inventory, P2 inventory, round, and last result.
+- [ ] The canvas is the dominant visible area in phone landscape and you can clearly see both tanks.
+- [ ] In phone portrait with `Continue Anyway`, the canvas is still visible (smaller strip) and not zero-height.
+- [ ] Touch buttons are not oversized; they sit comfortably without covering the tanks.
+- [ ] FIRE fires exactly one shot per tap.
+- [ ] Hold for `↺`, `↻`, `PWR-`, `PWR+`, `◀`, `▶` repeats smoothly while held and stops on release.
+- [ ] No "Landscape is recommended" bubble overlaps the HUD or health pills.
+- [ ] No duplicated portrait warning text appears anywhere on screen.
+- [ ] On phone Play, the browser attempts fullscreen; if denied, the game still runs and the console has no uncaught fullscreen errors.
+- [ ] On phone Play, the orientation-lock attempt is non-fatal whether it succeeds or fails.
+- [ ] After fullscreen denial or success, the `≡` (menu) button still works and returns to the main menu.
+- [ ] Round summary is reachable on phone (after a tank is destroyed) and scrolls internally if it overflows.
+- [ ] Shop is reachable on phone, items stack vertically, and buttons are touch-sized.
+- [ ] `Start Next Round` is always reachable on phone (visible without horizontal scrolling).
+- [ ] No horizontal page scrolling on any phone viewport.
+- [ ] No accidental zoom from rapid taps on the touch buttons.
+- [ ] Desktop layout at 1280×720, 1366×768, and 1920×1080 is unchanged from v0.6 and shows the desktop HUD cards.
+- [ ] Desktop keyboard controls (arrows, A/D, Space, Tab/W, R, N, M, Esc) all still work.
+- [ ] First Aid Kit fully heals between rounds (regression check).
+- [ ] Heavy Shell and Dirt Bomb refill purchases still refill to max carried ammo (regression check).
+- [ ] Mobile Play still starts Single Player vs CPU (regression check).
 
 ## Startup and Settings
 
@@ -300,7 +335,7 @@ Note: only available from desktop layout (≥ 768 px wide).
 
 Open the local URL with `?debug=1` to expose optional helpers. They do not run automatically.
 
-- [ ] `window.GAME_VERSION` returns `"v0.6.0"`.
+- [ ] `window.GAME_VERSION` returns `"v0.6.1"`.
 - [ ] `window.render_game_to_text()` returns concise current game state.
 - [ ] `window.debugGameState()` returns parsed game state (with `?debug=1`).
 - [ ] `window.testWeaponImpact("standard")` creates a Standard Shell impact during a live aiming turn.
@@ -312,7 +347,7 @@ Open the local URL with `?debug=1` to expose optional helpers. They do not run a
 
 ## Final Regression Pass
 
-- [ ] Main menu loads and shows `v0.6.0`.
+- [ ] Main menu loads and shows `v0.6.1`.
 - [ ] Phone viewport shows `Play`; desktop shows `Two Player Local` + `Single Player vs CPU`.
 - [ ] Settings persist.
 - [ ] Two Player starts (desktop only).

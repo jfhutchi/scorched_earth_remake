@@ -15,7 +15,7 @@
             <main class="menu-card">
                 <p class="eyebrow">Local artillery duel</p>
                 <h1 class="title">Tank Artillery Duel</h1>
-                <p id="menuVersion" class="version-line">v0.6.0</p>
+                <p id="menuVersion" class="version-line">v0.6.1</p>
                 <p class="subtitle">Destroy the opposing tank across a shifting battlefield of wind, craters, dirt mounds, and limited heavy ammo.</p>
 
                 <div class="menu-actions">
@@ -99,6 +99,28 @@
             <div id="stage">
                 <canvas id="gameCanvas" width="1280" height="720"></canvas>
 
+                <div id="mobileHud" class="mobile-hud" aria-hidden="true">
+                    <div class="mhud-row mhud-row-top">
+                        <span class="mhud-pill mhud-turn" id="mhudTurn">P1</span>
+                        <span class="mhud-pill mhud-hp p1"><b>P1</b> <span id="mhudP1Hp">100</span></span>
+                        <span class="mhud-pill mhud-hp p2"><b>P2</b> <span id="mhudP2Hp">100</span></span>
+                        <span class="mhud-pill mhud-wind">W <span id="mhudWind">0</span></span>
+                        <button type="button" id="mhudInfoBtn" class="mhud-pill mhud-info" aria-label="Toggle extra info">i</button>
+                    </div>
+                    <div class="mhud-row mhud-row-bottom">
+                        <span class="mhud-pill mhud-weapon" id="mhudWeapon">Standard</span>
+                        <span class="mhud-pill" >A <span id="mhudAngle">45</span>&deg;</span>
+                        <span class="mhud-pill" >P <span id="mhudPower">50</span></span>
+                        <span class="mhud-pill" >Ammo <span id="mhudAmmo">&infin;</span></span>
+                    </div>
+                    <div class="mhud-row mhud-row-extra hidden" id="mhudExtra">
+                        <span class="mhud-pill" id="mhudP1Inv">P1 $0</span>
+                        <span class="mhud-pill" id="mhudP2Inv">P2 $0</span>
+                        <span class="mhud-pill" id="mhudRound">R 1/3</span>
+                        <span class="mhud-pill" id="mhudResult">--</span>
+                    </div>
+                </div>
+
                 <div id="hud">
                     <section class="hud-panel player left" id="p1Panel">
                         <div class="panel-top">
@@ -146,7 +168,7 @@
                 </div>
 
                 <div id="controlsHint">Left/Right: Angle   Up/Down: Power   A/D: Move   Space: Fire   Tab/W: Weapon   R: Restart   M: Mute   Esc: Menu</div>
-                <div id="versionChip" class="version-chip">v0.6.0</div>
+                <div id="versionChip" class="version-chip">v0.6.1</div>
                 <button id="muteBtn" class="mute-chip">Sound: On</button>
 
                 <div id="touchControls" class="touch-controls hidden" aria-hidden="true">
@@ -172,7 +194,19 @@
             </div>
 
             <div id="smallWarning" class="small-warning hidden">Window is small; expand it for the clearest HUD and aiming view.</div>
-            <div id="orientationHint" class="orientation-hint hidden">Landscape is recommended for the best aiming view.</div>
+            <div id="orientationHint" class="orientation-hint hidden">Rotate to landscape for a wider view.</div>
+
+            <div id="rotateOverlay" class="rotate-overlay hidden" role="dialog" aria-modal="true" aria-label="Rotate device">
+                <div class="rotate-card">
+                    <div class="rotate-icon" aria-hidden="true">&#x21BB;</div>
+                    <h2>Rotate your phone</h2>
+                    <p>Landscape gives you the playable battlefield. Rotate your phone, or continue in portrait with a compact layout.</p>
+                    <div class="rotate-actions">
+                        <button type="button" id="rotateContinueBtn" class="btn primary">Continue Anyway</button>
+                        <button type="button" id="rotateMenuBtn" class="btn">Back to Menu</button>
+                    </div>
+                </div>
+            </div>
 
             <div id="summaryOverlay" class="overlay hidden">
                 <div class="menu-card overlay-card">

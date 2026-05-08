@@ -56,8 +56,60 @@ export class UI {
         this.resultVal = document.getElementById('resultVal');
         this.controlsHint = document.getElementById('controlsHint');
 
+        this.mhudTurn = document.getElementById('mhudTurn');
+        this.mhudP1Hp = document.getElementById('mhudP1Hp');
+        this.mhudP2Hp = document.getElementById('mhudP2Hp');
+        this.mhudWind = document.getElementById('mhudWind');
+        this.mhudWeapon = document.getElementById('mhudWeapon');
+        this.mhudAngle = document.getElementById('mhudAngle');
+        this.mhudPower = document.getElementById('mhudPower');
+        this.mhudAmmo = document.getElementById('mhudAmmo');
+        this.mhudP1Inv = document.getElementById('mhudP1Inv');
+        this.mhudP2Inv = document.getElementById('mhudP2Inv');
+        this.mhudRound = document.getElementById('mhudRound');
+        this.mhudResult = document.getElementById('mhudResult');
+
         this.loadSettings();
         this.setVersion(GAME_VERSION);
+    }
+
+    updateMobileHud(game, state) {
+        if (!this.mhudTurn) return;
+        const tanks = state ? state.tanks : (game && game.tanks);
+        if (!tanks || tanks.length < 2) return;
+        const active = state ? state.active : tanks[game.currentPlayer];
+        if (!active) return;
+        const currentPlayer = state ? state.currentPlayer : game.currentPlayer;
+        const wind = state ? state.wind : game.wind;
+        const selectedWeapon = state ? state.selectedWeapon : (active.selectedWeapon ? active.selectedWeapon() : null);
+
+        const p1 = tanks[0];
+        const p2 = tanks[1];
+        const cpuMode = (state && state.gameMode === 'cpu') || (game && game.gameMode === 'cpu');
+        this.mhudTurn.textContent = currentPlayer === 0 ? 'P1' : (cpuMode ? 'CPU' : 'P2');
+        this.mhudTurn.style.background = currentPlayer === 0 ? 'rgba(199, 82, 47, 0.86)' : 'rgba(45, 117, 199, 0.78)';
+        this.mhudP1Hp.textContent = String(Math.max(0, Math.round(p1.health)));
+        this.mhudP2Hp.textContent = String(Math.max(0, Math.round(p2.health)));
+        this.mhudWind.textContent = formatWindShort(wind);
+        if (selectedWeapon) this.mhudWeapon.textContent = shortWeaponName(selectedWeapon.name);
+        this.mhudAngle.textContent = String(Math.round(active.angle));
+        this.mhudPower.textContent = String(Math.round(active.power));
+        if (selectedWeapon) {
+            const a = active.ammoFor(selectedWeapon.id);
+            this.mhudAmmo.textContent = Number.isFinite(a) ? String(a) : '∞';
+        }
+
+        if (this.mhudP1Inv) this.mhudP1Inv.textContent = `P1 ${shortInv(p1)}`;
+        if (this.mhudP2Inv) this.mhudP2Inv.textContent = `P2 ${shortInv(p2)}`;
+        if (this.mhudRound) {
+            const round = state ? state.roundNumber : game.roundNumber;
+            const target = state ? state.roundsToWin : (game.settings && game.settings.roundsToWin);
+            this.mhudRound.textContent = `R ${round || 1}/${target || 3}`;
+        }
+        if (this.mhudResult) {
+            const last = state ? state.lastResult : game.lastResult;
+            this.mhudResult.textContent = last ? String(last).slice(0, 60) : '--';
+        }
     }
 
     setVersion(version) {
@@ -310,6 +362,29 @@ function isShopItemFull(player, item) {
 function formatWind(wind) {
     if (wind === 0) return '0';
     return `${wind > 0 ? 'right' : 'left'} ${Math.abs(wind).toFixed(1)}`;
+}
+
+function formatWindShort(wind) {
+    if (!wind) return '0';
+    const arrow = wind > 0 ? '→' : '←';
+    return `${arrow}${Math.abs(wind).toFixed(1)}`;
+}
+
+function shortWeaponName(name) {
+    if (!name) return '';
+    if (name.includes('Standard')) return 'Std';
+    if (name.includes('Heavy')) return 'Hvy';
+    if (name.includes('Dirt')) return 'Dirt';
+    return name.length > 8 ? name.slice(0, 8) : name;
+}
+
+function shortInv(tank) {
+    if (!tank) return '';
+    const money = Math.round(tank.money || 0);
+    const heavy = typeof tank.ammoFor === 'function' ? tank.ammoFor('heavy') : 0;
+    const dirt = typeof tank.ammoFor === 'function' ? tank.ammoFor('dirt') : 0;
+    const fa = tank.repairKits || 0;
+    return `$${money} H${heavy} D${dirt} FA${fa}`;
 }
 
 function formatAmmo(ammo) {

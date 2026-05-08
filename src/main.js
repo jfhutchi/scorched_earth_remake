@@ -13,6 +13,176 @@ const smallWarning = document.getElementById('smallWarning');
 const orientationHint = document.getElementById('orientationHint');
 const touchContainer = document.getElementById('touchControls');
 const mobilePlayBtn = document.getElementById('mobilePlayBtn');
+const rotateOverlay = document.getElementById('rotateOverlay');
+const rotateContinueBtn = document.getElementById('rotateContinueBtn');
+const rotateMenuBtn = document.getElementById('rotateMenuBtn');
+const mhudInfoBtn = document.getElementById('mhudInfoBtn');
+const mhudExtra = document.getElementById('mhudExtra');
+
+const MOBILE_BREAKPOINT = 768;
+
+function isPhoneViewport() {
+    return window.innerWidth < MOBILE_BREAKPOINT;
+}
+
+function isCoarsePointer() {
+    return window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+}
+
+function isPortrait() {
+    return window.innerHeight > window.innerWidth;
+}
+
+// State the user toggles when choosing "Continue Anyway" from the rotate
+// overlay, so we don't keep showing it for the rest of the match.
+let allowPortraitPlay = false;
+
+function applyEnvClasses() {
+    const body = document.body;
+    const onGameScreen = !ui.menu.classList.contains('hidden') ? false
+        : !ui.game.classList.contains('hidden');
+    const phone = isPhoneViewport() || (isCoarsePointer() && Math.min(window.innerWidth, window.innerHeight) < 820);
+    const mobileGame = phone && onGameScreen;
+
+    body.classList.toggle('is-phone', phone);
+    body.classList.toggle('is-mobile-game', mobileGame);
+    body.classList.toggle('is-portrait', isPortrait());
+    body.classList.toggle('is-landscape', !isPortrait());
+    body.classList.toggle('allow-portrait', allowPortraitPlay);
+
+    if (rotateOverlay) {
+        const showRotate = mobileGame && isPortrait() && !allowPortraitPlay;
+        rotateOverlay.classList.toggle('hidden', !showRotate);
+    }
+
+    const mobileHud = document.getElementById('mobileHud');
+    if (mobileHud) {
+        mobileHud.setAttribute('aria-hidden', mobileGame ? 'false' : 'true');
+    }
+
+    // Small landscape-recommend chip: only show in mobile-game landscape if the
+    // user explicitly chose to continue in portrait but then rotated back, or
+    // when the viewport is very narrow landscape. Keep it tiny and out of the
+    // way; it must not block HUD pills.
+    if (orientationHint) {
+        const showHint = mobileGame && !isPortrait() && window.innerHeight < 360;
+        orientationHint.classList.toggle('hidden', !showHint);
+    }
+}
+
+function fitCanvas() {
+    const onGameScreen = ui.game && !ui.game.classList.contains('hidden');
+    const phone = isPhoneViewport() || (isCoarsePointer() && Math.min(window.innerWidth, window.innerHeight) < 820);
+    const mobileGame = phone && onGameScreen;
+
+    // Use the smaller of dvh/svh/innerHeight to avoid sliding under the URL bar
+    // on iOS Safari when it expands.
+    const viewH = Math.min(
+        window.innerHeight,
+        window.visualViewport ? window.visualViewport.height : window.innerHeight,
+    );
+    const viewW = Math.min(
+        window.innerWidth,
+        window.visualViewport ? window.visualViewport.width : window.innerWidth,
+    );
+
+    let availableWidth, availableHeight;
+
+    if (mobileGame) {
+        // Reserve compact HUD (~44px in portrait, ~36px in landscape) and
+        // touch controls (~140-160 portrait, ~110 landscape).
+        const portrait = isPortrait();
+        const hudReserve = portrait ? 56 : 40;
+        const touchReserve = portrait ? 160 : 124;
+        availableWidth = viewW - 4;
+        availableHeight = viewH - hudReserve - touchReserve;
+    } else {
+        const margin = 24;
+        const baseReserve = viewH < 700 ? 8 : 0;
+        availableWidth = viewW - margin;
+        availableHeight = viewH - margin - baseReserve;
+    }
+
+    const scale = Math.min(
+        availableWidth / CONFIG.canvas.width,
+        availableHeight / CONFIG.canvas.height,
+        1,
+    );
+    const targetW = Math.max(160, Math.floor(CONFIG.canvas.width * scale));
+    const targetH = Math.max(90, Math.floor(CONFIG.canvas.height * scale));
+    canvas.style.width = `${targetW}px`;
+    canvas.style.height = `${targetH}px`;
+    canvas.style.marginTop = '';
+
+    // Desktop-only "small window" hint.
+    if (smallWarning) {
+        smallWarning.classList.toggle('hidden', mobileGame || scale >= 0.42);
+    }
+}
+
+function refreshTouchControls() {
+    updateTouchControlsState(game, touchContainer);
+}
+
+function refreshLayout() {
+    applyEnvClasses();
+    fitCanvas();
+    refreshTouchControls();
+    if (typeof ui.updateMobileHud === 'function') ui.updateMobileHud(game);
+}
+
+window.addEventListener('resize', refreshLayout);
+window.addEventListener('orientationchange', refreshLayout);
+if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', refreshLayout);
+}
+
+// Wrap UI updates so the compact mobile HUD stays in sync with the desktop one.
+const originalUiUpdate = ui.update.bind(ui);
+ui.update = (state) => {
+    originalUiUpdate(state);
+    refreshTouchControls();
+    if (typeof ui.updateMobileHud === 'function') ui.updateMobileHud(game, state);
+};
+
+const originalShowMenu = ui.showMenu.bind(ui);
+ui.showMenu = () => {
+    originalShowMenu();
+    if (touchContainer) touchContainer.classList.add('hidden');
+    if (orientationHint) orientationHint.classList.add('hidden');
+    if (rotateOverlay) rotateOverlay.classList.add('hidden');
+    allowPortraitPlay = false;
+    refreshLayout();
+};
+
+const originalShowGame = ui.showGame.bind(ui);
+ui.showGame = () => {
+    originalShowGame();
+    refreshLayout();
+};
+
+function tryFullscreen() {
+    // Best-effort fullscreen on phone Play. Fail silently on desktop or when
+    // denied. This is run from a user-gesture handler, so it will not be
+    // immediately rejected by the browser.
+    const target = document.documentElement;
+    if (!target || typeof target.requestFullscreen !== 'function') return;
+    try {
+        const p = target.requestFullscreen({ navigationUI: 'hide' });
+        if (p && typeof p.catch === 'function') p.catch(() => {});
+    } catch (_err) {
+        /* ignore */
+    }
+    // Best-effort orientation lock; ignore failures.
+    if (window.screen && window.screen.orientation && typeof window.screen.orientation.lock === 'function') {
+        try {
+            const p = window.screen.orientation.lock('landscape');
+            if (p && typeof p.catch === 'function') p.catch(() => {});
+        } catch (_err) {
+            /* ignore */
+        }
+    }
+}
 
 function startMatch(mode) {
     ui.showGame();
@@ -33,9 +203,32 @@ ui.cpuBtn.addEventListener('click', (e) => {
 if (mobilePlayBtn) {
     mobilePlayBtn.addEventListener('click', (e) => {
         e.currentTarget.blur();
-        // On phones, Play always starts Single Player vs CPU since shared
-        // local two-player play does not work on a single small touchscreen.
+        // On phones, attempt fullscreen + landscape lock as a best-effort
+        // before starting Single Player vs CPU. Both are wrapped in try/catch
+        // so failure cannot break gameplay.
+        if (isPhoneViewport() || isCoarsePointer()) tryFullscreen();
         startMatch('cpu');
+    });
+}
+
+if (rotateContinueBtn) {
+    rotateContinueBtn.addEventListener('click', (e) => {
+        e.currentTarget.blur();
+        allowPortraitPlay = true;
+        refreshLayout();
+    });
+}
+if (rotateMenuBtn) {
+    rotateMenuBtn.addEventListener('click', (e) => {
+        e.currentTarget.blur();
+        game.returnToMenu();
+    });
+}
+
+if (mhudInfoBtn && mhudExtra) {
+    mhudInfoBtn.addEventListener('click', (e) => {
+        e.currentTarget.blur();
+        mhudExtra.classList.toggle('hidden');
     });
 }
 
@@ -96,73 +289,6 @@ ui.shopContent.addEventListener('click', (e) => {
 
 initTouchInput(game, touchContainer);
 
-const ORIGINAL_HUD_RESERVE_THRESHOLD = 700;
-const TOUCH_HUD_RESERVE = 130;
-const MOBILE_BREAKPOINT = 768;
-
-function isPhoneViewport() {
-    return window.innerWidth < MOBILE_BREAKPOINT;
-}
-
-function fitCanvas() {
-    const margin = isPhoneViewport() ? 8 : 24;
-    const baseReserve = window.innerHeight < ORIGINAL_HUD_RESERVE_THRESHOLD ? 8 : 0;
-    // Reserve vertical room for the on-screen control pad on phone-sized
-    // viewports so the canvas does not slide under the buttons.
-    const touchReserve = isPhoneViewport() ? TOUCH_HUD_RESERVE : 0;
-    const availableWidth = window.innerWidth - margin;
-    const availableHeight = window.innerHeight - margin - baseReserve - touchReserve;
-    const scale = Math.min(
-        availableWidth / CONFIG.canvas.width,
-        availableHeight / CONFIG.canvas.height,
-        1
-    );
-
-    canvas.style.width = `${Math.max(160, Math.floor(CONFIG.canvas.width * scale))}px`;
-    canvas.style.height = `${Math.max(90, Math.floor(CONFIG.canvas.height * scale))}px`;
-    smallWarning.classList.toggle('hidden', scale >= 0.42);
-
-    const isPhonePortrait = isPhoneViewport() && window.innerHeight > window.innerWidth;
-    if (orientationHint) {
-        orientationHint.classList.toggle('hidden', !isPhonePortrait || ui.menu.classList.contains('hidden') === false);
-    }
-}
-
-function refreshTouchControls() {
-    updateTouchControlsState(game, touchContainer);
-}
-
-window.addEventListener('resize', () => {
-    fitCanvas();
-    refreshTouchControls();
-});
-window.addEventListener('orientationchange', () => {
-    fitCanvas();
-    refreshTouchControls();
-});
-
-// Wrap the UI update so we can refresh the touch-control disabled state
-// alongside the rest of the HUD without modifying the UI class internals.
-const originalUiUpdate = ui.update.bind(ui);
-ui.update = (state) => {
-    originalUiUpdate(state);
-    refreshTouchControls();
-};
-
-const originalShowMenu = ui.showMenu.bind(ui);
-ui.showMenu = () => {
-    originalShowMenu();
-    if (touchContainer) touchContainer.classList.add('hidden');
-    if (orientationHint) orientationHint.classList.add('hidden');
-};
-
-const originalShowGame = ui.showGame.bind(ui);
-ui.showGame = () => {
-    originalShowGame();
-    refreshTouchControls();
-    fitCanvas();
-};
-
 // Suppress page-level pinch zoom and accidental gesture scrolls during play.
 document.addEventListener('gesturestart', (e) => e.preventDefault());
 document.addEventListener('touchmove', (e) => {
@@ -174,7 +300,7 @@ document.addEventListener('touchmove', (e) => {
     }
 }, { passive: false });
 
-fitCanvas();
+refreshLayout();
 
 window.render_game_to_text = () => game.renderTextState();
 window.advanceTime = (ms) => game.advanceTime(ms);
