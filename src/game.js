@@ -53,13 +53,35 @@ export class Game {
         this.roundNumber = 0;
         this.matchWinnerIndex = null;
         this.playerData = this._createPlayerData();
-        this._setupRound({ incrementRound: true });
+        this.tanks = [];
+        this.terrain = null;
+        this.projectile = null;
+        this.explosions = [];
+        this.gameOver = false;
+        this.lastSummary = null;
+        this.cpuTimer = 0;
+        this.shotInfo = null;
+        this.roundStats = this._createRoundStats();
+        this.wind = 0;
+        this.statusMessage = 'Pre-round shop. Spend your starting money, then Start Round.';
+        this.lastResult = `Pre-round shop. Each player starts with $${this.playerData[0].money}.`;
+        this.ui.hideAllOverlays();
+        this._clearCanvas();
+
+        // v0.6.3: open the shop BEFORE round 1 so starting money is useful.
+        this._openShop({ preRound: true });
 
         if (!this.running) {
             this.running = true;
             this.lastFrame = performance.now();
             requestAnimationFrame(this.loop);
         }
+    }
+
+    _clearCanvas() {
+        if (!this.ctx) return;
+        this.ctx.fillStyle = '#8ccced';
+        this.ctx.fillRect(0, 0, this.width, this.height);
     }
 
     stop() {
@@ -95,8 +117,14 @@ export class Game {
         }
     }
 
+    // Public entry: opens the between-round shop after a round summary.
+    // The pre-round shop (before round 1) is opened from start() via _openShop.
     openShop() {
         if (this.phase !== 'roundSummary' || this.matchWinnerIndex !== null) return;
+        this._openShop({ preRound: false });
+    }
+
+    _openShop({ preRound = false } = {}) {
         this.phase = 'shop';
         this.shopCpuPurchased = false;
         if (this.gameMode === 'cpu') this._runCpuShop();
@@ -105,6 +133,7 @@ export class Game {
 
     startNextRoundFromShop() {
         if (this.phase !== 'shop') return;
+        // Works for both pre-round (roundNumber 0 → 1) and between-round flows.
         this._setupRound({ incrementRound: true });
     }
 
@@ -1298,9 +1327,17 @@ function normalizeSettings(settings = {}) {
 }
 
 function createStartingAmmo() {
+    // v0.6.3: Heavy Shell and Dirt Bomb start at 1 carried each (max remains
+    // 3/4) so the new pre-round shop has meaningful refill purchases.
+    // Standard Shell remains unlimited.
+    const STARTING_LIMITED_AMMO = { heavy: 1, dirt: 1 };
     const ammo = {};
     for (const weapon of WEAPONS) {
-        ammo[weapon.id] = weapon.ammo;
+        if (Object.prototype.hasOwnProperty.call(STARTING_LIMITED_AMMO, weapon.id)) {
+            ammo[weapon.id] = STARTING_LIMITED_AMMO[weapon.id];
+        } else {
+            ammo[weapon.id] = weapon.ammo;
+        }
     }
     return ammo;
 }

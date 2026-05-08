@@ -6,19 +6,57 @@ For mobile testing, either visit the LAN IP from a phone (`http://<your-laptop-i
 
 ## GitHub Pages / Version
 
-- [ ] Main menu visibly shows `v0.6.2`.
-- [ ] In-game HUD/footer visibly shows the `v0.6.2` chip.
-- [ ] GitHub Pages deployment shows `v0.6.2` after a hard refresh.
-- [ ] `window.GAME_VERSION` returns `"v0.6.2"` in the browser console.
+- [ ] Main menu visibly shows `v0.6.3`.
+- [ ] In-game HUD/footer visibly shows the `v0.6.3` chip.
+- [ ] GitHub Pages deployment shows `v0.6.3` after a hard refresh.
+- [ ] `window.GAME_VERSION` returns `"v0.6.3"` in the browser console.
 - [ ] No external assets are requested in the Network panel.
+
+## v0.6.3 Pre-Round Shop and Menu Cleanup
+
+Test these on desktop and at least one phone-emulator viewport.
+
+- [ ] Main menu shows `v0.6.3`.
+- [ ] Main menu does NOT show "Local artillery duel" eyebrow text anywhere.
+- [ ] Main menu still shows the title "Tank Artillery Duel".
+- [ ] Main menu still shows the version pill `v0.6.3`.
+- [ ] Main menu still shows match settings (Rounds to Win, CPU Difficulty, Wind, Starting Money, Terrain).
+- [ ] On desktop, clicking `Two Player Local` opens the Pre-Round Shop before Round 1 begins.
+- [ ] On desktop, clicking `Single Player vs CPU` opens the Pre-Round Shop with both players and the CPU has already auto-bought items appropriate to its difficulty.
+- [ ] On phone, tapping `Play` opens the Pre-Round Shop (Single Player vs CPU mode).
+- [ ] Pre-Round Shop title reads `Pre-Round Shop`.
+- [ ] Pre-Round Shop primary button reads `Start Round` (not "Start Next Round").
+- [ ] Pre-Round Shop subtitle mentions starting money / Round 1.
+- [ ] Each player starts with the configured starting money (Low $100 / Normal $150 / High $250) visible in the shop.
+- [ ] Each player starts with Heavy Shell ammo = 1 and Dirt Bomb ammo = 1 (visible in inventory line).
+- [ ] Buying `Refill Heavy Shells` from the Pre-Round Shop sets Heavy Shell ammo to exactly 3 and deducts $100.
+- [ ] Buying `Refill Dirt Bombs` from the Pre-Round Shop sets Dirt Bomb ammo to exactly 4 and deducts $80.
+- [ ] If Heavy Shell ammo is somehow already at 3, the refill button shows "Heavy Shells Full" and is disabled (no money deducted).
+- [ ] If Dirt Bomb ammo is somehow already at 4, the refill button shows "Dirt Bombs Full" and is disabled (no money deducted).
+- [ ] Clicking `Start Round` from the Pre-Round Shop generates the battlefield and starts Round 1 (HUD shows Round 1).
+- [ ] Round 1 plays correctly with the new Heavy/Dirt ammo counts.
+- [ ] After Round 1 finishes, the round summary appears, then `Continue to Shop` opens the Between-Round Shop.
+- [ ] Between-Round Shop title reads `Between-Round Shop` and the button reads `Start Next Round`.
+- [ ] In CPU mode, the CPU does NOT double-buy if the shop is re-rendered (purchases are flagged once per shop session).
+- [ ] In CPU mode, the CPU does NOT spend money on a refill that's already at max ammo.
+- [ ] `New Match` from the round summary or shop resets economy and inventory and re-opens the Pre-Round Shop.
+- [ ] `Restart Round` (R key during live play) does NOT open the Pre-Round Shop — it restarts the current battlefield.
+- [ ] Phone landscape gameplay layout from v0.6.2 is still intact (corner-positioned controls, near-fullscreen canvas).
+- [ ] Phone portrait still shows the rotate overlay during gameplay.
+- [ ] Touch controls in shop are touch-sized (Buy buttons, Start Round button).
+- [ ] Desktop keyboard controls during gameplay still work (arrows, A/D, Space, Tab/W, R, N, M, Esc).
+- [ ] Pressing `N` from the Pre-Round Shop starts Round 1.
+- [ ] Pressing `Esc` from the Pre-Round Shop returns to the main menu.
+- [ ] No console errors during any of the above flows.
+- [ ] GitHub Pages deployment shows `v0.6.3` after a hard refresh.
 
 ## v0.6.2 Phone Landscape Hotfix
 
 Test these at phone-emulator viewports (DevTools Device Toolbar) and, where possible, on at least one real phone in landscape.
 
-- [ ] Main menu shows `v0.6.2`.
-- [ ] In phone gameplay, `v0.6.2` is visible inside the top-left HUD pill row (no more bottom-left version chip overlapping movement buttons).
-- [ ] In desktop gameplay (1280×720+), the bottom-left `v0.6.2` chip is still visible.
+- [ ] Main menu shows `v0.6.3`.
+- [ ] In phone gameplay, `v0.6.3` is visible inside the top-left HUD pill row (no more bottom-left version chip overlapping movement buttons).
+- [ ] In desktop gameplay (1280×720+), the bottom-left `v0.6.3` chip is still visible.
 - [ ] At 844×390 landscape, the canvas is visibly much larger than v0.6.1 and clearly shows both tanks, terrain, and shot arc.
 - [ ] At 932×430 landscape, the canvas uses most of the available width; horizontal dark margins around the canvas only host the touch clusters, not large empty space.
 - [ ] In phone landscape, utility buttons (`WPN R N ♪ ≡`) sit in a single small row in the top-right corner — NOT in the middle of the battlefield.
@@ -47,7 +85,7 @@ Test these at phone-emulator viewports (DevTools Device Toolbar) and, where poss
 - [ ] Dirt Bomb still creates a much larger mound than v0.5 (regression).
 - [ ] Each weapon still has a distinct fire and impact sound (regression).
 - [ ] Mobile Play still starts Single Player vs CPU (regression).
-- [ ] GitHub Pages deployment shows `v0.6.2` after a hard refresh.
+- [ ] GitHub Pages deployment shows `v0.6.3` after a hard refresh.
 - [ ] No uncaught console errors in any of the above flows.
 
 ## v0.6.1 Mobile Hotfix
@@ -373,7 +411,7 @@ Note: only available from desktop layout (≥ 768 px wide).
 
 Open the local URL with `?debug=1` to expose optional helpers. They do not run automatically.
 
-- [ ] `window.GAME_VERSION` returns `"v0.6.2"`.
+- [ ] `window.GAME_VERSION` returns `"v0.6.3"`.
 - [ ] `window.render_game_to_text()` returns concise current game state.
 - [ ] `window.debugGameState()` returns parsed game state (with `?debug=1`).
 - [ ] `window.testWeaponImpact("standard")` creates a Standard Shell impact during a live aiming turn.
@@ -385,7 +423,7 @@ Open the local URL with `?debug=1` to expose optional helpers. They do not run a
 
 ## Final Regression Pass
 
-- [ ] Main menu loads and shows `v0.6.2`.
+- [ ] Main menu loads and shows `v0.6.3`.
 - [ ] Phone viewport shows `Play`; desktop shows `Two Player Local` + `Single Player vs CPU`.
 - [ ] Settings persist.
 - [ ] Two Player starts (desktop only).

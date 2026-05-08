@@ -1,14 +1,14 @@
 # Tank Artillery Duel
 
-Current version: `v0.6.2`
+Current version: `v0.6.3`
 
-Tank Artillery Duel is a local browser-based 2D artillery game inspired by classic tank duel games. Two tanks fight across destructible hilly terrain with wind, turn-based aiming, movement fuel, distinct weapons, generated sound effects, match scoring, money, a between-round shop, and an optional CPU opponent. v0.6 added mobile-browser support and on-screen touch controls. v0.6.1 introduced a compact mobile HUD and rotate overlay. **v0.6.2 makes phone landscape the primary mobile gameplay mode**: the canvas now fills nearly the entire viewport, touch clusters live in corner thumb zones (left margin, right margin, top-right utilities) instead of a wide bottom strip, and the version chip moved into the HUD pill row so it never overlaps movement controls.
+Tank Artillery Duel is a local browser-based 2D artillery game inspired by classic tank duel games. Two tanks fight across destructible hilly terrain with wind, turn-based aiming, movement fuel, distinct weapons, generated sound effects, match scoring, money, a pre-round and between-round shop, and an optional CPU opponent. v0.6.2 made phone landscape the primary mobile gameplay mode. **v0.6.3 adds a pre-round shop before Round 1** so starting money is meaningful: Heavy Shells and Dirt Bombs now start at 1 each (max 3 / 4) and can be refilled in the shop, and the menu's old "Local artillery duel" eyebrow is gone for a cleaner mobile menu.
 
 The project is pure HTML, CSS, vanilla JavaScript, HTML5 Canvas, and the Web Audio API. It has no backend, no build step, no paid services, and no remote assets.
 
 ## GitHub Pages Note
 
-The live game displays `v0.6.2` on the main menu and in the in-game HUD. After a GitHub Pages deployment, hard refresh the page if the old version still appears:
+The live game displays `v0.6.3` on the main menu and in the in-game HUD. After a GitHub Pages deployment, hard refresh the page if the old version still appears:
 
 - Windows/Linux: `Ctrl` + `F5`
 - macOS: `Cmd` + `Shift` + `R`
@@ -157,11 +157,13 @@ Controls are locked while a projectile is flying, an explosion is resolving, the
 
 ## Weapons
 
-| Weapon | Ammo | Projectile | Terrain Effect | Damage |
-| --- | --- | --- | --- | --- |
-| `Standard Shell` | Unlimited | Normal speed | Medium crater, radius 42 | Medium, max 38 |
-| `Heavy Shell` | Limited, max carried 3 | Slower and larger | Larger, deeper crater, radius 66 | High, max 70 |
-| `Dirt Bomb` | Limited, max carried 4 | Slightly slower | Builds a much bigger mound, radius 88 | Low, max 10 |
+| Weapon | Starting Ammo | Max Carried | Projectile | Terrain Effect | Damage |
+| --- | --- | --- | --- | --- | --- |
+| `Standard Shell` | Unlimited | Unlimited | Normal speed | Medium crater, radius 42 | Medium, max 38 |
+| `Heavy Shell` | 1 | 3 | Slower and larger | Larger, deeper crater, radius 66 | High, max 70 |
+| `Dirt Bomb` | 1 | 4 | Slightly slower | Builds a much bigger mound, radius 88 | Low, max 10 |
+
+Heavy Shell and Dirt Bomb start at 1 carried each as of v0.6.3 — the pre-round shop is where you decide whether to top them up before the first battle. Standard Shell remains unlimited so you can always play even if you spend all your starting money on utilities.
 
 The v0.6 Dirt Bomb is meaningfully stronger as a terrain-builder. Its mound radius is wider, its mound is much taller, and post-impact terrain smoothing is reduced so the pile actually sticks. The mound visibly fills craters and creates usable cover, while damage to tanks remains low.
 
@@ -216,12 +218,14 @@ Fall damage only triggers when a tank settles downward more than 45 pixels after
 
 ## Round and Match Flow
 
+- **Pre-round shop (v0.6.3)**: starting a new match opens the shop *before* Round 1 so each player can spend starting money. The shop title reads `Pre-Round Shop` and the primary button reads `Start Round`. In Single Player vs CPU, the CPU auto-buys before Round 1 using its difficulty profile.
 - Destroying a tank ends the round and awards 1 point to the surviving player.
-- The round summary appears before the shop.
+- The round summary appears before the between-round shop.
+- The between-round shop title reads `Between-Round Shop` and the button reads `Start Next Round`.
 - The shop appears between rounds unless the match winner has reached the rounds-to-win target.
 - `Start Next Round` regenerates terrain and keeps score, money, inventory, and remaining tank health.
-- `New Match` resets score, terrain, health, money, ammo, and utilities.
-- `Restart Round` restarts the current battlefield without awarding score or shop money.
+- `New Match` resets score, terrain, health, money, ammo, and utilities, and opens the pre-round shop again.
+- `Restart Round` restarts the current battlefield without awarding score or shop money. It does NOT open the pre-round shop.
 
 ## Debug Helpers
 
@@ -240,8 +244,8 @@ Normal play does not expose extra debug helpers. Add `?debug=1` to the local URL
 
 Use `TESTING.md` for the manual checklist. At minimum before publishing, verify:
 
-- Main menu shows `v0.6.2`.
-- In-game HUD shows the `v0.6.2` chip (HUD pill on phone, bottom-left chip on desktop).
+- Main menu shows `v0.6.3`.
+- In-game HUD shows the `v0.6.3` chip (HUD pill on phone, bottom-left chip on desktop).
 - Phone-sized viewport shows a single `Play` button (Two Player Local hidden).
 - Desktop viewport still shows both `Two Player Local` and `Single Player vs CPU` buttons.
 - Arrow keys adjust angle only; `A`/`D` move only.
@@ -276,7 +280,7 @@ src/touchInput.js   Pointer-event wiring for the on-screen touch control pad
 - If the port is busy, use another port such as `python -m http.server 8010`.
 - If sound does not play, click or tap once in the page first. Browsers require user interaction before starting audio.
 - If the sound button starts muted, localStorage has a saved mute preference. Press `M` or tap the sound button to toggle it.
-- If GitHub Pages shows an older version, hard refresh (`Ctrl+F5` on Windows/Linux, `Cmd+Shift+R` on macOS) and confirm the menu says `v0.6.2`.
+- If GitHub Pages shows an older version, hard refresh (`Ctrl+F5` on Windows/Linux, `Cmd+Shift+R` on macOS) and confirm the menu says `v0.6.3`.
 - If match settings look wrong, clear `localStorage` for the site or change the settings on the menu before starting a new match.
 - If a phone keeps zooming on double-tap, ensure the page is loaded fresh after the v0.6 update — it sets `user-scalable=no` and `touch-action: manipulation` to prevent that behavior on the controls.
 

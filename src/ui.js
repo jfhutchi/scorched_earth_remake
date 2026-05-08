@@ -191,6 +191,22 @@ export class UI {
 
     showShop(state, items) {
         this.summaryOverlay.classList.add('hidden');
+        // v0.6.3: when opening the shop before round 1 (roundNumber === 0),
+        // the primary button reads "Start Round" instead of "Start Next Round".
+        const isPreRound = state.roundNumber === 0;
+        if (this.startNextRoundBtn) {
+            this.startNextRoundBtn.textContent = isPreRound ? 'Start Round' : 'Start Next Round';
+        }
+        const shopHeading = this.shopOverlay && this.shopOverlay.querySelector('.title');
+        if (shopHeading) {
+            shopHeading.textContent = isPreRound ? 'Pre-Round Shop' : 'Between-Round Shop';
+        }
+        const shopSubtitle = this.shopOverlay && this.shopOverlay.querySelector('.subtitle');
+        if (shopSubtitle) {
+            shopSubtitle.textContent = isPreRound
+                ? 'Spend your starting money before Round 1. Ammo refills set Heavy Shells to 3 and Dirt Bombs to 4.'
+                : 'First Aid Kits fully heal between rounds. Ammo purchases refill that weapon to its carried max.';
+        }
         // Player names and shop labels are static config values, not user
         // input. We render via DOM APIs so the security hook is satisfied
         // and any future user-supplied text remains safe.
