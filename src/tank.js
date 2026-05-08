@@ -20,6 +20,7 @@ export class Tank {
         this.recentDamage = 0;
         this.damageTimer = 0;
         this.selectedWeaponIndex = 0;
+        this.movementFuel = CONFIG.tank.movementFuelPerTurn;
         this.ammo = {};
         this.resetForRound();
     }
@@ -32,6 +33,7 @@ export class Tank {
         this.angle = 45;
         this.power = 50;
         this.selectedWeaponIndex = 0;
+        this.movementFuel = CONFIG.tank.movementFuelPerTurn;
         this.ammo = {};
 
         for (const weapon of WEAPONS) {
@@ -143,6 +145,16 @@ export class Tank {
         if (this.damageTimer > 0) {
             this.damageTimer = Math.max(0, this.damageTimer - dt);
         }
+    }
+
+    resetMovementFuel() {
+        this.movementFuel = CONFIG.tank.movementFuelPerTurn;
+    }
+
+    spendMovementFuel(amount) {
+        const spent = clamp(amount, 0, this.movementFuel);
+        this.movementFuel = Math.max(0, this.movementFuel - spent);
+        return spent;
     }
 
     adjustAngle(delta) {

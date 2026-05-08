@@ -37,6 +37,7 @@ export class UI {
         this.windVal = document.getElementById('windVal');
         this.weaponVal = document.getElementById('weaponVal');
         this.ammoVal = document.getElementById('ammoVal');
+        this.moveVal = document.getElementById('moveVal');
         this.resultVal = document.getElementById('resultVal');
         this.controlsHint = document.getElementById('controlsHint');
     }
@@ -100,6 +101,9 @@ export class UI {
         this.windVal.textContent = formatWind(wind);
         this.weaponVal.textContent = selectedWeapon.name;
         this.ammoVal.textContent = formatAmmo(active.ammoFor(selectedWeapon.id));
+        this.moveVal.textContent = `${Math.round(active.movementFuel)} px`;
+        this.moveVal.parentElement.classList.toggle('empty', active.movementFuel <= 0);
+        this.moveVal.parentElement.classList.toggle('available', state.phase === 'aiming' && !active.isCpu && active.movementFuel > 0);
         this.resultVal.textContent = state.lastResult;
         this.controlsHint.textContent = this._controlsText(state);
     }
@@ -124,7 +128,10 @@ export class UI {
         if (state.phase === 'cpuThinking') return 'CPU is aiming. Controls locked. M: Mute   Esc: Menu';
         if (state.phase !== 'aiming') return 'Controls locked until the shot resolves. M: Mute   Esc: Menu';
         if (state.active.isCpu) return 'CPU turn. M: Mute   Esc: Menu';
-        return 'Left/Right: Angle   Up/Down: Power   Space: Fire   Tab/W: Weapon   R: Restart   M: Mute   Esc: Menu';
+        if (state.active.movementFuel <= 0) {
+            return 'Left/Right: Angle   Up/Down: Power   Movement exhausted   Space: Fire   Tab/W: Weapon   R: Restart   M: Mute   Esc: Menu';
+        }
+        return 'Left/Right: Angle   Up/Down: Power   A/D: Move   Space: Fire   Tab/W: Weapon   R: Restart   M: Mute   Esc: Menu';
     }
 }
 

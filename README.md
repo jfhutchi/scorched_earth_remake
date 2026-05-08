@@ -1,6 +1,6 @@
 # Tank Artillery Duel
 
-Tank Artillery Duel is a local browser-based 2D artillery game inspired by classic tank duel games. Two tanks fight across destructible hilly terrain with wind, turn-based aiming, multiple weapons, generated sound effects, score tracking, and a simple CPU opponent.
+Tank Artillery Duel is a local browser-based 2D artillery game inspired by classic tank duel games. Two tanks fight across destructible hilly terrain with wind, turn-based aiming, movement fuel, distinct weapons, generated sound effects, score tracking, and a simple CPU opponent.
 
 The project is pure HTML, CSS, vanilla JavaScript, and HTML5 Canvas. It has no backend, no build step, no paid services, and no remote assets.
 
@@ -43,6 +43,7 @@ The CPU waits briefly, picks a weapon, and uses a simple simulated aiming pass t
 | --- | --- |
 | `Left Arrow` / `Right Arrow` | Adjust cannon angle |
 | `Up Arrow` / `Down Arrow` | Adjust shot power |
+| `A` / `D` | Move the active tank before firing |
 | `Spacebar` | Fire |
 | `Tab` or `W` | Cycle available weapons |
 | `M` | Mute or unmute sound |
@@ -50,17 +51,21 @@ The CPU waits briefly, picks a weapon, and uses a simple simulated aiming pass t
 | `N` | Start next round after game over |
 | `Escape` | Return to main menu |
 
-Controls are locked while a projectile is flying, an explosion is resolving, the CPU is thinking, or the game is over.
+Controls are locked while a projectile is flying, an explosion is resolving, the CPU is thinking, or the game is over. Tank movement is available only during the active human player's aiming phase and uses 90 pixels of movement fuel per turn.
 
 ## Weapons
 
-| Weapon | Ammo | Role |
-| --- | --- | --- |
-| `Standard Shell` | Unlimited | Medium damage and medium crater. |
-| `Heavy Shell` | 3 per round per player | Higher damage, larger crater, slower projectile. |
-| `Dirt Bomb` | 3 per round per player | Low tank damage with larger terrain deformation. |
+| Weapon | Ammo | Terrain Effect | Damage |
+| --- | --- | --- | --- |
+| `Standard Shell` | Unlimited | Normal crater, radius 42 | Balanced, max 38 |
+| `Heavy Shell` | 3 per round per player | Larger and deeper crater, radius 62 | High, max 68 |
+| `Dirt Bomb` | 4 per round per player | Adds a rounded dirt mound, radius 58 | Low, max 10 |
 
-Each player has separate ammo. Empty limited weapons are skipped when cycling, and the game prevents firing a weapon with 0 ammo.
+Each player has separate ammo. Empty limited weapons are skipped when cycling, and the game prevents firing a weapon with 0 ammo. Terrain effect and damage are tuned separately, so Dirt Bomb can reshape the battlefield without acting like another high-damage explosive.
+
+## Movement
+
+During a human aiming phase, press `A` or `D` to drive the active tank left or right. Movement follows the terrain surface, consumes fuel by distance moved, and is blocked by steep slopes, battlefield edges, or the other tank. Fuel resets at the start of each turn.
 
 ## Round and Match Flow
 
@@ -96,6 +101,7 @@ src/ui.js           Menu, HUD, overlay updates
 ## Known Limitations
 
 - CPU aiming is intentionally simple and imperfect.
+- CPU movement is not implemented; the CPU repositions by aim and weapon choice only.
 - Terrain is a heightmap, so it cannot represent caves or overhangs.
 - There are no online, networked, or persistent profiles.
 - Touch controls and small-phone layouts are not implemented.

@@ -51,10 +51,10 @@ export class CPUController {
         const dirt = available.find((weapon) => weapon.id === 'dirt');
         const standard = available.find((weapon) => weapon.id === 'standard') || available[0];
 
-        if (heavy && target.health <= 58 && Math.random() < 0.6) return heavy;
-        if (dirt && this.missStreak >= 2 && Math.random() < 0.45) return dirt;
-        if (heavy && Math.random() < 0.28) return heavy;
-        if (dirt && Math.random() < 0.16) return dirt;
+        if (heavy && target.health <= 68 && Math.random() < 0.58) return heavy;
+        if (heavy && this.missStreak <= 1 && Math.random() < 0.22) return heavy;
+        if (dirt && this.missStreak >= 3 && Math.random() < 0.18) return dirt;
+        if (dirt && Math.random() < 0.05) return dirt;
         return standard;
     }
 
@@ -114,9 +114,13 @@ function simulateShot({ shooter, target, terrain, wind, weapon, angle, power }) 
         }
     }
 
-    const landingPenalty = Math.abs(impactX - target.x) * 0.22;
-    const craterBonus = Math.max(0, weapon.craterRadius - Math.abs(impactX - target.x)) * 0.7;
-    return minDistance + landingPenalty - craterBonus;
+    const landingDistance = Math.abs(impactX - target.x);
+    const landingPenalty = landingDistance * 0.22;
+    const damageBonus = Math.max(0, weapon.damageRadius - landingDistance) * (weapon.maxDamage / 100);
+    const terrainBonus = weapon.behavior === 'crater'
+        ? Math.max(0, weapon.terrainEffectRadius - landingDistance) * 0.28
+        : -18;
+    return minDistance + landingPenalty - damageBonus - terrainBonus;
 }
 
 function randomRange(min, max) {
