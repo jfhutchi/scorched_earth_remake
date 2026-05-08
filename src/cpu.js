@@ -1,0 +1,124 @@
+import { CONFIG, WEAPONS, clamp } from './config.js';
+
+export class CPUController {
+    constructor() {
+        this.missStreak = 0;
+        this.lastMissX = 0;
+    }
+
+    resetRound() {
+        this.missStreak = 0;
+        this.lastMissX = 0;
+    }
+
+    recordShot({ hit, impactX, targetX }) {
+        if (hit) {
+            this.missStreak = 0;
+            this.lastMissX = 0;
+            return;
+        }
+
+        this.missStreak = Math.min(5, this.missStreak + 1);
+        if (Number.isFinite(impactX) && Number.isFinite(targetX)) {
+            this.lastMissX = impactX - targetX;
+        }
+    }
+
+    chooseAction({ shooter, target, terrain, wind }) {
+        const weapon = this._chooseWeapon(shooter, target);
+        const solution = this._findAimSolution(shooter, target, terrain, wind, weapon);
+        const learningScale = Math.max(0.45, 1 - this.missStreak * CONFIG.cpu.missLearning);
+        const learnedPower = this.lastMissX * CONFIG.cpu.lastMissPowerCorrection;
+
+        return {
+            weaponId: weapon.id,
+            angle: clamp(
+                solution.angle + randomRange(-CONFIG.cpu.baseAngleError, CONFIG.cpu.baseAngleError) * learningScale,
+                CONFIG.tank.minAngle,
+                CONFIG.tank.maxAngle
+            ),
+            power: clamp(
+                solution.power + learnedPower + randomRange(-CONFIG.cpu.basePowerError, CONFIG.cpu.basePowerError) * learningScale,
+                CONFIG.tank.minPower,
+                CONFIG.tank.maxPower
+            ),
+        };
+    }
+
+    _chooseWeapon(shooter, target) {
+        const available = WEAPONS.filter((weapon) => shooter.ammoFor(weapon.id) > 0);
+        const heavy = available.find((weapon) => weapon.id === 'heavy');
+        const dirt = available.find((weapon) => weapon.id === 'dirt');
+        const standard = available.find((weapon) => weapon.id === 'standard') || available[0];
+
+        if (heavy && target.health <= 58 && Math.random() < 0.6) return heavy;
+        if (dirt && this.missStreak >= 2 && Math.random() < 0.45) return dirt;
+        if (heavy && Math.random() < 0.28) return heavy;
+        if (dirt && Math.random() < 0.16) return dirt;
+        return standard;
+    }
+
+    _findAimSolution(shooter, target, terrain, wind, weapon) {
+        let best = { angle: shooter.angle, power: shooter.power, score: Infinity };
+
+        for (let angle = 18; angle <= 78; angle += 2.5) {
+            for (let power = 24; power <= 100; power += 3.5) {
+                const score = simulateShot({ shooter, target, terrain, wind, weapon, angle, power });
+                if (score < best.score) {
+                    best = { angle, power, score };
+                }
+            }
+        }
+
+        return best;
+    }
+}
+
+function simulateShot({ shooter, target, terrain, wind, weapon, angle, power }) {
+    const rad = angle * Math.PI / 180;
+    const turretY = shooter.y - shooter.height;
+    let x = shooter.x + Math.cos(rad) * shooter.barrelLength * shooter.facing;
+    let y = turretY - Math.sin(rad) * shooter.barrelLength;
+    let vx = Math.cos(rad) * power * CONFIG.tank.powerToSpeed * weapon.speedScale * shooter.facing;
+    let vy = -Math.sin(rad) * power * CONFIG.tank.powerToSpeed * weapon.speedScale;
+
+    const targetCircle = target.boundingCircle();
+    const windAccel = wind * CONFIG.physics.windAccelScale;
+    const dt = 1 / 45;
+    let minDistance = Infinity;
+    let impactX = x;
+
+    for (let t = 0; t < 5.2; t += dt) {
+        vy += CONFIG.physics.gravity * dt;
+        vx += windAccel * dt;
+        x += vx * dt;
+        y += vy * dt;
+
+        const dx = x - targetCircle.x;
+        const dy = y - targetCircle.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        minDistance = Math.min(minDistance, distance);
+
+        if (distance <= targetCircle.r + weapon.projectileRadius) {
+            return distance - 120;
+        }
+
+        if (x < -80 || x > terrain.width + 80 || y > terrain.height + 80) {
+            impactX = x;
+            break;
+        }
+
+        if (x >= 0 && x < terrain.width && y >= terrain.heightAt(x)) {
+            impactX = x;
+            break;
+        }
+    }
+
+    const landingPenalty = Math.abs(impactX - target.x) * 0.22;
+    const craterBonus = Math.max(0, weapon.craterRadius - Math.abs(impactX - target.x)) * 0.7;
+    return minDistance + landingPenalty - craterBonus;
+}
+
+function randomRange(min, max) {
+    return min + Math.random() * (max - min);
+}

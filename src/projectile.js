@@ -1,20 +1,18 @@
-// Projectile physics + rendering. Uses simple Euler integration; gravity in
-// pixels/sec^2, wind in pixels/sec^2 (horizontal acceleration).
-
 export class Projectile {
-    constructor(x, y, vx, vy) {
+    constructor(x, y, vx, vy, weapon) {
         this.x = x;
         this.y = y;
         this.vx = vx;
         this.vy = vy;
-        this.radius = 4;
-        this.alive = true;
-        this.trail = [];           // recent positions for trail rendering
-        this.maxTrail = 18;
+        this.weapon = weapon;
+        this.radius = weapon.projectileRadius;
+        this.age = 0;
+        this.trail = [];
+        this.maxTrail = weapon.id === 'heavy' ? 24 : 18;
     }
 
     update(dt, gravity, wind) {
-        // Save trail point before moving so the trail follows the head.
+        this.age += dt;
         this.trail.push({ x: this.x, y: this.y });
         if (this.trail.length > this.maxTrail) this.trail.shift();
 
@@ -25,36 +23,41 @@ export class Projectile {
     }
 
     draw(ctx) {
-        // Trail
         for (let i = 0; i < this.trail.length; i++) {
-            const p = this.trail[i];
-            const a = (i + 1) / this.trail.length;
-            ctx.fillStyle = `rgba(255, 230, 120, ${a * 0.6})`;
+            const point = this.trail[i];
+            const alpha = (i + 1) / this.trail.length;
+            ctx.fillStyle = `rgba(${this.weapon.trailColor}, ${alpha * 0.48})`;
             ctx.beginPath();
-            ctx.arc(p.x, p.y, this.radius * a, 0, Math.PI * 2);
+            ctx.arc(point.x, point.y, Math.max(1, this.radius * alpha), 0, Math.PI * 2);
             ctx.fill();
         }
-        // Head
-        ctx.fillStyle = '#1a1a1a';
+
+        ctx.fillStyle = '#1b1d20';
         ctx.beginPath();
-        ctx.arc(this.x, this.y, this.radius + 1, 0, Math.PI * 2);
+        ctx.arc(this.x, this.y, this.radius + 1.5, 0, Math.PI * 2);
         ctx.fill();
-        ctx.fillStyle = '#ffd34a';
+
+        ctx.fillStyle = this.weapon.color;
         ctx.beginPath();
         ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
         ctx.fill();
     }
 }
 
-// Animated explosion effect (does not affect physics).
 export class Explosion {
-    constructor(x, y, maxRadius) {
+    constructor(x, y, maxRadius, weapon) {
         this.x = x;
         this.y = y;
         this.maxRadius = maxRadius;
+        this.weapon = weapon;
         this.t = 0;
-        this.duration = 0.45;
+        this.duration = weapon.id === 'heavy' ? 0.7 : 0.58;
         this.alive = true;
+        this.fragments = Array.from({ length: weapon.id === 'dirt' ? 18 : 13 }, () => ({
+            angle: Math.random() * Math.PI * 2,
+            speed: 18 + Math.random() * maxRadius * 1.1,
+            size: 1.5 + Math.random() * 3,
+        }));
     }
 
     update(dt) {
@@ -64,22 +67,42 @@ export class Explosion {
 
     draw(ctx) {
         const k = Math.min(1, this.t / this.duration);
-        const r = this.maxRadius * (0.4 + k * 0.9);
-        // Outer shockwave
-        ctx.strokeStyle = `rgba(255, 220, 80, ${1 - k})`;
+        const shockRadius = this.maxRadius * (0.25 + k * 1.05);
+        const coreRadius = this.maxRadius * (0.95 - k * 0.45);
+
+        ctx.save();
+
+        ctx.strokeStyle = `rgba(255, 238, 145, ${1 - k})`;
         ctx.lineWidth = 3;
         ctx.beginPath();
-        ctx.arc(this.x, this.y, r, 0, Math.PI * 2);
+        ctx.arc(this.x, this.y, shockRadius, 0, Math.PI * 2);
         ctx.stroke();
-        // Hot core
-        const core = this.maxRadius * (1 - k * 0.6);
-        const grad = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, core);
-        grad.addColorStop(0, `rgba(255, 240, 200, ${1 - k})`);
-        grad.addColorStop(0.5, `rgba(255, 140, 30, ${0.85 - k * 0.85})`);
-        grad.addColorStop(1, `rgba(180, 30, 30, 0)`);
-        ctx.fillStyle = grad;
+
+        const gradient = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, coreRadius);
+        gradient.addColorStop(0, `rgba(255, 248, 218, ${0.9 - k * 0.6})`);
+        gradient.addColorStop(0.38, `rgba(255, 137, 38, ${0.78 - k * 0.55})`);
+        gradient.addColorStop(1, 'rgba(120, 40, 24, 0)');
+        ctx.fillStyle = gradient;
         ctx.beginPath();
-        ctx.arc(this.x, this.y, core, 0, Math.PI * 2);
+        ctx.arc(this.x, this.y, coreRadius, 0, Math.PI * 2);
         ctx.fill();
+
+        ctx.fillStyle = this.weapon.id === 'dirt'
+            ? `rgba(98, 64, 38, ${0.75 - k * 0.55})`
+            : `rgba(55, 45, 38, ${0.55 - k * 0.45})`;
+        for (const fragment of this.fragments) {
+            const d = fragment.speed * k;
+            ctx.beginPath();
+            ctx.arc(
+                this.x + Math.cos(fragment.angle) * d,
+                this.y + Math.sin(fragment.angle) * d,
+                fragment.size * (1 - k * 0.5),
+                0,
+                Math.PI * 2
+            );
+            ctx.fill();
+        }
+
+        ctx.restore();
     }
 }

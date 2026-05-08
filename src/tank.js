@@ -1,133 +1,240 @@
-// Tank entity. Simple body + rotating cannon. Each player owns one.
-// Player 1 fires to the right (angle 0 = horizontal right, 90 = straight up).
-// Player 2 fires to the left; under the hood we mirror by drawing/firing direction.
+import { CONFIG, WEAPONS, clamp, getWeaponById } from './config.js';
 
 export class Tank {
-    constructor({ id, x, color, facing }) {
-        this.id = id;            // 1 or 2
-        this.x = x;              // horizontal position (center)
-        this.y = 0;              // set by terrain.heightAt
+    constructor({ id, name, x, color, facing, isCpu = false }) {
+        this.id = id;
+        this.name = name;
+        this.x = x;
+        this.y = 0;
         this.color = color;
-        this.facing = facing;    // +1 = right, -1 = left
-        this.health = 100;
-        this.angle = 45;         // degrees: 0 horizontal forward, 90 straight up
-        this.power = 50;         // 10..100
-        this.width = 36;
-        this.height = 14;
-        this.barrelLength = 22;
-        this.barrelThickness = 4;
+        this.facing = facing;
+        this.isCpu = isCpu;
+        this.width = CONFIG.tank.width;
+        this.height = CONFIG.tank.height;
+        this.barrelLength = CONFIG.tank.barrelLength;
+        this.barrelThickness = CONFIG.tank.barrelThickness;
+        this.angle = 45;
+        this.power = 50;
+        this.health = CONFIG.tank.maxHealth;
         this.alive = true;
-        this.recentDamage = 0;   // floating damage popup amount
-        this.damageTimer = 0;    // seconds remaining for popup
+        this.recentDamage = 0;
+        this.damageTimer = 0;
+        this.selectedWeaponIndex = 0;
+        this.ammo = {};
+        this.resetForRound();
     }
 
-    // Place tank on ground for given terrain.
+    resetForRound() {
+        this.health = CONFIG.tank.maxHealth;
+        this.alive = true;
+        this.recentDamage = 0;
+        this.damageTimer = 0;
+        this.angle = 45;
+        this.power = 50;
+        this.selectedWeaponIndex = 0;
+        this.ammo = {};
+
+        for (const weapon of WEAPONS) {
+            this.ammo[weapon.id] = weapon.ammo;
+        }
+    }
+
     settleOn(terrain) {
-        this.y = terrain.heightAt(this.x);
+        this.x = clamp(this.x, CONFIG.tank.spawnMargin, terrain.width - CONFIG.tank.spawnMargin);
+        this.y = clamp(terrain.heightAt(this.x), 70, terrain.height - 2);
     }
 
-    // World position of the cannon muzzle, used as projectile spawn point.
     muzzlePosition() {
         const rad = this.angle * Math.PI / 180;
         const turretX = this.x;
-        const turretY = this.y - this.height; // top of body
+        const turretY = this.y - this.height;
         const dx = Math.cos(rad) * this.barrelLength * this.facing;
         const dy = -Math.sin(rad) * this.barrelLength;
         return { x: turretX + dx, y: turretY + dy };
     }
 
-    // Initial velocity vector for a fired shot.
-    fireVelocity() {
+    fireVelocity(weapon) {
         const rad = this.angle * Math.PI / 180;
-        // Power 10..100 -> speed multiplier; tuned to feel arcade-like.
-        const speed = this.power * 6;
+        const speed = this.power * CONFIG.tank.powerToSpeed * weapon.speedScale;
         return {
             vx: Math.cos(rad) * speed * this.facing,
             vy: -Math.sin(rad) * speed,
         };
     }
 
-    // Bounding circle used for projectile hit checks.
     boundingCircle() {
         return {
             x: this.x,
             y: this.y - this.height / 2,
-            r: Math.max(this.width, this.height) / 2 + 2,
+            r: Math.max(this.width, this.height) / 2 + 3,
         };
     }
 
+    selectedWeapon() {
+        this.ensureAvailableWeapon();
+        return WEAPONS[this.selectedWeaponIndex] || WEAPONS[0];
+    }
+
+    ammoFor(weaponId) {
+        const value = this.ammo[weaponId];
+        return value === undefined ? 0 : value;
+    }
+
+    canUseWeapon(weaponId) {
+        return this.ammoFor(weaponId) > 0;
+    }
+
+    ensureAvailableWeapon() {
+        const selected = WEAPONS[this.selectedWeaponIndex];
+        if (selected && this.canUseWeapon(selected.id)) return;
+
+        const next = WEAPONS.findIndex((weapon) => this.canUseWeapon(weapon.id));
+        this.selectedWeaponIndex = next === -1 ? 0 : next;
+    }
+
+    cycleWeapon() {
+        for (let offset = 1; offset <= WEAPONS.length; offset++) {
+            const index = (this.selectedWeaponIndex + offset) % WEAPONS.length;
+            if (this.canUseWeapon(WEAPONS[index].id)) {
+                this.selectedWeaponIndex = index;
+                return WEAPONS[index];
+            }
+        }
+
+        this.selectedWeaponIndex = 0;
+        return WEAPONS[0];
+    }
+
+    selectWeaponById(weaponId) {
+        const index = WEAPONS.findIndex((weapon) => weapon.id === weaponId);
+        if (index === -1 || !this.canUseWeapon(weaponId)) {
+            this.ensureAvailableWeapon();
+            return this.selectedWeapon();
+        }
+
+        this.selectedWeaponIndex = index;
+        return WEAPONS[index];
+    }
+
+    consumeSelectedAmmo() {
+        const weapon = this.selectedWeapon();
+        if (!this.canUseWeapon(weapon.id)) return false;
+        if (Number.isFinite(this.ammo[weapon.id])) {
+            this.ammo[weapon.id] = Math.max(0, this.ammo[weapon.id] - 1);
+        }
+        this.ensureAvailableWeapon();
+        return true;
+    }
+
     applyDamage(amount) {
-        const dmg = Math.round(amount);
-        if (dmg <= 0) return;
+        const dmg = Math.max(0, Math.round(amount));
+        if (dmg <= 0 || !this.alive) return 0;
+
+        const before = this.health;
         this.health = Math.max(0, this.health - dmg);
-        this.recentDamage = dmg;
-        this.damageTimer = 1.4;
+        const actual = before - this.health;
+        this.recentDamage = actual;
+        this.damageTimer = 1.35;
         if (this.health <= 0) this.alive = false;
+        return actual;
     }
 
     update(dt) {
-        if (this.damageTimer > 0) this.damageTimer -= dt;
+        if (this.damageTimer > 0) {
+            this.damageTimer = Math.max(0, this.damageTimer - dt);
+        }
     }
 
     adjustAngle(delta) {
-        // Clamp 5..89 so a player can't aim into the ground or straight up.
-        this.angle = Math.max(5, Math.min(89, this.angle + delta));
+        this.angle = clamp(this.angle + delta, CONFIG.tank.minAngle, CONFIG.tank.maxAngle);
     }
 
     adjustPower(delta) {
-        this.power = Math.max(10, Math.min(100, this.power + delta));
+        this.power = clamp(this.power + delta, CONFIG.tank.minPower, CONFIG.tank.maxPower);
     }
 
     draw(ctx) {
         const baseY = this.y;
         const bodyX = this.x - this.width / 2;
         const bodyY = baseY - this.height;
+        const treadY = baseY - 6;
 
-        // Track / shadow under tank.
-        ctx.fillStyle = 'rgba(0,0,0,0.25)';
+        ctx.save();
+
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.24)';
         ctx.beginPath();
-        ctx.ellipse(this.x, baseY + 2, this.width / 2 + 2, 4, 0, 0, Math.PI * 2);
+        ctx.ellipse(this.x, baseY + 3, this.width / 2 + 5, 5, 0, 0, Math.PI * 2);
         ctx.fill();
 
-        // Body
-        ctx.fillStyle = this.color;
-        roundRect(ctx, bodyX, bodyY, this.width, this.height, 3);
+        ctx.fillStyle = '#20252c';
+        roundRect(ctx, bodyX - 4, treadY, this.width + 8, 8, 4);
         ctx.fill();
 
-        // Treads
-        ctx.fillStyle = '#222';
-        roundRect(ctx, bodyX - 2, baseY - 5, this.width + 4, 5, 2);
+        ctx.fillStyle = '#111820';
+        for (let i = 0; i < 5; i++) {
+            ctx.beginPath();
+            ctx.arc(bodyX + 4 + i * 9, treadY + 4, 2.1, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        const bodyGradient = ctx.createLinearGradient(bodyX, bodyY, bodyX, baseY);
+        bodyGradient.addColorStop(0, shade(this.color, 18));
+        bodyGradient.addColorStop(1, shade(this.color, -10));
+        ctx.fillStyle = bodyGradient;
+        roundRect(ctx, bodyX, bodyY, this.width, this.height, 5);
         ctx.fill();
 
-        // Turret dome
-        const turretR = 8;
-        ctx.fillStyle = shade(this.color, -20);
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.16)';
+        roundRect(ctx, bodyX + 5, bodyY + 3, this.width - 10, 4, 2);
+        ctx.fill();
+
+        const turretY = bodyY;
+        const turretR = 10;
+        ctx.fillStyle = shade(this.color, -18);
         ctx.beginPath();
-        ctx.arc(this.x, bodyY, turretR, Math.PI, Math.PI * 2);
+        ctx.arc(this.x, turretY, turretR, Math.PI, Math.PI * 2);
         ctx.fill();
 
-        // Cannon barrel.
         const rad = this.angle * Math.PI / 180;
-        const bx = this.x;
-        const by = bodyY;
-        const ex = bx + Math.cos(rad) * this.barrelLength * this.facing;
-        const ey = by - Math.sin(rad) * this.barrelLength;
-        ctx.strokeStyle = '#1a1a1a';
-        ctx.lineWidth = this.barrelThickness;
+        const muzzle = this.muzzlePosition();
+        ctx.strokeStyle = '#171b20';
+        ctx.lineWidth = this.barrelThickness + 2;
         ctx.lineCap = 'round';
         ctx.beginPath();
-        ctx.moveTo(bx, by);
-        ctx.lineTo(ex, ey);
+        ctx.moveTo(this.x, turretY);
+        ctx.lineTo(muzzle.x, muzzle.y);
         ctx.stroke();
 
-        // Damage popup
+        ctx.strokeStyle = '#343a42';
+        ctx.lineWidth = this.barrelThickness;
+        ctx.beginPath();
+        ctx.moveTo(this.x, turretY);
+        ctx.lineTo(muzzle.x, muzzle.y);
+        ctx.stroke();
+
+        ctx.fillStyle = '#111820';
+        ctx.beginPath();
+        ctx.arc(muzzle.x, muzzle.y, 3, 0, Math.PI * 2);
+        ctx.fill();
+
         if (this.damageTimer > 0) {
-            const a = Math.min(1, this.damageTimer / 1.4);
-            ctx.fillStyle = `rgba(255, 80, 80, ${a})`;
-            ctx.font = 'bold 18px sans-serif';
+            const alpha = Math.min(1, this.damageTimer / 1.35);
+            ctx.fillStyle = `rgba(255, 76, 66, ${alpha})`;
+            ctx.font = 'bold 19px Georgia, serif';
             ctx.textAlign = 'center';
-            ctx.fillText(`-${this.recentDamage}`, this.x, bodyY - 18 - (1 - a) * 16);
+            ctx.fillText(`-${this.recentDamage}`, this.x, bodyY - 22 - (1 - alpha) * 18);
         }
+
+        ctx.restore();
+    }
+
+    weaponSnapshot() {
+        return WEAPONS.map((weapon) => ({
+            id: weapon.id,
+            name: weapon.name,
+            ammo: this.ammoFor(weapon.id),
+            selected: getWeaponById(weapon.id).id === this.selectedWeapon().id,
+        }));
     }
 }
 
@@ -142,14 +249,13 @@ function roundRect(ctx, x, y, w, h, r) {
 }
 
 function shade(hex, percent) {
-    // Lighten/darken a hex color by percent (-100..100).
     const c = hex.replace('#', '');
     const num = parseInt(c, 16);
     let r = (num >> 16) + Math.round((percent / 100) * 255);
     let g = ((num >> 8) & 0xff) + Math.round((percent / 100) * 255);
     let b = (num & 0xff) + Math.round((percent / 100) * 255);
-    r = Math.max(0, Math.min(255, r));
-    g = Math.max(0, Math.min(255, g));
-    b = Math.max(0, Math.min(255, b));
+    r = clamp(r, 0, 255);
+    g = clamp(g, 0, 255);
+    b = clamp(b, 0, 255);
     return `rgb(${r},${g},${b})`;
 }

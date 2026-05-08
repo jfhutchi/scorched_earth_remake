@@ -8,73 +8,99 @@
 </head>
 <body>
     <div id="app">
-        <!-- Main Menu -->
         <div id="menu" class="screen">
-            <div class="menu-card">
+            <main class="menu-card">
+                <p class="eyebrow">Local artillery duel</p>
                 <h1 class="title">Tank Artillery Duel</h1>
-                <p class="subtitle">A 2-player turn-based artillery game</p>
-                <button id="startBtn" class="btn primary">Start New Game</button>
-                <div class="instructions">
-                    <h2>How to Play</h2>
-                    <ul>
-                        <li><b>Left / Right Arrow</b> &mdash; adjust cannon angle</li>
-                        <li><b>Up / Down Arrow</b> &mdash; adjust shot power</li>
-                        <li><b>Spacebar</b> &mdash; fire projectile</li>
-                        <li><b>R</b> &mdash; restart match</li>
-                        <li><b>Escape</b> &mdash; return to main menu</li>
-                    </ul>
-                    <p class="note">
-                        Two tanks face off across procedurally generated terrain.
-                        Aim, account for wind, and blow up the other tank!
-                    </p>
+                <p class="subtitle">Destroy the opposing tank across a shifting battlefield of wind, craters, and limited heavy ammo.</p>
+
+                <div class="menu-actions">
+                    <button id="twoPlayerBtn" class="btn primary">Two Player Local</button>
+                    <button id="cpuBtn" class="btn primary alt">Single Player vs CPU</button>
+                    <button id="menuMuteBtn" class="btn small">Sound: On</button>
                 </div>
-            </div>
+
+                <section class="instructions" aria-label="Instructions">
+                    <h2>Controls</h2>
+                    <ul>
+                        <li><b>Left / Right Arrow</b> adjust cannon angle</li>
+                        <li><b>Up / Down Arrow</b> adjust shot power</li>
+                        <li><b>Spacebar</b> fire</li>
+                        <li><b>Tab or W</b> cycle weapon</li>
+                        <li><b>M</b> mute or unmute</li>
+                        <li><b>R</b> restart current round</li>
+                        <li><b>N</b> next round after a win</li>
+                        <li><b>Escape</b> return to this menu</li>
+                    </ul>
+                    <p class="note">Weapons: Standard Shell has unlimited ammo, Heavy Shell hits harder, and Dirt Bomb reshapes more terrain.</p>
+                </section>
+            </main>
         </div>
 
-        <!-- Game Screen -->
         <div id="game" class="screen hidden">
-            <canvas id="gameCanvas" width="1280" height="720"></canvas>
+            <div id="stage">
+                <canvas id="gameCanvas" width="1280" height="720"></canvas>
 
-            <!-- HUD overlay -->
-            <div id="hud">
-                <div class="hud-panel left" id="p1Panel">
-                    <div class="player-name" id="p1Name">Player 1</div>
-                    <div class="health-row">
-                        <span class="label">HP</span>
-                        <div class="health-bar"><div class="health-fill" id="p1Health"></div></div>
-                        <span class="health-text" id="p1HealthText">100</span>
-                    </div>
+                <div id="hud">
+                    <section class="hud-panel player left" id="p1Panel">
+                        <div class="panel-top">
+                            <div class="player-name" id="p1Name">Player 1</div>
+                            <div class="score-pill">Score <b id="p1Score">0</b></div>
+                        </div>
+                        <div class="health-row">
+                            <span class="label">HP</span>
+                            <div class="health-bar"><div class="health-fill" id="p1Health"></div></div>
+                            <span class="health-text" id="p1HealthText">100/100</span>
+                        </div>
+                    </section>
+
+                    <section class="hud-panel center" id="turnPanel">
+                        <div class="turn-label" id="turnLabel">Player 1's Turn</div>
+                        <div class="status-line" id="statusVal">Player 1 is aiming.</div>
+                        <div class="meta-row">
+                            <span>Round <b id="roundVal">1</b></span>
+                            <span id="modeVal">Two Player Local</span>
+                        </div>
+                        <div class="stat-grid">
+                            <span>Angle <b id="angleVal">45 deg</b></span>
+                            <span>Power <b id="powerVal">50</b></span>
+                            <span>Wind <b id="windVal">0</b></span>
+                            <span>Weapon <b id="weaponVal">Standard Shell</b></span>
+                            <span>Ammo <b id="ammoVal">Unlimited</b></span>
+                        </div>
+                        <div class="result-line" id="resultVal">Round ready.</div>
+                    </section>
+
+                    <section class="hud-panel player right" id="p2Panel">
+                        <div class="panel-top">
+                            <div class="player-name" id="p2Name">Player 2</div>
+                            <div class="score-pill">Score <b id="p2Score">0</b></div>
+                        </div>
+                        <div class="health-row">
+                            <span class="label">HP</span>
+                            <div class="health-bar"><div class="health-fill" id="p2Health"></div></div>
+                            <span class="health-text" id="p2HealthText">100/100</span>
+                        </div>
+                    </section>
                 </div>
 
-                <div class="hud-panel center" id="turnPanel">
-                    <div class="turn-label" id="turnLabel">Player 1's Turn</div>
-                    <div class="stat-row">
-                        <span>Angle:</span><b id="angleVal">45&deg;</b>
-                        <span>Power:</span><b id="powerVal">50</b>
-                        <span>Wind:</span><b id="windVal">0</b>
-                    </div>
-                </div>
-
-                <div class="hud-panel right" id="p2Panel">
-                    <div class="player-name" id="p2Name">Player 2</div>
-                    <div class="health-row">
-                        <span class="label">HP</span>
-                        <div class="health-bar"><div class="health-fill" id="p2Health"></div></div>
-                        <span class="health-text" id="p2HealthText">100</span>
-                    </div>
-                </div>
+                <div id="controlsHint">Left/Right: Angle   Up/Down: Power   Space: Fire   Tab/W: Weapon   R: Restart   M: Mute   Esc: Menu</div>
+                <button id="muteBtn" class="mute-chip">Sound: On</button>
             </div>
 
-            <div id="controlsHint">
-                &larr;/&rarr; Angle &nbsp; &uarr;/&darr; Power &nbsp; Space: Fire &nbsp; R: Restart &nbsp; Esc: Menu
-            </div>
+            <div id="smallWarning" class="small-warning hidden">Window is small; expand it for the clearest HUD and aiming view.</div>
 
-            <!-- Win overlay -->
             <div id="winOverlay" class="overlay hidden">
-                <div class="menu-card">
+                <div class="menu-card win-card">
                     <h1 id="winText" class="title">Player 1 Wins!</h1>
-                    <button id="restartBtn" class="btn primary">Play Again</button>
-                    <button id="menuBtn" class="btn">Main Menu</button>
+                    <p id="winDetails" class="subtitle">Score: Player 1 0 - Player 2 0</p>
+                    <div class="menu-actions">
+                        <button id="nextRoundBtn" class="btn primary">Next Round</button>
+                        <button id="restartBtn" class="btn">Restart Round</button>
+                        <button id="newMatchBtn" class="btn">New Match</button>
+                        <button id="menuBtn" class="btn">Main Menu</button>
+                    </div>
+                    <p class="note">Keyboard: N for next round, R to restart this round, Escape for menu.</p>
                 </div>
             </div>
         </div>

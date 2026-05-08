@@ -1,51 +1,83 @@
-// Entry point: wire up DOM controls, kick off the menu, and own canvas sizing.
-
 import { Game } from './game.js';
 import { UI } from './ui.js';
-
-const BASE_W = 1280;
-const BASE_H = 720;
+import { CONFIG } from './config.js';
 
 const canvas = document.getElementById('gameCanvas');
-canvas.width = BASE_W;
-canvas.height = BASE_H;
+canvas.width = CONFIG.canvas.width;
+canvas.height = CONFIG.canvas.height;
 
 const ui = new UI();
 const game = new Game(canvas, ui);
+const smallWarning = document.getElementById('smallWarning');
 
-// Buttons
-ui.startBtn.addEventListener('click', (e) => {
-    e.currentTarget.blur(); // so Space doesn't re-click the button mid-game
+ui.twoPlayerBtn.addEventListener('click', (e) => {
+    e.currentTarget.blur();
     ui.showGame();
-    game.start();
+    game.audio.playMenu();
+    game.start('two-player');
+});
+
+ui.cpuBtn.addEventListener('click', (e) => {
+    e.currentTarget.blur();
+    ui.showGame();
+    game.audio.playMenu();
+    game.start('cpu');
 });
 
 ui.restartBtn.addEventListener('click', (e) => {
     e.currentTarget.blur();
-    // Loop is still running — just reset state. Avoid kicking off a second
-    // requestAnimationFrame chain.
-    game.reset();
+    game.audio.playMenu();
+    game.resetCurrentRound();
+});
+
+ui.nextRoundBtn.addEventListener('click', (e) => {
+    e.currentTarget.blur();
+    game.audio.playMenu();
+    game.nextRound();
+});
+
+ui.newMatchBtn.addEventListener('click', (e) => {
+    e.currentTarget.blur();
+    game.audio.playMenu();
+    game.startNewMatch(game.gameMode);
 });
 
 ui.menuBtn.addEventListener('click', (e) => {
     e.currentTarget.blur();
-    game.stop();
-    ui.showMenu();
+    game.audio.playMenu();
+    game.returnToMenu();
 });
 
-// Keep canvas readable on smaller windows. We don't change the internal
-// resolution so the game logic stays consistent — CSS scales it down.
+ui.muteBtn.addEventListener('click', (e) => {
+    e.currentTarget.blur();
+    game.toggleMute();
+});
+
+ui.menuMuteBtn.addEventListener('click', (e) => {
+    e.currentTarget.blur();
+    game.toggleMute();
+});
+
 function fitCanvas() {
     const margin = 24;
-    const availW = window.innerWidth - margin;
-    const availH = window.innerHeight - margin;
-    const scale = Math.min(availW / BASE_W, availH / BASE_H, 1);
-    canvas.style.width = `${BASE_W * scale}px`;
-    canvas.style.height = `${BASE_H * scale}px`;
+    const hudReserve = window.innerHeight < 700 ? 8 : 0;
+    const availableWidth = window.innerWidth - margin;
+    const availableHeight = window.innerHeight - margin - hudReserve;
+    const scale = Math.min(
+        availableWidth / CONFIG.canvas.width,
+        availableHeight / CONFIG.canvas.height,
+        1
+    );
+
+    canvas.style.width = `${Math.floor(CONFIG.canvas.width * scale)}px`;
+    canvas.style.height = `${Math.floor(CONFIG.canvas.height * scale)}px`;
+    smallWarning.classList.toggle('hidden', scale >= 0.58);
 }
 
 window.addEventListener('resize', fitCanvas);
 fitCanvas();
 
-// Show menu on load
+window.render_game_to_text = () => game.renderTextState();
+window.advanceTime = (ms) => game.advanceTime(ms);
+
 ui.showMenu();

@@ -1,5 +1,4 @@
-// Thin wrapper over the HTML overlay HUD elements. Centralizes DOM updates
-// so game.js stays focused on game logic.
+import { WEAPONS } from './config.js';
 
 export class UI {
     constructor() {
@@ -7,22 +6,39 @@ export class UI {
         this.game = document.getElementById('game');
         this.winOverlay = document.getElementById('winOverlay');
         this.winText = document.getElementById('winText');
+        this.winDetails = document.getElementById('winDetails');
 
-        this.startBtn = document.getElementById('startBtn');
+        this.twoPlayerBtn = document.getElementById('twoPlayerBtn');
+        this.cpuBtn = document.getElementById('cpuBtn');
         this.restartBtn = document.getElementById('restartBtn');
+        this.nextRoundBtn = document.getElementById('nextRoundBtn');
+        this.newMatchBtn = document.getElementById('newMatchBtn');
         this.menuBtn = document.getElementById('menuBtn');
+        this.muteBtn = document.getElementById('muteBtn');
+        this.menuMuteBtn = document.getElementById('menuMuteBtn');
 
         this.p1Panel = document.getElementById('p1Panel');
         this.p2Panel = document.getElementById('p2Panel');
+        this.p1Name = document.getElementById('p1Name');
+        this.p2Name = document.getElementById('p2Name');
         this.p1Health = document.getElementById('p1Health');
         this.p2Health = document.getElementById('p2Health');
         this.p1HealthText = document.getElementById('p1HealthText');
         this.p2HealthText = document.getElementById('p2HealthText');
+        this.p1Score = document.getElementById('p1Score');
+        this.p2Score = document.getElementById('p2Score');
 
         this.turnLabel = document.getElementById('turnLabel');
+        this.statusVal = document.getElementById('statusVal');
+        this.roundVal = document.getElementById('roundVal');
+        this.modeVal = document.getElementById('modeVal');
         this.angleVal = document.getElementById('angleVal');
         this.powerVal = document.getElementById('powerVal');
         this.windVal = document.getElementById('windVal');
+        this.weaponVal = document.getElementById('weaponVal');
+        this.ammoVal = document.getElementById('ammoVal');
+        this.resultVal = document.getElementById('resultVal');
+        this.controlsHint = document.getElementById('controlsHint');
     }
 
     showMenu() {
@@ -37,8 +53,9 @@ export class UI {
         this.winOverlay.classList.add('hidden');
     }
 
-    showWin(text) {
+    showWin(text, state) {
         this.winText.textContent = text;
+        this.winDetails.textContent = `Score: Player 1 ${state.score[0]} - ${state.tanks[1].name} ${state.score[1]}`;
         this.winOverlay.classList.remove('hidden');
     }
 
@@ -46,39 +63,88 @@ export class UI {
         this.winOverlay.classList.add('hidden');
     }
 
+    setMuted(muted) {
+        const label = muted ? 'Sound: Off' : 'Sound: On';
+        if (this.muteBtn) this.muteBtn.textContent = label;
+        if (this.menuMuteBtn) this.menuMuteBtn.textContent = label;
+    }
+
     update(state) {
-        const { tanks, currentPlayer, wind } = state;
+        const { tanks, currentPlayer, active, selectedWeapon, wind } = state;
+        if (!tanks || tanks.length < 2 || !active) return;
+
         const p1 = tanks[0];
         const p2 = tanks[1];
 
-        // Health bars
-        this.p1Health.style.width = `${p1.health}%`;
-        this.p2Health.style.width = `${p2.health}%`;
-        this.p1HealthText.textContent = String(p1.health);
-        this.p2HealthText.textContent = String(p2.health);
-        this.p1Health.style.background = healthColor(p1.health);
-        this.p2Health.style.background = healthColor(p2.health);
+        this.p1Name.textContent = p1.name;
+        this.p2Name.textContent = p2.name;
+        this.p1Score.textContent = String(state.score[0]);
+        this.p2Score.textContent = String(state.score[1]);
 
-        // Active player highlight
-        this.p1Panel.classList.toggle('active', currentPlayer === 0);
-        this.p2Panel.classList.toggle('active', currentPlayer === 1);
+        this._updateHealth(p1, this.p1Health, this.p1HealthText);
+        this._updateHealth(p2, this.p2Health, this.p2HealthText);
 
-        // Turn + stats reflect the active tank
-        const active = tanks[currentPlayer];
-        this.turnLabel.textContent = `Player ${currentPlayer + 1}'s Turn`;
-        this.turnLabel.style.color = currentPlayer === 0 ? '#f78166' : '#58a6ff';
-        this.angleVal.textContent = `${Math.round(active.angle)}°`;
+        this.p1Panel.classList.toggle('active', currentPlayer === 0 && !state.gameOver);
+        this.p2Panel.classList.toggle('active', currentPlayer === 1 && !state.gameOver);
+        this.p1Panel.classList.toggle('disabled', !p1.alive);
+        this.p2Panel.classList.toggle('disabled', !p2.alive);
+
+        this.turnLabel.textContent = this._turnText(state);
+        this.turnLabel.style.color = currentPlayer === 0 ? '#f06b45' : '#2d75c7';
+        this.statusVal.textContent = state.statusMessage;
+        this.roundVal.textContent = String(state.roundNumber);
+        this.modeVal.textContent = state.gameMode === 'cpu' ? 'Single Player vs CPU' : 'Two Player Local';
+
+        this.angleVal.textContent = `${Math.round(active.angle)} deg`;
         this.powerVal.textContent = String(Math.round(active.power));
+        this.windVal.textContent = formatWind(wind);
+        this.weaponVal.textContent = selectedWeapon.name;
+        this.ammoVal.textContent = formatAmmo(active.ammoFor(selectedWeapon.id));
+        this.resultVal.textContent = state.lastResult;
+        this.controlsHint.textContent = this._controlsText(state);
+    }
 
-        const windText = wind === 0
-            ? '0'
-            : `${wind > 0 ? '→' : '←'} ${Math.abs(wind).toFixed(1)}`;
-        this.windVal.textContent = windText;
+    _updateHealth(tank, bar, text) {
+        const percent = Math.max(0, Math.min(100, tank.health));
+        bar.style.width = `${percent}%`;
+        bar.style.background = healthColor(percent);
+        text.textContent = `${tank.health}/100`;
+    }
+
+    _turnText(state) {
+        if (state.gameOver) return 'Round Over';
+        if (state.phase === 'projectile') return 'Shot In Flight';
+        if (state.phase === 'resolving') return 'Resolving Impact';
+        if (state.phase === 'cpuThinking') return `${state.active.name} Thinking`;
+        return `${state.active.name}'s Turn`;
+    }
+
+    _controlsText(state) {
+        if (state.gameOver) return 'N: Next Round   R: Restart Round   Esc: Menu   M: Mute';
+        if (state.phase === 'cpuThinking') return 'CPU is aiming. Controls locked. M: Mute   Esc: Menu';
+        if (state.phase !== 'aiming') return 'Controls locked until the shot resolves. M: Mute   Esc: Menu';
+        if (state.active.isCpu) return 'CPU turn. M: Mute   Esc: Menu';
+        return 'Left/Right: Angle   Up/Down: Power   Space: Fire   Tab/W: Weapon   R: Restart   M: Mute   Esc: Menu';
     }
 }
 
+function formatWind(wind) {
+    if (wind === 0) return '0';
+    return `${wind > 0 ? 'right' : 'left'} ${Math.abs(wind).toFixed(1)}`;
+}
+
+function formatAmmo(ammo) {
+    return Number.isFinite(ammo) ? String(ammo) : 'Unlimited';
+}
+
 function healthColor(hp) {
-    if (hp > 60) return 'linear-gradient(90deg, #2ea043, #56d364)';
-    if (hp > 30) return 'linear-gradient(90deg, #c69026, #f0c36b)';
-    return 'linear-gradient(90deg, #c93c3c, #ff7b72)';
+    if (hp > 60) return 'linear-gradient(90deg, #2f9e44, #69db7c)';
+    if (hp > 30) return 'linear-gradient(90deg, #f08c00, #ffd43b)';
+    return 'linear-gradient(90deg, #c92a2a, #ff6b6b)';
+}
+
+export function weaponListText(tank) {
+    return WEAPONS
+        .map((weapon) => `${weapon.name}: ${formatAmmo(tank.ammoFor(weapon.id))}`)
+        .join(' | ');
 }
