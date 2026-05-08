@@ -3,7 +3,7 @@ import { Tank } from './tank.js';
 import { Projectile, Explosion } from './projectile.js';
 import { AudioManager } from './audio.js';
 import { CPUController } from './cpu.js';
-import { CONFIG, CPU_DIFFICULTY, WEAPONS, clamp } from './config.js';
+import { CONFIG, CPU_DIFFICULTY, GAME_VERSION, WEAPONS, clamp, getWeaponById } from './config.js';
 
 export class Game {
     constructor(canvas, ui) {
@@ -40,6 +40,7 @@ export class Game {
         this.roundStats = this._createRoundStats();
         this.lastSummary = null;
         this.shopCpuPurchased = false;
+        this.roundStartMessages = [];
 
         this._setupInput();
         this.ui.setMuted(this.audio.muted);
@@ -64,6 +65,9 @@ export class Game {
     stop() {
         this.running = false;
         this.phase = 'menu';
+        this.projectile = null;
+        this.explosions = [];
+        this.cpuTimer = 0;
         this.keys.clear();
     }
 
@@ -108,11 +112,12 @@ export class Game {
         if (this.phase !== 'shop') return false;
         const player = this.playerData[playerIndex];
         const item = CONFIG.shop[itemId];
+        if (this.gameMode === 'cpu' && playerIndex === 1) return false;
         if (!player || !item || player.money < item.price) return false;
 
         player.money -= item.price;
         this._grantShopItem(player, itemId);
-        this._syncTankFromPlayerData(playerIndex);
+        this._syncTankInventoryFromPlayerData(playerIndex);
         this.ui.showShop(this._state(), this.getShopItems());
         return true;
     }
@@ -137,6 +142,7 @@ export class Game {
     renderTextState() {
         const active = this.tanks[this.currentPlayer] || null;
         const payload = {
+            version: GAME_VERSION,
             coordinateSystem: 'Canvas pixels, origin top-left, x right, y down.',
             mode: this.gameMode,
             phase: this.phase,
@@ -185,6 +191,84 @@ export class Game {
         return JSON.stringify(payload);
     }
 
+    debugState() {
+        return JSON.parse(this.renderTextState());
+    }
+
+    testWeaponImpact(weaponId = 'standard') {
+        if (!this.terrain || !this.tanks.length || this.phase !== 'aiming' || this.projectile) {
+            return { ok: false, message: 'Start a live aiming turn before testing weapon impacts.' };
+        }
+
+        const weapon = getWeaponById(weaponId);
+        const shooterIndex = this.currentPlayer;
+        const targetIndex = shooterIndex === 0 ? 1 : 0;
+        const shooter = this.tanks[shooterIndex];
+        const target = this.tanks[targetIndex] || this.tanks[0];
+        const x = clamp(target.x + (weapon.id === 'dirt' ? -42 : 0), 20, this.width - 20);
+        const y = this.terrain.heightAt(x);
+        const weaponIndex = WEAPONS.findIndex((candidate) => candidate.id === weapon.id);
+        if (shooter && weaponIndex !== -1) shooter.selectedWeaponIndex = weaponIndex;
+
+        this.projectile = null;
+        this.shotInfo = {
+            shooterIndex,
+            targetIndex,
+            weaponId: weapon.id,
+            collision: 'terrain',
+            impactX: x,
+            impactY: y,
+            enemyDamage: 0,
+            selfDamage: 0,
+            totalDamage: 0,
+            minTargetDistance: 0,
+        };
+
+        const result = this._applyExplosionDamage(x, y, weapon, 'terrain');
+        const terrainMessage = this._applyTerrainEffect(x, y, weapon);
+        const fallMessages = this._settleTanksWithFallDamage();
+        const explosion = new Explosion(x, y, weapon.explosionRadius, weapon);
+        this.explosions.push(explosion);
+        this.lastResult = `${result.message} ${terrainMessage}${fallMessages.length ? ` ${fallMessages.join(' ')}` : ''}`;
+        this.statusMessage = `Debug impact: ${weapon.name}.`;
+        this.phase = 'resolving';
+        this.phaseTimer = Math.max(CONFIG.turn.impactDelaySeconds, explosion.duration + 0.15);
+        this._draw();
+        this.ui.update(this._state());
+
+        return {
+            ok: true,
+            weapon: weapon.name,
+            x: Math.round(x),
+            y: Math.round(y),
+            result: this.lastResult,
+        };
+    }
+
+    forceRoundWin(playerIndex = 0) {
+        if (!this.terrain || !this.tanks.length || this.phase === 'menu' || this.phase === 'roundSummary' || this.phase === 'shop') {
+            return { ok: false, message: 'Start or resume a live round before forcing a round win.' };
+        }
+
+        const winnerIndex = playerIndex === 1 ? 1 : 0;
+        const loserIndex = winnerIndex === 0 ? 1 : 0;
+        this.projectile = null;
+        this.explosions = [];
+        this.tanks[winnerIndex].alive = true;
+        this.tanks[winnerIndex].health = Math.max(1, this.tanks[winnerIndex].health);
+        this.tanks[loserIndex].health = 0;
+        this.tanks[loserIndex].alive = false;
+        this._syncPlayerDataFromTank(winnerIndex);
+        this._syncPlayerDataFromTank(loserIndex);
+        this._checkWinCondition();
+
+        return {
+            ok: true,
+            winner: this.playerData[winnerIndex].name,
+            phase: this.phase,
+        };
+    }
+
     _createPlayerData() {
         const startingMoney = CONFIG.economy.startingMoney[this.settings.startingMoney] ?? CONFIG.economy.startingMoney.normal;
         return [0, 1].map((index) => ({
@@ -225,7 +309,7 @@ export class Game {
         const p2IsCpu = this.gameMode === 'cpu';
         this.playerData[0].name = 'Player 1';
         this.playerData[1].name = p2IsCpu ? 'CPU' : 'Player 2';
-        this._applyRepairKitsForNewRound();
+        this.roundStartMessages = this._applyRepairKitsForNewRound();
 
         const p1 = new Tank({ id: 1, name: 'Player 1', x: x1, color: '#f16f45', facing: 1 });
         const p2 = new Tank({
@@ -258,7 +342,9 @@ export class Game {
         this.keys.clear();
         this._rollWind();
 
-        this.lastResult = `Round ${this.roundNumber} ready.`;
+        this.lastResult = this.roundStartMessages.length
+            ? `${this.roundStartMessages.join(' ')} Round ${this.roundNumber} ready.`
+            : `Round ${this.roundNumber} ready.`;
         this.statusMessage = 'Player 1 is aiming.';
         this.ui.hideAllOverlays();
         this._startTurn(false);
@@ -267,12 +353,16 @@ export class Game {
     }
 
     _applyRepairKitsForNewRound() {
+        const messages = [];
         for (const player of this.playerData) {
             if (player.repairKits > 0 && player.health < CONFIG.tank.maxHealth) {
                 player.repairKits -= 1;
+                const before = player.health;
                 player.health = Math.min(CONFIG.tank.maxHealth, player.health + CONFIG.utilities.repairHeal);
+                messages.push(`${player.name} used a repair kit (+${player.health - before} HP).`);
             }
         }
+        return messages;
     }
 
     _syncTankFromPlayerData(index) {
@@ -306,6 +396,19 @@ export class Game {
             heavy: tank.ammoFor('heavy'),
             dirt: tank.ammoFor('dirt'),
         };
+    }
+
+    _syncTankInventoryFromPlayerData(index) {
+        const tank = this.tanks[index];
+        const data = this.playerData[index];
+        if (!tank || !data) return;
+
+        tank.money = Math.max(0, Math.round(data.money));
+        tank.shieldCharge = Math.max(0, data.shieldCharge);
+        tank.repairKits = Math.max(0, data.repairKits);
+        tank.parachutes = Math.max(0, data.parachutes);
+        tank.ammo = { ...data.ammo, standard: Infinity };
+        tank.ensureAvailableWeapon();
     }
 
     _state() {
@@ -833,6 +936,8 @@ export class Game {
     }
 
     _checkWinCondition() {
+        if (this.gameOver || this.phase === 'roundSummary' || this.phase === 'shop') return true;
+
         const alive = this.tanks
             .map((tank, index) => ({ tank, index }))
             .filter((entry) => entry.tank.alive);
@@ -882,6 +987,7 @@ export class Game {
                 heavy: tank.ammoFor('heavy'),
                 dirt: tank.ammoFor('dirt'),
             };
+            this._syncTankInventoryFromPlayerData(i);
         }
 
         this.lastSummary = {
@@ -908,24 +1014,32 @@ export class Game {
 
         const tryBuy = (itemId, chance) => {
             const item = CONFIG.shop[itemId];
+            const reserve = profile.reserveMoney ?? 0;
+            const urgentRepair = itemId === 'repair' && cpu.health < 55;
             if (!item || cpu.money < item.price || Math.random() > chance) return false;
+            if (!urgentRepair && cpu.money - item.price < reserve) return false;
             cpu.money -= item.price;
             this._grantShopItem(cpu, itemId);
             return true;
         };
 
-        if (cpu.health < 85) tryBuy('repair', profile.repairBuyChance);
-        if (cpu.shieldCharge < 90) tryBuy('shield', profile.shieldBuyChance);
+        if (cpu.health < 85) tryBuy('repair', cpu.health < 55 ? Math.min(1, profile.repairBuyChance + 0.25) : profile.repairBuyChance);
+        if (cpu.shieldCharge < CONFIG.utilities.shieldPurchaseCharge) tryBuy('shield', profile.shieldBuyChance);
         if (cpu.ammo.heavy < 2) tryBuy('heavyAmmo', profile.ammoBuyChance);
-        if (cpu.ammo.dirt < 2) tryBuy('dirtAmmo', profile.ammoBuyChance * 0.55);
+        if (cpu.ammo.dirt < 1) tryBuy('dirtAmmo', profile.ammoBuyChance * 0.45);
         if (cpu.parachutes < 1) tryBuy('parachute', profile.shieldBuyChance * 0.45);
-        this._syncTankFromPlayerData(cpuIndex);
+        this._syncTankInventoryFromPlayerData(cpuIndex);
     }
 
     _grantShopItem(player, itemId) {
         if (itemId === 'heavyAmmo') player.ammo.heavy += 1;
         if (itemId === 'dirtAmmo') player.ammo.dirt += 1;
-        if (itemId === 'shield') player.shieldCharge += CONFIG.utilities.shieldPurchaseCharge;
+        if (itemId === 'shield') {
+            player.shieldCharge = Math.min(
+                CONFIG.utilities.shieldMaxCharge,
+                player.shieldCharge + CONFIG.utilities.shieldPurchaseCharge
+            );
+        }
         if (itemId === 'repair') player.repairKits += 1;
         if (itemId === 'parachute') player.parachutes += 1;
     }
@@ -1036,7 +1150,8 @@ export class Game {
         ctx.font = 'bold 13px Georgia, serif';
         ctx.textAlign = 'center';
         ctx.fillStyle = 'rgba(28, 38, 48, 0.72)';
-        ctx.fillText(`Wind ${this.wind === 0 ? '0' : Math.abs(this.wind).toFixed(1)}`, cx, cy - 16);
+        const directionText = direction === 0 ? 'calm' : (direction > 0 ? 'right' : 'left');
+        ctx.fillText(`Wind ${this.wind === 0 ? '0 calm' : `${Math.abs(this.wind).toFixed(1)} ${directionText}`}`, cx, cy - 16);
 
         ctx.strokeStyle = 'rgba(28, 38, 48, 0.7)';
         ctx.fillStyle = 'rgba(28, 38, 48, 0.7)';

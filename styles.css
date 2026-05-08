@@ -78,6 +78,18 @@ button {
     max-width: 620px;
 }
 
+.version-line {
+    display: inline-block;
+    margin: -4px 0 14px;
+    padding: 4px 10px;
+    border: 1px solid rgba(158, 219, 230, 0.26);
+    border-radius: 999px;
+    background: rgba(35, 108, 125, 0.18);
+    color: #9edbe6;
+    font-size: 12px;
+    font-weight: 900;
+}
+
 .menu-actions {
     display: flex;
     flex-wrap: wrap;
@@ -423,6 +435,21 @@ button {
     font-weight: 800;
 }
 
+.version-chip {
+    position: absolute;
+    left: 14px;
+    bottom: 14px;
+    min-height: 28px;
+    padding: 6px 10px;
+    border: 1px solid rgba(255, 236, 190, 0.2);
+    border-radius: 999px;
+    background: rgba(28, 36, 36, 0.72);
+    color: #d9f3f6;
+    font-size: 11px;
+    font-weight: 900;
+    pointer-events: none;
+}
+
 .overlay {
     position: absolute;
     inset: 0;
@@ -485,7 +512,10 @@ button {
 }
 
 .shop-buy:disabled {
-    opacity: 0.45;
+    border-color: rgba(255, 236, 190, 0.12);
+    background: rgba(22, 27, 25, 0.72);
+    color: rgba(228, 220, 200, 0.48);
+    opacity: 1;
     cursor: not-allowed;
 }
 
