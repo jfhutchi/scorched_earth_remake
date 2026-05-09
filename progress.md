@@ -59,3 +59,13 @@ Original prompt: Upgrade the existing local browser Scorched Earth-style artille
 - Polished CSS for menu, HUD panels, buttons, health/shield bars, canvas frame, and mobile controls without changing core flow.
 - Updated README.md and TESTING.md for v0.6.6 visual QA and the new rendering modules.
 - Verification: `node --check` passed for all `src/*.js`; the web-game Playwright client reported `v0.6.6`; targeted Playwright checks covered main menu version, no gameplay version badge, desktop round start, keyboard angle/movement/fire transitions, debug weapon impact visuals for Standard/Heavy/Dirt/Roller/Napalm/Cluster/Mega, mobile Play to CPU mode, visible mobile touch controls, mobile fire transition, screenshot review, and no console/page errors.
+
+## v0.6.7 Notes
+
+- Updated the version target to `v0.6.7`; the main menu and `window.GAME_VERSION` now report v0.6.7 while gameplay remains free of a floating version chip.
+- Normalized Heavy Shell and Mega Bomb speed scales to `0.98` so Mega Bomb uses a practical high-power artillery arc without changing damage, economy, or global physics.
+- Replaced the simple generated tone sounds with a categorized Web Audio mixer, layered weapon/explosion/UI/utility sounds, subtle positional panning, safer gain staging, and generated theme ambience that respects mute and stops at the menu.
+- Added debug-only `window.testWeaponReach()` and `window.setupAimTest()` helpers for quick ballistic validation.
+- Reworked the mobile landscape right control cluster as a one-row grid for `↑`, `↓`, `PWR-`, `PWR+`, and `FIRE`.
+- Updated README.md and TESTING.md for v0.6.7 audio, Mega Bomb reach, mobile controls, debug helpers, and deployment checks.
+- Verification: `node --check` passed for all `src/*.js`; local Playwright checks reported `v0.6.7`, no gameplay version badge, `window.testWeaponReach()`/`window.setupAimTest()` available in debug mode, Mega Bomb speed scale `0.98` and direct-hit reach at power 100 in the aim test, mute persistence, desktop angle/power key holds, mobile landscape one-row controls at 844x390 / 932x430 / 915x412, mobile PWR hold, mobile FIRE tap, screenshot review, and no console/page errors.

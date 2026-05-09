@@ -4,15 +4,15 @@ Use a local static server, open the game in a desktop or mobile browser, and kee
 
 For mobile testing, either visit the LAN IP from a phone (`http://<your-laptop-ip>:8000`), publish to GitHub Pages, or use browser DevTools device emulation.
 
-## v0.6.6 Version
+## v0.6.7 Version
 
-- [ ] Main menu visibly shows `v0.6.6`.
+- [ ] Main menu visibly shows `v0.6.7`.
 - [ ] Gameplay screen does not show a floating version badge over the battlefield, HUD, or controls.
-- [ ] `window.GAME_VERSION` returns `"v0.6.6"` in the browser console.
-- [ ] GitHub Pages deployment shows `v0.6.6` after a hard refresh.
+- [ ] `window.GAME_VERSION` returns `"v0.6.7"` in the browser console.
+- [ ] GitHub Pages deployment shows `v0.6.7` after a hard refresh.
 - [ ] No external assets are requested in the Network panel.
 
-## v0.6.6 Visual Presentation
+## v0.6.7 Visual Presentation
 
 - [ ] Tanks render with armored body, separate turret, cannon, treads/wheels, highlight, shadow, and team color accents.
 - [ ] Tank cannon visually matches the gameplay firing angle.
@@ -31,7 +31,7 @@ For mobile testing, either visit the LAN IP from a phone (`http://<your-laptop-i
 - [ ] Screen shake is subtle and does not make the HUD unreadable.
 - [ ] Main menu, HUD, shop, summary, buttons, health bars, and shield bars look visually cohesive.
 
-## v0.6.6 Tank Destruction
+## v0.6.7 Tank Destruction
 
 - [ ] Destroying a tank plays a distinct death explosion sound.
 - [ ] Tank death sound plays once for the destroyed tank.
@@ -42,7 +42,7 @@ For mobile testing, either visit the LAN IP from a phone (`http://<your-laptop-i
 - [ ] Destroyed tank emits dark smoke.
 - [ ] Round summary still appears after the destruction effect resolves.
 
-## v0.6.6 Napalm Ground Fire
+## v0.6.7 Napalm Ground Fire
 
 - [ ] Napalm Canister creates visible ground fire on impact.
 - [ ] Napalm fire spreads horizontally along the terrain surface.
@@ -55,7 +55,7 @@ For mobile testing, either visit the LAN IP from a phone (`http://<your-laptop-i
 - [ ] Napalm impact sound differs from normal explosions.
 - [ ] Napalm sound respects mute.
 
-## v0.6.6 Shield and Inventory Clarity
+## v0.6.7 Shield and Inventory Clarity
 
 - [ ] Buying `Shield Charge` immediately updates the visible shield indicator.
 - [ ] Shield value is shown near HP on desktop as separate blue/cyan protection.
@@ -71,13 +71,17 @@ For mobile testing, either visit the LAN IP from a phone (`http://<your-laptop-i
 - [ ] Shop inventory uses `Money:`, `Heavy Shells:`, `Dirt Bombs:`, `Shield:`, `First Aid:`, and `Parachutes:`.
 - [ ] Summary inventory uses the same clear terminology.
 
-## v0.6.6 Mobile Controls
+## v0.6.7 Mobile Controls
 
 - [ ] Mobile angle up button displays `↑`.
 - [ ] Mobile angle down button displays `↓`.
 - [ ] Holding `↑` increases cannon angle.
 - [ ] Holding `↓` decreases cannon angle.
+- [ ] In mobile landscape, `↑`, `↓`, `PWR-`, `PWR+`, and `FIRE` are all on the same row.
 - [ ] `PWR-` and `PWR+` sit beside each other on the same row.
+- [ ] `PWR+` and `FIRE` remain aligned with the angle buttons and `PWR-`.
+- [ ] Mobile control buttons do not overlap.
+- [ ] Mobile control buttons are not clipped off-screen.
 - [ ] Holding `PWR-` decreases power.
 - [ ] Holding `PWR+` increases power.
 - [ ] FIRE remains prominent and fires exactly once per tap.
@@ -86,7 +90,7 @@ For mobile testing, either visit the LAN IP from a phone (`http://<your-laptop-i
 - [ ] Touch hold still works for angle, power, and movement.
 - [ ] Desktop keyboard controls are unchanged.
 
-## v0.6.6 Shop Ammo
+## v0.6.7 Shop Ammo
 
 - [ ] Shop shows `Heavy Shell Ammo`.
 - [ ] Shop shows `Dirt Bomb Ammo`.
@@ -110,7 +114,7 @@ For mobile testing, either visit the LAN IP from a phone (`http://<your-laptop-i
 - [ ] CPU does not buy full ammo.
 - [ ] Mobile shop clearly shows disabled/full state.
 
-## v0.6.6 Mobile Shop Compacting
+## v0.6.7 Mobile Shop Compacting
 
 - [ ] Mobile shop cards are smaller and cleaner than the desktop shop cards.
 - [ ] Human player money, inventory, and purchase buttons are the main focus.
@@ -121,7 +125,7 @@ For mobile testing, either visit the LAN IP from a phone (`http://<your-laptop-i
 - [ ] Desktop shop still shows enough CPU auto-shop detail.
 - [ ] CPU does not double-buy when the shop re-renders after human purchases.
 
-## v0.6.6 Weapons
+## v0.6.7 Weapons
 
 - [ ] Standard Shell fires and remains unlimited.
 - [ ] Heavy Shell fires, consumes ammo, creates a larger crater, and does higher damage than Standard Shell.
@@ -148,6 +152,10 @@ For mobile testing, either visit the LAN IP from a phone (`http://<your-laptop-i
 - [ ] CPU can use Cluster Bomb without breaking turn flow.
 - [ ] Mega Bomb can be bought/refilled in the shop.
 - [ ] Mega Bomb can be selected and fired.
+- [ ] Mega Bomb at power 100 has a useful high-power arc.
+- [ ] Mega Bomb can threaten or reach the enemy tank at normal battlefield distance.
+- [ ] Mega Bomb trajectory preview matches the actual shot.
+- [ ] Mega Bomb does not fall dramatically short compared with Standard Shell.
 - [ ] Mega Bomb max ammo is 1.
 - [ ] Mega Bomb creates the largest crater.
 - [ ] Mega Bomb does high damage.
@@ -156,7 +164,7 @@ For mobile testing, either visit the LAN IP from a phone (`http://<your-laptop-i
 - [ ] Weapon cycling works on mobile with the expanded weapon list.
 - [ ] HUD selected weapon display handles longer names.
 
-## v0.6.6 Explosion Visuals
+## v0.6.7 Explosion Visuals
 
 - [ ] Expanding explosion rings are visible.
 - [ ] Standard Shell uses a medium expanding blast.
@@ -171,9 +179,10 @@ For mobile testing, either visit the LAN IP from a phone (`http://<your-laptop-i
 - [ ] Visuals remain performant on desktop.
 - [ ] Visuals remain acceptable on mobile.
 
-## v0.6.6 Audio
+## v0.6.7 Audio
 
 - [ ] Standard Shell, Heavy Shell, Dirt Bomb, Roller Shell, Napalm Canister, Cluster Bomb, and Mega Bomb have distinct fire sounds.
+- [ ] Standard Shell sounds like a small cannon, not a simple tone.
 - [ ] Each weapon has a distinct impact/explosion sound.
 - [ ] Heavy Shell sounds heavier than Standard Shell.
 - [ ] Mega Bomb sounds largest.
@@ -186,12 +195,20 @@ For mobile testing, either visit the LAN IP from a phone (`http://<your-laptop-i
 - [ ] Parachute cushion sound plays on parachute use.
 - [ ] Shop purchase plays a click/chime.
 - [ ] Invalid purchase plays a subtle blocked sound.
+- [ ] Weapon cycle sound plays and remains subtle.
+- [ ] Round start sound plays.
+- [ ] Round win and match win sounds play.
+- [ ] Theme ambience starts during battlefield play.
+- [ ] Ambience stops or quiets when muted or returning to menu.
+- [ ] Left/right impacts have subtle positional panning on headphones or desktop speakers.
 - [ ] `M` toggles mute.
 - [ ] Sound buttons toggle mute.
+- [ ] Mute persists after reload.
 - [ ] No sounds play while muted.
 - [ ] No console errors from audio.
+- [ ] Mobile audio works only after user interaction and produces no autoplay errors.
 
-## v0.6.6 CPU Shop and Weapon Use
+## v0.6.7 CPU Shop and Weapon Use
 
 - [ ] CPU can buy Shield Charge.
 - [ ] CPU can buy First Aid Kit.
@@ -206,6 +223,7 @@ For mobile testing, either visit the LAN IP from a phone (`http://<your-laptop-i
 - [ ] CPU does not select weapons with zero ammo.
 - [ ] CPU does not treat Dirt Bomb as a high-damage weapon.
 - [ ] CPU does not spam Mega Bomb without money/ammo.
+- [ ] CPU can use Mega Bomb without always undershooting after the reach fix.
 - [ ] CPU can fire new weapons without freezing.
 - [ ] CPU mode can complete round -> summary -> shop -> next round with expanded weapons.
 - [ ] CPU remains beatable on Easy and Normal.
@@ -319,7 +337,7 @@ For mobile testing, either visit the LAN IP from a phone (`http://<your-laptop-i
 
 Open the local URL with `?debug=1` for optional helpers.
 
-- [ ] `window.GAME_VERSION` returns `"v0.6.6"`.
+- [ ] `window.GAME_VERSION` returns `"v0.6.7"`.
 - [ ] `window.render_game_to_text()` returns concise current game state.
 - [ ] `window.debugGameState()` returns parsed game state with `?debug=1`.
 - [ ] `window.testWeaponImpact("standard")` creates a Standard Shell impact during a live aiming turn.
@@ -329,13 +347,16 @@ Open the local URL with `?debug=1` for optional helpers.
 - [ ] `window.testWeaponImpact("napalm")` creates a Napalm Canister impact during a live aiming turn.
 - [ ] `window.testWeaponImpact("cluster")` creates a Cluster Bomb impact during a live aiming turn.
 - [ ] `window.testWeaponImpact("mega")` creates a Mega Bomb impact during a live aiming turn.
+- [ ] `window.testWeaponReach()` returns approximate reach and speed-scale information for every weapon.
+- [ ] `window.testWeaponReach()` reports Mega Bomb as able to threaten typical enemy spawn distance.
+- [ ] `window.setupAimTest()` sets wind to 0, places tanks on stable terrain, gives ammo, and selects Mega Bomb.
 - [ ] `window.forceRoundWin(0)` opens a Player 1 win summary during a live round.
 - [ ] `window.forceRoundWin(1)` opens a Player 2/CPU win summary during a live round.
 - [ ] No debug noise is logged during normal gameplay.
 
 ## Final Regression Pass
 
-- [ ] Main menu loads and shows `v0.6.6`.
+- [ ] Main menu loads and shows `v0.6.7`.
 - [ ] Phone viewport shows `Play`; desktop shows `Two Player Local` and `Single Player vs CPU`.
 - [ ] Pre-round shop opens.
 - [ ] Full ammo buttons are disabled.
@@ -350,6 +371,7 @@ Open the local URL with `?debug=1` for optional helpers.
 - [ ] Napalm Canister fires and resolves.
 - [ ] Cluster Bomb fires and resolves.
 - [ ] Mega Bomb fires and resolves.
+- [ ] Mega Bomb preview and actual projectile agree at power 100.
 - [ ] Round summary appears.
 - [ ] Shop appears after summary.
 - [ ] Ammo refill buttons become available after ammo is used.
@@ -358,6 +380,7 @@ Open the local URL with `?debug=1` for optional helpers.
 - [ ] Desktop HUD inventory labels are readable.
 - [ ] Center HUD is compact and wind is readable.
 - [ ] Mobile PWR buttons are on the same row.
+- [ ] Mobile landscape `↑`, `↓`, `PWR-`, `PWR+`, and `FIRE` are on the same row.
 - [ ] Mobile angle arrows work.
 - [ ] Reloading the page returns to a clean menu state.
 - [ ] No normal gameplay console errors appear.

@@ -194,7 +194,7 @@ function tryFullscreen() {
 
 function startMatch(mode) {
     ui.showGame();
-    game.audio.playMenu();
+    game.audio.playStartMatch();
     game.start(mode, ui.getSettings());
 }
 
@@ -242,37 +242,37 @@ if (mhudInfoBtn && mhudExtra) {
 
 ui.continueShopBtn.addEventListener('click', (e) => {
     e.currentTarget.blur();
-    game.audio.playMenu();
+    game.audio.playContinue();
     game.openShop();
 });
 
 ui.startNextRoundBtn.addEventListener('click', (e) => {
     e.currentTarget.blur();
-    game.audio.playMenu();
+    game.audio.playContinue();
     game.startNextRoundFromShop();
 });
 
 ui.summaryNewMatchBtn.addEventListener('click', (e) => {
     e.currentTarget.blur();
-    game.audio.playMenu();
+    game.audio.playStartMatch();
     game.startNewMatch(game.gameMode, ui.getSettings());
 });
 
 ui.shopNewMatchBtn.addEventListener('click', (e) => {
     e.currentTarget.blur();
-    game.audio.playMenu();
+    game.audio.playStartMatch();
     game.startNewMatch(game.gameMode, ui.getSettings());
 });
 
 ui.summaryMenuBtn.addEventListener('click', (e) => {
     e.currentTarget.blur();
-    game.audio.playMenu();
+    game.audio.playUiClick();
     game.returnToMenu();
 });
 
 ui.shopMenuBtn.addEventListener('click', (e) => {
     e.currentTarget.blur();
-    game.audio.playMenu();
+    game.audio.playUiClick();
     game.returnToMenu();
 });
 
@@ -317,6 +317,12 @@ const debugEnabled = CONFIG.debug || new URLSearchParams(window.location.search)
 if (debugEnabled) {
     window.debugGameState = () => game.debugState();
     window.testWeaponImpact = (weaponId) => game.testWeaponImpact(weaponId);
+    window.testWeaponReach = () => game.testWeaponReach();
+    window.setupAimTest = () => {
+        const result = game.setupAimTest();
+        refreshLayout();
+        return result;
+    };
     window.forceRoundWin = (playerIndex) => game.forceRoundWin(playerIndex);
 }
 

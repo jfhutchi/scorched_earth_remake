@@ -1215,12 +1215,24 @@ body.is-mobile-game.is-landscape .touch-cluster.left-cluster {
 body.is-mobile-game.is-landscape .touch-cluster.right-cluster {
     bottom: max(6px, env(safe-area-inset-bottom));
     right: max(6px, env(safe-area-inset-right));
-    flex-direction: row;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-    align-items: flex-end;
-    /* fits 2 normal buttons per row; FIRE then wraps to its own row */
-    max-width: clamp(110px, 28vw, 160px);
+    display: grid;
+    grid-template-columns: repeat(4, minmax(44px, 1fr)) minmax(68px, 1.3fr);
+    width: min(390px, calc(100vw - 144px));
+    min-width: 292px;
+    gap: 4px;
+    align-items: stretch;
+    justify-content: end;
+}
+
+body.is-mobile-game.is-landscape .touch-cluster.right-cluster .touch-btn {
+    width: 100%;
+    min-width: 0;
+    min-height: clamp(44px, 8dvh, 56px);
+}
+
+body.is-mobile-game.is-landscape .touch-cluster.right-cluster .touch-btn.fire {
+    min-width: 0;
+    min-height: clamp(44px, 8dvh, 56px);
 }
 
 body.is-mobile-game.is-landscape .touch-cluster.utils-cluster {

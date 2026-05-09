@@ -1,16 +1,16 @@
 # Tank Artillery Duel
 
-Current version: `v0.6.6`
+Current version: `v0.6.7`
 
 Tank Artillery Duel is a local browser-based 2D artillery game inspired by classic tank duel games. Two tanks fight across destructible hilly terrain with wind, turn-based aiming, movement fuel, limited special weapons, generated Web Audio effects, match scoring, money, a pre-round and between-round shop, and an optional CPU opponent.
 
-v0.6.6 is a major graphics and presentation pass. It adds original runtime-generated tank art, textured terrain, layered battlefield themes, projectile sprites, richer combat effects, subtle screen shake, and UI polish while preserving the existing game loop, weapons, economy, CPU, shop, and mobile controls.
+v0.6.7 is a focused polish pass. It preserves the v0.6.6 visual upgrade while improving generated Web Audio, normalizing Mega Bomb reach, adding aim/reach debug helpers, and aligning the mobile landscape firing controls into one clean row.
 
 The project is pure HTML, CSS, vanilla JavaScript, HTML5 Canvas, and the Web Audio API. It has no backend, no build step, no paid services, and no external assets.
 
 ## GitHub Pages Note
 
-The live game displays `v0.6.6` on the main menu only. Gameplay intentionally does not show a floating version badge over the canvas, HUD, or touch controls. `window.GAME_VERSION` remains available and returns `"v0.6.6"`.
+The live game displays `v0.6.7` on the main menu only. Gameplay intentionally does not show a floating version badge over the canvas, HUD, or touch controls. `window.GAME_VERSION` remains available and returns `"v0.6.7"`.
 
 After a GitHub Pages deployment, hard refresh the page if the old version still appears:
 
@@ -53,18 +53,18 @@ To test from a phone on the same Wi-Fi, use your machine's LAN IP, for example `
 - Textured terrain with surface highlights, embedded stones, crater shadows, scorch marks, and Dirt Bomb mound highlights.
 - Economy, round summaries, pre-round shop before Round 1, between-round shop, score tracking, and inventory HUD.
 - Shield charge, First Aid Kit full-heal behavior, parachutes, and ammo refill-to-max purchases.
-- Generated Web Audio firing, impact, tank destruction, shield, heal, parachute, purchase, and blocked-purchase sounds.
+- Layered generated Web Audio firing, impact, ambience, tank destruction, shield, heal, parachute, purchase, blocked-purchase, weapon-cycle, round, and match sounds.
 - `window.render_game_to_text()`, `window.advanceTime(ms)`, and `window.GAME_VERSION` for smoke testing.
 
 ## Version Display
 
-- Main menu shows `v0.6.6`.
+- Main menu shows `v0.6.7`.
 - Gameplay does not show a version chip or badge.
-- `window.GAME_VERSION` returns `"v0.6.6"`.
+- `window.GAME_VERSION` returns `"v0.6.7"`.
 
 ## Visual Upgrade
 
-All v0.6.6 art is original and self-contained. The game does not download images, fonts, sounds, or sprites from remote services.
+All v0.6.7 art is original and self-contained. The game does not download images, fonts, sounds, or sprites from remote services.
 
 - Tanks are drawn as stylized artillery vehicles with tread sprites, armored hull panels, angled body alignment on slopes, separate turrets, readable cannon direction, recoil, muzzle flash, low-health smoke, and destroyed wreck art.
 - Terrain uses a layered Canvas render pass: base fill, procedural texture, strata, embedded stones, crater/scorch overlays, mound highlights, and a readable surface cap.
@@ -84,6 +84,7 @@ Phone landscape remains the intended mobile gameplay mode.
 - The mobile shop uses tighter cards, two-column purchase buttons, and a sticky start-round action area so buying does not bury the next step.
 - In CPU mode, the mobile shop prioritizes the human purchase card and collapses CPU auto-shop details behind a small `Details` toggle.
 - Touch controls remain translucent and corner-positioned for phone landscape playability.
+- In phone landscape, the right-side `↑`, `↓`, `PWR-`, `PWR+`, and `FIRE` controls are aligned on one horizontal row.
 
 ### On-Screen Controls
 
@@ -100,7 +101,7 @@ Phone landscape remains the intended mobile gameplay mode.
 | Menu button | Return to the main menu |
 | Sound button | Toggle mute |
 
-Hold-to-repeat works for angle, power, and movement. Fire and weapon-cycle each trigger once per tap.
+Hold-to-repeat works for angle, power, and movement. Fire and weapon-cycle each trigger once per tap. In phone landscape, the right firing cluster is a single row: `↑`, `↓`, `PWR-`, `PWR+`, `FIRE`.
 
 ## Desktop Controls
 
@@ -143,18 +144,27 @@ Shield Charge adds separate blue/cyan protection. It is not normal HP.
 | Weapon | Starting Ammo | Max Carried | Shop Ammo Item | Behavior |
 | --- | ---: | ---: | --- | --- |
 | `Standard Shell` | Unlimited | Unlimited | None | Balanced crater and damage. |
-| `Heavy Shell` | 1 | 3 | `Heavy Shell Ammo` | Slower shell, larger crater, high damage. |
+| `Heavy Shell` | 1 | 3 | `Heavy Shell Ammo` | Heavy-feeling shell, larger crater, high damage. |
 | `Dirt Bomb` | 1 | 4 | `Dirt Bomb Ammo` | Adds a large dirt mound with low tank damage. |
 | `Roller Shell` | 0 | 3 | `Roller Shell Ammo` | Hits terrain, rolls along the slope, then explodes. |
 | `Napalm Canister` | 0 | 3 | `Napalm Canister Ammo` | Creates a terrain-hugging ground fire patch with minimal terrain deformation. |
 | `Cluster Bomb` | 0 | 2 | `Cluster Bomb Ammo` | Splits into 5 bomblets with multiple small craters. |
-| `Mega Bomb` | 0 | 1 | `Mega Bomb Ammo` | Rare, expensive, large crater and high damage. |
+| `Mega Bomb` | 0 | 1 | `Mega Bomb Ammo` | Rare, expensive, practical high-power arc, largest crater, and high damage. |
 
 Standard Shell is unlimited and has no ammo shop button. Every limited weapon can be selected only when it has ammo.
 
+## Mega Bomb Reach
+
+v0.6.7 normalizes Mega Bomb ballistics so it uses the same angle and power range as the other arcing weapons. Its speed scale is now close to Standard Shell, so it can threaten normal enemy spawn distances at high power while still feeling heavy through recoil, visuals, blast size, ammo scarcity, and sound.
+
+The trajectory preview and the actual projectile both use the same `Tank.fireVelocity()` calculation, and the CPU aim simulation reads the same weapon speed scale. Debug mode also includes:
+
+- `window.testWeaponReach()` for approximate per-weapon reach data.
+- `window.setupAimTest()` for a wind-zero, stable-terrain visual aim test with Mega Bomb ammo available.
+
 ## Explosion Visuals
 
-v0.6.6 upgrades the existing Canvas blast visuals while keeping weapon behavior unchanged:
+v0.6.7 upgrades the existing Canvas blast visuals while keeping weapon behavior unchanged:
 
 - Standard Shell: medium expanding blast ring and flash.
 - Heavy Shell: larger ring, stronger flash, more debris.
@@ -167,7 +177,9 @@ v0.6.6 upgrades the existing Canvas blast visuals while keeping weapon behavior 
 
 ## Generated Sounds
 
-All sounds are generated locally with Web Audio. No audio files are used.
+All sounds are generated locally with Web Audio. No audio files or remote assets are used.
+
+v0.6.7 routes sounds through a small mixer with `master`, `weapons`, `explosions`, `impacts`, `ui`, `utilities`, and `ambience` categories. It uses layered oscillators, filtered noise, shaped envelopes, subtle variation, stereo panning by battlefield x-position, and a Web Audio compressor/limiter for safer gain staging.
 
 - Standard Shell: medium cannon thump and normal explosion.
 - Heavy Shell: deeper launch and larger low-rumble impact.
@@ -177,9 +189,10 @@ All sounds are generated locally with Web Audio. No audio files are used.
 - Cluster Bomb: hollow launch, split pop, and small bomblet impacts.
 - Mega Bomb: deepest launch and largest low-frequency explosion.
 - Tank destruction: deep final boom, low rumble, metallic crack/pop, and falling debris noise.
-- Shield absorption, First Aid Kit, parachute, purchase, and invalid purchase sounds remain distinct.
+- Shield activation/absorption, First Aid Kit, parachute, purchase, invalid purchase, weapon cycle, round start, round win, and match win sounds remain distinct.
+- Battlefield ambience is subtle generated wind/atmosphere per theme and stops when muted or returning to the menu.
 
-Mute still suppresses all generated sounds.
+Mute still suppresses all generated sounds and persists through localStorage.
 
 ## Economy and Shop
 
@@ -239,6 +252,8 @@ Normal play does not expose extra debug helpers. Add `?debug=1` to enable:
 - `window.testWeaponImpact("napalm")`
 - `window.testWeaponImpact("cluster")`
 - `window.testWeaponImpact("mega")`
+- `window.testWeaponReach()`
+- `window.setupAimTest()`
 - `window.forceRoundWin(0)`
 - `window.forceRoundWin(1)`
 
@@ -272,7 +287,7 @@ src/touchInput.js   Pointer-event wiring for the on-screen touch control pad
 - If the port is busy, use another port such as `python -m http.server 8010`.
 - If sound does not play, click or tap once in the page first. Browsers require user interaction before starting audio.
 - If the sound button starts muted, localStorage has a saved mute preference. Press `M` or tap the sound button.
-- If GitHub Pages shows an older version, hard refresh and confirm the main menu says `v0.6.6`.
+- If GitHub Pages shows an older version, hard refresh and confirm the main menu says `v0.6.7`.
 - If match settings look wrong, clear `localStorage` for the site or change settings on the menu before starting a new match.
 
 ## Known Limitations
