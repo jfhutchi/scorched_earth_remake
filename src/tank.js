@@ -1,4 +1,5 @@
 import { CONFIG, WEAPONS, clamp, getWeaponById } from './config.js';
+import { drawTank } from './tankRenderer.js';
 
 export class Tank {
     constructor({ id, name, x, color, facing, isCpu = false }) {
@@ -27,6 +28,11 @@ export class Tank {
         this.parachutes = 0;
         this.lastShieldAbsorbed = 0;
         this.shieldFlashTimer = 0;
+        this.recoilTimer = 0;
+        this.recoilDuration = 0.22;
+        this.muzzleFlashTimer = 0;
+        this.muzzleFlashDuration = 0.16;
+        this.fireSeed = Math.random() * 1000;
         this.deathEffectPlayed = false;
         this.wreckSmokeTime = 0;
         this.wreckSeed = Math.random() * 1000;
@@ -45,6 +51,9 @@ export class Tank {
         this.movementFuel = CONFIG.tank.movementFuelPerTurn;
         this.lastShieldAbsorbed = 0;
         this.shieldFlashTimer = 0;
+        this.recoilTimer = 0;
+        this.muzzleFlashTimer = 0;
+        this.fireSeed = Math.random() * 1000;
         this.deathEffectPlayed = false;
         this.wreckSmokeTime = 0;
         this.wreckSeed = Math.random() * 1000;
@@ -177,6 +186,18 @@ export class Tank {
         if (this.shieldFlashTimer > 0) {
             this.shieldFlashTimer = Math.max(0, this.shieldFlashTimer - dt);
         }
+        if (this.recoilTimer > 0) {
+            this.recoilTimer = Math.max(0, this.recoilTimer - dt);
+        }
+        if (this.muzzleFlashTimer > 0) {
+            this.muzzleFlashTimer = Math.max(0, this.muzzleFlashTimer - dt);
+        }
+    }
+
+    triggerFireVisual() {
+        this.recoilTimer = this.recoilDuration;
+        this.muzzleFlashTimer = this.muzzleFlashDuration;
+        this.fireSeed = Math.random() * 1000;
     }
 
     resetMovementFuel() {
@@ -197,89 +218,8 @@ export class Tank {
         this.power = clamp(this.power + delta, CONFIG.tank.minPower, CONFIG.tank.maxPower);
     }
 
-    draw(ctx) {
-        const baseY = this.y;
-        const bodyX = this.x - this.width / 2;
-        const bodyY = baseY - this.height;
-        const treadY = baseY - 6;
-
-        ctx.save();
-
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.24)';
-        ctx.beginPath();
-        ctx.ellipse(this.x, baseY + 3, this.width / 2 + 5, 5, 0, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.fillStyle = '#20252c';
-        roundRect(ctx, bodyX - 4, treadY, this.width + 8, 8, 4);
-        ctx.fill();
-
-        ctx.fillStyle = '#111820';
-        for (let i = 0; i < 5; i++) {
-            ctx.beginPath();
-            ctx.arc(bodyX + 4 + i * 9, treadY + 4, 2.1, 0, Math.PI * 2);
-            ctx.fill();
-        }
-
-        const bodyGradient = ctx.createLinearGradient(bodyX, bodyY, bodyX, baseY);
-        bodyGradient.addColorStop(0, shade(this.color, 18));
-        bodyGradient.addColorStop(1, shade(this.color, -10));
-        ctx.fillStyle = bodyGradient;
-        roundRect(ctx, bodyX, bodyY, this.width, this.height, 5);
-        ctx.fill();
-
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.16)';
-        roundRect(ctx, bodyX + 5, bodyY + 3, this.width - 10, 4, 2);
-        ctx.fill();
-
-        const turretY = bodyY;
-        const turretR = 10;
-        ctx.fillStyle = shade(this.color, -18);
-        ctx.beginPath();
-        ctx.arc(this.x, turretY, turretR, Math.PI, Math.PI * 2);
-        ctx.fill();
-
-        const rad = this.angle * Math.PI / 180;
-        const muzzle = this.muzzlePosition();
-        ctx.strokeStyle = '#171b20';
-        ctx.lineWidth = this.barrelThickness + 2;
-        ctx.lineCap = 'round';
-        ctx.beginPath();
-        ctx.moveTo(this.x, turretY);
-        ctx.lineTo(muzzle.x, muzzle.y);
-        ctx.stroke();
-
-        ctx.strokeStyle = '#343a42';
-        ctx.lineWidth = this.barrelThickness;
-        ctx.beginPath();
-        ctx.moveTo(this.x, turretY);
-        ctx.lineTo(muzzle.x, muzzle.y);
-        ctx.stroke();
-
-        ctx.fillStyle = '#111820';
-        ctx.beginPath();
-        ctx.arc(muzzle.x, muzzle.y, 3, 0, Math.PI * 2);
-        ctx.fill();
-
-        if (this.damageTimer > 0) {
-            const alpha = Math.min(1, this.damageTimer / 1.35);
-            ctx.fillStyle = `rgba(255, 76, 66, ${alpha})`;
-            ctx.font = 'bold 19px Georgia, serif';
-            ctx.textAlign = 'center';
-            ctx.fillText(`-${this.recentDamage}`, this.x, bodyY - 22 - (1 - alpha) * 18);
-        }
-
-        if (this.shieldCharge > 0 || this.shieldFlashTimer > 0) {
-            const chargeAlpha = Math.min(0.45, 0.14 + this.shieldCharge / 220);
-            const flashAlpha = this.shieldFlashTimer > 0 ? this.shieldFlashTimer / 0.45 * 0.35 : 0;
-            ctx.strokeStyle = `rgba(110, 210, 255, ${chargeAlpha + flashAlpha})`;
-            ctx.lineWidth = 2 + Math.min(3, this.shieldCharge / 35);
-            ctx.beginPath();
-            ctx.ellipse(this.x, this.y - this.height / 2, this.width / 2 + 14, this.height + 12, 0, 0, Math.PI * 2);
-            ctx.stroke();
-        }
-
-        ctx.restore();
+    draw(ctx, terrain = null, time = 0) {
+        drawTank(ctx, this, { terrain, time });
     }
 
     weaponSnapshot() {
@@ -290,26 +230,4 @@ export class Tank {
             selected: getWeaponById(weapon.id).id === this.selectedWeapon().id,
         }));
     }
-}
-
-function roundRect(ctx, x, y, w, h, r) {
-    ctx.beginPath();
-    ctx.moveTo(x + r, y);
-    ctx.arcTo(x + w, y, x + w, y + h, r);
-    ctx.arcTo(x + w, y + h, x, y + h, r);
-    ctx.arcTo(x, y + h, x, y, r);
-    ctx.arcTo(x, y, x + w, y, r);
-    ctx.closePath();
-}
-
-function shade(hex, percent) {
-    const c = hex.replace('#', '');
-    const num = parseInt(c, 16);
-    let r = (num >> 16) + Math.round((percent / 100) * 255);
-    let g = ((num >> 8) & 0xff) + Math.round((percent / 100) * 255);
-    let b = (num & 0xff) + Math.round((percent / 100) * 255);
-    r = clamp(r, 0, 255);
-    g = clamp(g, 0, 255);
-    b = clamp(b, 0, 255);
-    return `rgb(${r},${g},${b})`;
 }

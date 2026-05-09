@@ -1,4 +1,4 @@
-export const GAME_VERSION = 'v0.6.5';
+export const GAME_VERSION = 'v0.6.7';
 
 export const CONFIG = {
     debug: false,
@@ -201,7 +201,7 @@ export const WEAPONS = [
         explosionRadius: 72,
         terrainEffectRadius: 66,
         terrainEffectStrength: 1.36,
-        speedScale: 0.8,
+        speedScale: 0.98,
         projectileRadius: 6,
         color: '#ff8a45',
         trailColor: '255, 155, 88',
@@ -210,7 +210,7 @@ export const WEAPONS = [
         fireSoundType: 'heavy',
         impactSoundType: 'heavy',
         terrainMessage: 'Heavy Shell caused a major blast.',
-        description: 'High damage and a larger crater. Limited ammo.',
+        description: 'High damage and a larger crater with a practical artillery arc. Limited ammo.',
     },
     {
         // v0.6: Dirt Bomb buffed to ~3x visible mound effect (wider radius +
@@ -345,7 +345,7 @@ export const WEAPONS = [
         explosionRadius: 92,
         terrainEffectRadius: 82,
         terrainEffectStrength: 1.62,
-        speedScale: 0.75,
+        speedScale: 0.98,
         projectileRadius: 7,
         color: '#ff6f36',
         trailColor: '255, 108, 54',
@@ -354,7 +354,7 @@ export const WEAPONS = [
         fireSoundType: 'mega',
         impactSoundType: 'mega',
         terrainMessage: 'Mega Bomb tore open a massive crater.',
-        description: 'Rare, expensive, slow shell with the largest crater and highest blast damage.',
+        description: 'Rare, expensive heavy blast with the largest crater and highest blast damage.',
     },
 ];
 

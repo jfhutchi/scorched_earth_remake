@@ -1,3 +1,5 @@
+import { drawProjectileSprite, drawProjectileTrail } from './visualAssets.js';
+
 export class Projectile {
     constructor(x, y, vx, vy, weapon) {
         this.x = x;
@@ -11,10 +13,12 @@ export class Projectile {
         this.maxTrail = weapon.id === 'heavy' || weapon.id === 'mega' ? 26 : (weapon.id === 'clusterBomblet' ? 10 : 18);
         this.rolling = false;
         this.done = false;
+        this.spin = Math.random() * Math.PI * 2;
     }
 
     update(dt, gravity, wind) {
         this.age += dt;
+        this.spin += dt * (this.weapon.id === 'roller' ? 18 : 8);
         this.trail.push({ x: this.x, y: this.y });
         if (this.trail.length > this.maxTrail) this.trail.shift();
 
@@ -25,15 +29,7 @@ export class Projectile {
     }
 
     draw(ctx) {
-        for (let i = 0; i < this.trail.length; i++) {
-            const point = this.trail[i];
-            const alpha = (i + 1) / this.trail.length;
-            ctx.fillStyle = `rgba(${this.weapon.trailColor}, ${alpha * 0.48})`;
-            ctx.beginPath();
-            ctx.arc(point.x, point.y, Math.max(1, this.radius * alpha), 0, Math.PI * 2);
-            ctx.fill();
-        }
-
+        drawProjectileTrail(ctx, this);
         if (this.rolling) {
             ctx.strokeStyle = 'rgba(35, 38, 42, 0.42)';
             ctx.lineWidth = 2;
@@ -41,16 +37,7 @@ export class Projectile {
             ctx.arc(this.x, this.y, this.radius + 4, 0, Math.PI * 2);
             ctx.stroke();
         }
-
-        ctx.fillStyle = '#1b1d20';
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.radius + 1.5, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.fillStyle = this.weapon.color;
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-        ctx.fill();
+        drawProjectileSprite(ctx, this);
     }
 }
 
@@ -160,6 +147,27 @@ export class Explosion {
                 Math.PI * 2
             );
             ctx.fill();
+        }
+
+        const smokeAlpha = (isMega ? 0.42 : (isHeavy ? 0.34 : 0.22)) * Math.min(1, k * 2.2) * (1 - k * 0.62);
+        if (smokeAlpha > 0.02) {
+            ctx.fillStyle = `rgba(48, 42, 36, ${smokeAlpha})`;
+            for (let i = 0; i < this.fragments.length; i += isCluster ? 3 : 4) {
+                const fragment = this.fragments[i];
+                const d = fragment.speed * k * 0.48;
+                const radius = fragment.size * (2.4 + k * (isMega ? 5 : 3));
+                ctx.beginPath();
+                ctx.ellipse(
+                    this.x + Math.cos(fragment.angle) * d + Math.sin(this.t * 3 + i) * 4,
+                    this.y + Math.sin(fragment.angle) * d - this.maxRadius * k * 0.22,
+                    radius * 1.25,
+                    radius,
+                    0,
+                    0,
+                    Math.PI * 2
+                );
+                ctx.fill();
+            }
         }
 
         ctx.restore();

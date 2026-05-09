@@ -1,18 +1,24 @@
 import { CONFIG, clamp } from './config.js';
+import { drawTerrain } from './terrainRenderer.js';
+import { getBattleTheme } from './themes.js';
 
 // Terrain is a height map: heights[x] is the top of the ground at canvas x.
 // Smaller y is higher terrain because canvas coordinates grow downward.
 export class Terrain {
-    constructor(width, height, roughness = 'normal') {
+    constructor(width, height, roughness = 'normal', themeId = 'green') {
         this.width = width;
         this.height = height;
         this.roughness = roughness;
+        this.theme = getBattleTheme(themeId);
         this.heights = new Float32Array(width);
         this.craters = [];
         this.mounds = [];
-        this.color = '#735433';
-        this.deepColor = '#4d3524';
-        this.grassColor = '#3f9f4d';
+        this.scorchMarks = [];
+        this.detailStones = [];
+        this.surfaceDetails = [];
+        this.visualSeed = Math.random() * Math.PI * 2;
+        this.textureOffsetX = Math.floor(Math.random() * 128);
+        this.textureOffsetY = Math.floor(Math.random() * 128);
         this.generate();
     }
 
@@ -45,6 +51,8 @@ export class Terrain {
         this._smooth(profile.smoothing);
         this.craters = [];
         this.mounds = [];
+        this.scorchMarks = [];
+        this._generateVisualDetails();
     }
 
     heightAt(x) {
@@ -60,6 +68,12 @@ export class Terrain {
         const left = this.heightAt(x - halfWidth);
         const right = this.heightAt(x + halfWidth);
         return Math.abs(right - left) / Math.max(1, halfWidth * 2);
+    }
+
+    angleAt(x, halfWidth = 18) {
+        const left = this.heightAt(x - halfWidth);
+        const right = this.heightAt(x + halfWidth);
+        return Math.atan2(right - left, Math.max(1, halfWidth * 2));
     }
 
     findStableSpawn(minRatio, maxRatio, avoidX = null) {
@@ -123,8 +137,9 @@ export class Terrain {
             }
         }
 
-        this.craters.push({ x: cx, y: cy, radius });
+        this.craters.push({ x: cx, y: cy, radius, seed: Math.random() * 1000 });
         if (this.craters.length > 24) this.craters.shift();
+        this.scorch(cx, cy, radius * 0.88, 'blast');
         this._smoothRange(xMin - 3, xMax + 3, 1);
     }
 
@@ -142,41 +157,68 @@ export class Terrain {
             this.heights[x] = clamp(this.heights[x] - moundHeight, minGroundY, this.height);
         }
 
-        this.mounds.push({ x: cx, y: cy, radius });
+        this.mounds.push({ x: cx, y: cy, radius, seed: Math.random() * 1000 });
         if (this.mounds.length > 16) this.mounds.shift();
         // v0.6: lighter smoothing so the larger mound stays visibly tall and
         // does not get flattened back down by averaging.
         this._smoothRange(xMin - 8, xMax + 8, 1);
     }
 
+    scorch(cx, cy, radius, type = 'blast') {
+        if (!Number.isFinite(cx) || !Number.isFinite(cy) || radius <= 0) return;
+        this.scorchMarks.push({
+            x: cx,
+            y: cy,
+            radius,
+            type,
+            alpha: type === 'napalm' ? 1 : 0.78,
+            seed: Math.random() * 1000,
+        });
+        if (this.scorchMarks.length > 32) this.scorchMarks.shift();
+    }
+
     draw(ctx) {
-        const w = this.width;
-        const h = this.height;
+        drawTerrain(ctx, this);
+    }
 
-        const groundGradient = ctx.createLinearGradient(0, h * 0.35, 0, h);
-        groundGradient.addColorStop(0, this.color);
-        groundGradient.addColorStop(1, this.deepColor);
+    _generateVisualDetails() {
+        this.detailStones = [];
+        this.surfaceDetails = [];
 
-        ctx.beginPath();
-        ctx.moveTo(0, h);
-        ctx.lineTo(0, this.heights[0]);
-        for (let x = 1; x < w; x++) ctx.lineTo(x, this.heights[x]);
-        ctx.lineTo(w, h);
-        ctx.closePath();
-        ctx.fillStyle = groundGradient;
-        ctx.fill();
+        const stoneCount = Math.floor(this.width / 13);
+        for (let i = 0; i < stoneCount; i++) {
+            const x = Math.random() * this.width;
+            const depth = 14 + Math.random() * 150;
+            const y = this.heightAt(x) + depth;
+            if (y >= this.height - 5) continue;
+            this.detailStones.push({
+                x,
+                y,
+                rx: 1.2 + Math.random() * 3.8,
+                ry: 0.8 + Math.random() * 2.3,
+                rotation: Math.random() * Math.PI,
+                colorIndex: Math.floor(Math.random() * this.theme.terrain.stones.length),
+                alpha: 0.22 + Math.random() * 0.3,
+            });
+        }
 
-        this._drawStrata(ctx);
-        this._drawCraterShadows(ctx);
-        this._drawMoundHighlights(ctx);
-
-        ctx.beginPath();
-        ctx.moveTo(0, this.heights[0]);
-        for (let x = 1; x < w; x++) ctx.lineTo(x, this.heights[x]);
-        ctx.strokeStyle = this.grassColor;
-        ctx.lineWidth = 5;
-        ctx.lineCap = 'round';
-        ctx.stroke();
+        const detailCount = Math.floor(this.width / 42);
+        for (let i = 0; i < detailCount; i++) {
+            const x = 12 + Math.random() * (this.width - 24);
+            const kindRoll = Math.random();
+            const kind = this.theme.id === 'green' && kindRoll < 0.52
+                ? 'grass'
+                : (kindRoll < 0.82 ? 'pebble' : 'plate');
+            this.surfaceDetails.push({
+                x,
+                kind,
+                height: 4 + Math.random() * 8,
+                size: 1.2 + Math.random() * 3.5,
+                lean: -2 + Math.random() * 4,
+                rotation: Math.random() * Math.PI,
+                colorIndex: Math.floor(Math.random() * this.theme.terrain.stones.length),
+            });
+        }
     }
 
     _smooth(iterations) {
