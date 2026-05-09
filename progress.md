@@ -48,3 +48,14 @@ Original prompt: Upgrade the existing local browser Scorched Earth-style artille
 - Compact mobile shop polish now keeps the human purchase card primary, uses smaller mobile shop spacing/buttons, and collapses CPU auto-shop purchases behind a Details toggle on phone-sized screens.
 - Updated README.md and TESTING.md for v0.6.5.
 - Verification: `node --check` passed for edited JS files; the web-game Playwright smoke client reported `v0.6.5`; targeted browser checks covered menu version, no gameplay version chip, desktop/mobile CPU shop summaries, mobile compact shop reachability, Napalm ground fire/damage, tank death wreck/blast, and no console/page errors.
+
+## v0.6.6 Notes
+
+- Updated the version target to `v0.6.6`; the main menu and `window.GAME_VERSION` now report v0.6.6 while gameplay remains free of a floating version chip.
+- Added original runtime-generated visual systems: battlefield themes, layered backgrounds, procedural terrain texture/detail rendering, generated projectile sprites, and cached tread/projectile art.
+- Upgraded tanks with stylized armored hulls, treads, turret/cannon details, slope-aligned bodies, recoil, muzzle flash, low-health smoke, shield arcs, and improved wreck rendering.
+- Upgraded terrain rendering with theme-aware fills, strata, embedded stones, surface highlights, crater shadows, scorch marks, napalm scorch, and Dirt Bomb mound highlights.
+- Upgraded combat presentation with projectile trails/sprites, richer smoke/debris on explosions, weapon-specific visual identity, and subtle screen shake for impacts.
+- Polished CSS for menu, HUD panels, buttons, health/shield bars, canvas frame, and mobile controls without changing core flow.
+- Updated README.md and TESTING.md for v0.6.6 visual QA and the new rendering modules.
+- Verification: `node --check` passed for all `src/*.js`; the web-game Playwright client reported `v0.6.6`; targeted Playwright checks covered main menu version, no gameplay version badge, desktop round start, keyboard angle/movement/fire transitions, debug weapon impact visuals for Standard/Heavy/Dirt/Roller/Napalm/Cluster/Mega, mobile Play to CPU mode, visible mobile touch controls, mobile fire transition, screenshot review, and no console/page errors.

@@ -4,15 +4,30 @@
     padding: 0;
 }
 
+:root {
+    --ink: #182225;
+    --panel: #f5ead0;
+    --panel-deep: #e8d6ad;
+    --night: #172d31;
+    --night-deep: #11191b;
+    --gold: #ffe49b;
+    --rust: #ba5735;
+    --rust-hot: #dd7440;
+    --teal: #236f80;
+    --teal-hot: #47a3b4;
+    --cream: #f7edd3;
+}
+
 html,
 body {
     width: 100%;
     height: 100%;
     overflow: hidden;
     background:
-        radial-gradient(circle at 12% 18%, rgba(255, 221, 144, 0.20), transparent 28%),
-        linear-gradient(135deg, #17394a 0%, #192d33 44%, #1a1c1a 100%);
-    color: #f3efe3;
+        linear-gradient(120deg, rgba(255, 228, 155, 0.10) 0 18%, transparent 18% 100%),
+        repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.035) 0 1px, transparent 1px 15px),
+        linear-gradient(135deg, #183f49 0%, #172d31 44%, #151c1b 100%);
+    color: var(--cream);
     font-family: Georgia, "Trebuchet MS", serif;
     /* Prevent iOS rubber-band scroll and double-tap zoom while playing. */
     overscroll-behavior: none;
@@ -63,12 +78,12 @@ button {
     max-height: calc(100dvh - 32px);
     overflow: auto;
     padding: 32px 38px;
-    border: 1px solid rgba(255, 236, 190, 0.22);
+    border: 1px solid rgba(255, 236, 190, 0.28);
     border-radius: 10px;
     background:
-        linear-gradient(180deg, rgba(34, 44, 43, 0.96), rgba(24, 30, 28, 0.97)),
-        repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.03) 0 1px, transparent 1px 12px);
-    box-shadow: 0 22px 58px rgba(0, 0, 0, 0.42);
+        linear-gradient(180deg, rgba(43, 58, 54, 0.97), rgba(23, 30, 28, 0.985)),
+        repeating-linear-gradient(45deg, rgba(255, 232, 166, 0.045) 0 1px, transparent 1px 13px);
+    box-shadow: 0 24px 66px rgba(0, 0, 0, 0.48), inset 0 1px 0 rgba(255, 255, 255, 0.08);
     text-align: center;
     padding-top: max(32px, env(safe-area-inset-top));
     padding-bottom: max(32px, env(safe-area-inset-bottom));
@@ -84,11 +99,11 @@ button {
 }
 
 .title {
-    color: #ffe8a6;
+    color: var(--gold);
     font-size: clamp(28px, 5vw, 58px);
     line-height: 0.95;
     margin-bottom: 12px;
-    text-shadow: 0 3px 0 rgba(89, 48, 25, 0.5);
+    text-shadow: 0 3px 0 rgba(89, 48, 25, 0.54), 0 12px 28px rgba(0, 0, 0, 0.26);
 }
 
 .subtitle {
@@ -103,9 +118,9 @@ button {
     display: inline-block;
     margin: -4px 0 14px;
     padding: 4px 10px;
-    border: 1px solid rgba(158, 219, 230, 0.26);
+    border: 1px solid rgba(158, 219, 230, 0.34);
     border-radius: 999px;
-    background: rgba(35, 108, 125, 0.18);
+    background: linear-gradient(180deg, rgba(45, 126, 143, 0.34), rgba(23, 67, 79, 0.24));
     color: #9edbe6;
     font-size: 12px;
     font-weight: 900;
@@ -138,7 +153,7 @@ button {
     padding: 10px;
     border: 1px solid rgba(255, 232, 166, 0.22);
     border-radius: 6px;
-    background: #1f2b2a;
+    background: linear-gradient(180deg, #253836, #1c2827);
     color: #f8efd8;
     min-height: 40px;
     font-size: 14px;
@@ -149,16 +164,18 @@ button {
     padding: 11px 20px;
     border: 1px solid rgba(255, 232, 166, 0.28);
     border-radius: 8px;
-    background: #26312d;
+    background: linear-gradient(180deg, #34453f, #202b28);
     color: #f8efd8;
     cursor: pointer;
     font-weight: 700;
-    transition: transform 0.08s ease, background 0.16s ease, border-color 0.16s ease;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 6px 14px rgba(0, 0, 0, 0.18);
+    transition: transform 0.08s ease, background 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
 }
 
 .btn:hover {
-    background: #33443c;
+    background: linear-gradient(180deg, #3f554c, #27362f);
     border-color: rgba(255, 232, 166, 0.55);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 8px 18px rgba(0, 0, 0, 0.22);
 }
 
 .btn:active {
@@ -166,21 +183,21 @@ button {
 }
 
 .btn.primary {
-    background: #b94f2d;
+    background: linear-gradient(180deg, var(--rust-hot), var(--rust));
     border-color: #e08245;
 }
 
 .btn.primary:hover {
-    background: #d86637;
+    background: linear-gradient(180deg, #ee8750, #c85d38);
 }
 
 .btn.primary.alt {
-    background: #236c7d;
+    background: linear-gradient(180deg, var(--teal-hot), var(--teal));
     border-color: #4fa5b6;
 }
 
 .btn.primary.alt:hover {
-    background: #2d8295;
+    background: linear-gradient(180deg, #5ab6c7, #2d8295);
 }
 
 .btn.small {
@@ -228,7 +245,9 @@ button {
 #game {
     align-items: center;
     justify-content: center;
-    background: #15272d;
+    background:
+        repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.028) 0 1px, transparent 1px 28px),
+        linear-gradient(180deg, #13282e, #111717);
     padding-top: env(safe-area-inset-top);
     padding-bottom: env(safe-area-inset-bottom);
     padding-left: env(safe-area-inset-left);
@@ -248,7 +267,8 @@ button {
     display: block;
     background: #8ccced;
     border-radius: 6px;
-    box-shadow: 0 22px 55px rgba(0, 0, 0, 0.38);
+    border: 1px solid rgba(255, 236, 190, 0.20);
+    box-shadow: 0 22px 55px rgba(0, 0, 0, 0.42), 0 0 0 1px rgba(0, 0, 0, 0.2);
     max-width: 100%;
     max-height: 100%;
     touch-action: none;
@@ -270,11 +290,11 @@ button {
 .hud-panel {
     min-width: 0;
     padding: 8px 10px;
-    border: 1px solid rgba(41, 52, 54, 0.32);
+    border: 1px solid rgba(41, 52, 54, 0.26);
     border-radius: 8px;
-    background: rgba(249, 238, 207, 0.88);
+    background: linear-gradient(180deg, rgba(250, 239, 210, 0.93), rgba(231, 213, 174, 0.88));
     color: #1f2a2c;
-    box-shadow: 0 8px 24px rgba(22, 30, 28, 0.16);
+    box-shadow: 0 8px 24px rgba(22, 30, 28, 0.20), inset 0 1px 0 rgba(255, 255, 255, 0.35);
     backdrop-filter: blur(4px);
 }
 
@@ -288,7 +308,7 @@ button {
 
 .hud-panel.active {
     border-color: #c7522f;
-    box-shadow: 0 0 0 3px rgba(199, 82, 47, 0.24), 0 8px 24px rgba(22, 30, 28, 0.16);
+    box-shadow: 0 0 0 3px rgba(199, 82, 47, 0.24), 0 8px 24px rgba(22, 30, 28, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.35);
 }
 
 .hud-panel.disabled {
@@ -317,7 +337,7 @@ button {
     flex: 0 0 auto;
     padding: 3px 8px;
     border-radius: 999px;
-    background: rgba(35, 108, 125, 0.12);
+    background: rgba(35, 108, 125, 0.14);
     color: #24434a;
     font-size: 12px;
     font-weight: 700;
@@ -383,13 +403,15 @@ button {
     height: 12px;
     overflow: hidden;
     border-radius: 999px;
-    background: rgba(33, 43, 45, 0.16);
+    background: rgba(33, 43, 45, 0.19);
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.22);
 }
 
 .health-fill {
     width: 100%;
     height: 100%;
     transition: width 0.28s ease;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.24);
 }
 
 .health-text {

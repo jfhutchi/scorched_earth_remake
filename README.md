@@ -1,16 +1,16 @@
 # Tank Artillery Duel
 
-Current version: `v0.6.5`
+Current version: `v0.6.6`
 
 Tank Artillery Duel is a local browser-based 2D artillery game inspired by classic tank duel games. Two tanks fight across destructible hilly terrain with wind, turn-based aiming, movement fuel, limited special weapons, generated Web Audio effects, match scoring, money, a pre-round and between-round shop, and an optional CPU opponent.
 
-v0.6.5 is a focused polish pass: destroyed tanks now get a larger final blast, wreck smoke, and a distinct generated death sound, while Napalm Canister impacts create terrain-hugging ground fire that spreads along the ridge with minimal terrain damage.
+v0.6.6 is a major graphics and presentation pass. It adds original runtime-generated tank art, textured terrain, layered battlefield themes, projectile sprites, richer combat effects, subtle screen shake, and UI polish while preserving the existing game loop, weapons, economy, CPU, shop, and mobile controls.
 
 The project is pure HTML, CSS, vanilla JavaScript, HTML5 Canvas, and the Web Audio API. It has no backend, no build step, no paid services, and no external assets.
 
 ## GitHub Pages Note
 
-The live game displays `v0.6.5` on the main menu only. Gameplay intentionally does not show a floating version badge over the canvas, HUD, or touch controls. `window.GAME_VERSION` remains available and returns `"v0.6.5"`.
+The live game displays `v0.6.6` on the main menu only. Gameplay intentionally does not show a floating version badge over the canvas, HUD, or touch controls. `window.GAME_VERSION` remains available and returns `"v0.6.6"`.
 
 After a GitHub Pages deployment, hard refresh the page if the old version still appears:
 
@@ -47,6 +47,10 @@ To test from a phone on the same Wi-Fi, use your machine's LAN IP, for example `
 - Destructible heightmap terrain with craters, Dirt Bomb mounds, and tank settling/fall damage.
 - Projectile physics with gravity and wind.
 - Standard Shell, Heavy Shell, Dirt Bomb, Roller Shell, Napalm Canister, Cluster Bomb, and Mega Bomb.
+- Original self-contained Canvas art: cached projectile sprites, tank details, procedural terrain texture, and layered backgrounds.
+- Three randomly selected battlefield looks: green daytime hills, desert sunset canyon, and snowy mountains.
+- Polished tank rendering with treads, armored hulls, turret/cannon details, recoil, muzzle flash, shadows, shield outlines, damage smoke, and wrecked states.
+- Textured terrain with surface highlights, embedded stones, crater shadows, scorch marks, and Dirt Bomb mound highlights.
 - Economy, round summaries, pre-round shop before Round 1, between-round shop, score tracking, and inventory HUD.
 - Shield charge, First Aid Kit full-heal behavior, parachutes, and ammo refill-to-max purchases.
 - Generated Web Audio firing, impact, tank destruction, shield, heal, parachute, purchase, and blocked-purchase sounds.
@@ -54,9 +58,19 @@ To test from a phone on the same Wi-Fi, use your machine's LAN IP, for example `
 
 ## Version Display
 
-- Main menu shows `v0.6.5`.
+- Main menu shows `v0.6.6`.
 - Gameplay does not show a version chip or badge.
-- `window.GAME_VERSION` returns `"v0.6.5"`.
+- `window.GAME_VERSION` returns `"v0.6.6"`.
+
+## Visual Upgrade
+
+All v0.6.6 art is original and self-contained. The game does not download images, fonts, sounds, or sprites from remote services.
+
+- Tanks are drawn as stylized artillery vehicles with tread sprites, armored hull panels, angled body alignment on slopes, separate turrets, readable cannon direction, recoil, muzzle flash, low-health smoke, and destroyed wreck art.
+- Terrain uses a layered Canvas render pass: base fill, procedural texture, strata, embedded stones, crater/scorch overlays, mound highlights, and a readable surface cap.
+- Backgrounds are generated Canvas scenes with sky gradients, distant ridges, haze, and lightweight theme animation such as clouds, dust, or snow.
+- Projectiles use generated shell/canister/bomblet sprites with motion trails; explosions add flash rings, smoke, debris, scorch marks, and restrained screen shake for heavier weapons.
+- UI panels, buttons, health/shield bars, and mobile controls were polished for stronger contrast without changing the menu, shop, summary, or play flow.
 
 ## Mobile Browser Support
 
@@ -140,7 +154,7 @@ Standard Shell is unlimited and has no ammo shop button. Every limited weapon ca
 
 ## Explosion Visuals
 
-v0.6.5 keeps the classic-inspired expanding Canvas blast visuals and adds final tank destruction feedback:
+v0.6.6 upgrades the existing Canvas blast visuals while keeping weapon behavior unchanged:
 
 - Standard Shell: medium expanding blast ring and flash.
 - Heavy Shell: larger ring, stronger flash, more debris.
@@ -238,8 +252,13 @@ styles.css          Responsive layout, HUD, touch button styling, safe-area hand
 src/config.js       Version, tunables, weapon definitions, economy, CPU difficulty
 src/main.js         Entry point, DOM wiring, canvas sizing, touch wiring, debug hooks
 src/game.js         Game loop, turn flow, economy, shop, scoring, collisions, rendering
-src/terrain.js      Heightmap terrain, spawn pads, crater carving, dirt mounds
-src/tank.js         Tank state, health, shield, ammo, utilities, aiming, drawing
+src/themes.js       Original battlefield theme palettes and theme selection
+src/backgroundRenderer.js Layered Canvas backgrounds and lightweight atmosphere animation
+src/visualAssets.js Runtime-generated sprite and texture caches
+src/terrainRenderer.js Layered terrain painting, texture, stones, craters, scorch marks
+src/tankRenderer.js Stylized tank, recoil, smoke, shield, and wreck drawing
+src/terrain.js      Heightmap terrain, spawn pads, crater carving, dirt mounds, visual marks
+src/tank.js         Tank state, health, shield, ammo, utilities, aiming, visual timers
 src/projectile.js   Projectile physics, rolling/split behavior support, explosion visuals
 src/cpu.js          CPU weapon choice, aiming simulation, difficulty tuning
 src/audio.js        Generated Web Audio effects and mute persistence
@@ -253,7 +272,7 @@ src/touchInput.js   Pointer-event wiring for the on-screen touch control pad
 - If the port is busy, use another port such as `python -m http.server 8010`.
 - If sound does not play, click or tap once in the page first. Browsers require user interaction before starting audio.
 - If the sound button starts muted, localStorage has a saved mute preference. Press `M` or tap the sound button.
-- If GitHub Pages shows an older version, hard refresh and confirm the main menu says `v0.6.5`.
+- If GitHub Pages shows an older version, hard refresh and confirm the main menu says `v0.6.6`.
 - If match settings look wrong, clear `localStorage` for the site or change settings on the menu before starting a new match.
 
 ## Known Limitations

@@ -4,15 +4,34 @@ Use a local static server, open the game in a desktop or mobile browser, and kee
 
 For mobile testing, either visit the LAN IP from a phone (`http://<your-laptop-ip>:8000`), publish to GitHub Pages, or use browser DevTools device emulation.
 
-## v0.6.5 Version
+## v0.6.6 Version
 
-- [ ] Main menu visibly shows `v0.6.5`.
+- [ ] Main menu visibly shows `v0.6.6`.
 - [ ] Gameplay screen does not show a floating version badge over the battlefield, HUD, or controls.
-- [ ] `window.GAME_VERSION` returns `"v0.6.5"` in the browser console.
-- [ ] GitHub Pages deployment shows `v0.6.5` after a hard refresh.
+- [ ] `window.GAME_VERSION` returns `"v0.6.6"` in the browser console.
+- [ ] GitHub Pages deployment shows `v0.6.6` after a hard refresh.
 - [ ] No external assets are requested in the Network panel.
 
-## v0.6.5 Tank Destruction
+## v0.6.6 Visual Presentation
+
+- [ ] Tanks render with armored body, separate turret, cannon, treads/wheels, highlight, shadow, and team color accents.
+- [ ] Tank cannon visually matches the gameplay firing angle.
+- [ ] Tanks align with sloped terrain without flipping or changing collision behavior.
+- [ ] Recoil occurs when firing.
+- [ ] Muzzle flash appears when firing.
+- [ ] Low-health smoke appears on damaged tanks.
+- [ ] Destroyed tanks look disabled/wrecked and continue smoking.
+- [ ] Terrain has textured fill, surface highlight, embedded stones/details, and darker underside shading.
+- [ ] Craters and scorch marks remain visible after explosions.
+- [ ] Dirt Bomb mounds are visually highlighted without implying extra damage.
+- [ ] Background has layered depth and does not look empty.
+- [ ] Green hills, desert canyon, and snowy mountain themes each render correctly across new rounds.
+- [ ] Background animation is subtle and does not obscure tanks, terrain, HUD, or touch controls.
+- [ ] Projectile shells/canisters/bomblets have readable sprites and motion trails.
+- [ ] Screen shake is subtle and does not make the HUD unreadable.
+- [ ] Main menu, HUD, shop, summary, buttons, health bars, and shield bars look visually cohesive.
+
+## v0.6.6 Tank Destruction
 
 - [ ] Destroying a tank plays a distinct death explosion sound.
 - [ ] Tank death sound plays once for the destroyed tank.
@@ -23,7 +42,7 @@ For mobile testing, either visit the LAN IP from a phone (`http://<your-laptop-i
 - [ ] Destroyed tank emits dark smoke.
 - [ ] Round summary still appears after the destruction effect resolves.
 
-## v0.6.5 Napalm Ground Fire
+## v0.6.6 Napalm Ground Fire
 
 - [ ] Napalm Canister creates visible ground fire on impact.
 - [ ] Napalm fire spreads horizontally along the terrain surface.
@@ -36,7 +55,7 @@ For mobile testing, either visit the LAN IP from a phone (`http://<your-laptop-i
 - [ ] Napalm impact sound differs from normal explosions.
 - [ ] Napalm sound respects mute.
 
-## v0.6.5 Shield and Inventory Clarity
+## v0.6.6 Shield and Inventory Clarity
 
 - [ ] Buying `Shield Charge` immediately updates the visible shield indicator.
 - [ ] Shield value is shown near HP on desktop as separate blue/cyan protection.
@@ -52,7 +71,7 @@ For mobile testing, either visit the LAN IP from a phone (`http://<your-laptop-i
 - [ ] Shop inventory uses `Money:`, `Heavy Shells:`, `Dirt Bombs:`, `Shield:`, `First Aid:`, and `Parachutes:`.
 - [ ] Summary inventory uses the same clear terminology.
 
-## v0.6.5 Mobile Controls
+## v0.6.6 Mobile Controls
 
 - [ ] Mobile angle up button displays `↑`.
 - [ ] Mobile angle down button displays `↓`.
@@ -67,7 +86,7 @@ For mobile testing, either visit the LAN IP from a phone (`http://<your-laptop-i
 - [ ] Touch hold still works for angle, power, and movement.
 - [ ] Desktop keyboard controls are unchanged.
 
-## v0.6.5 Shop Ammo
+## v0.6.6 Shop Ammo
 
 - [ ] Shop shows `Heavy Shell Ammo`.
 - [ ] Shop shows `Dirt Bomb Ammo`.
@@ -91,7 +110,7 @@ For mobile testing, either visit the LAN IP from a phone (`http://<your-laptop-i
 - [ ] CPU does not buy full ammo.
 - [ ] Mobile shop clearly shows disabled/full state.
 
-## v0.6.5 Mobile Shop Compacting
+## v0.6.6 Mobile Shop Compacting
 
 - [ ] Mobile shop cards are smaller and cleaner than the desktop shop cards.
 - [ ] Human player money, inventory, and purchase buttons are the main focus.
@@ -102,7 +121,7 @@ For mobile testing, either visit the LAN IP from a phone (`http://<your-laptop-i
 - [ ] Desktop shop still shows enough CPU auto-shop detail.
 - [ ] CPU does not double-buy when the shop re-renders after human purchases.
 
-## v0.6.5 Weapons
+## v0.6.6 Weapons
 
 - [ ] Standard Shell fires and remains unlimited.
 - [ ] Heavy Shell fires, consumes ammo, creates a larger crater, and does higher damage than Standard Shell.
@@ -137,7 +156,7 @@ For mobile testing, either visit the LAN IP from a phone (`http://<your-laptop-i
 - [ ] Weapon cycling works on mobile with the expanded weapon list.
 - [ ] HUD selected weapon display handles longer names.
 
-## v0.6.5 Explosion Visuals
+## v0.6.6 Explosion Visuals
 
 - [ ] Expanding explosion rings are visible.
 - [ ] Standard Shell uses a medium expanding blast.
@@ -152,7 +171,7 @@ For mobile testing, either visit the LAN IP from a phone (`http://<your-laptop-i
 - [ ] Visuals remain performant on desktop.
 - [ ] Visuals remain acceptable on mobile.
 
-## v0.6.5 Audio
+## v0.6.6 Audio
 
 - [ ] Standard Shell, Heavy Shell, Dirt Bomb, Roller Shell, Napalm Canister, Cluster Bomb, and Mega Bomb have distinct fire sounds.
 - [ ] Each weapon has a distinct impact/explosion sound.
@@ -172,7 +191,7 @@ For mobile testing, either visit the LAN IP from a phone (`http://<your-laptop-i
 - [ ] No sounds play while muted.
 - [ ] No console errors from audio.
 
-## v0.6.5 CPU Shop and Weapon Use
+## v0.6.6 CPU Shop and Weapon Use
 
 - [ ] CPU can buy Shield Charge.
 - [ ] CPU can buy First Aid Kit.
@@ -300,7 +319,7 @@ For mobile testing, either visit the LAN IP from a phone (`http://<your-laptop-i
 
 Open the local URL with `?debug=1` for optional helpers.
 
-- [ ] `window.GAME_VERSION` returns `"v0.6.5"`.
+- [ ] `window.GAME_VERSION` returns `"v0.6.6"`.
 - [ ] `window.render_game_to_text()` returns concise current game state.
 - [ ] `window.debugGameState()` returns parsed game state with `?debug=1`.
 - [ ] `window.testWeaponImpact("standard")` creates a Standard Shell impact during a live aiming turn.
@@ -316,7 +335,7 @@ Open the local URL with `?debug=1` for optional helpers.
 
 ## Final Regression Pass
 
-- [ ] Main menu loads and shows `v0.6.5`.
+- [ ] Main menu loads and shows `v0.6.6`.
 - [ ] Phone viewport shows `Play`; desktop shows `Two Player Local` and `Single Player vs CPU`.
 - [ ] Pre-round shop opens.
 - [ ] Full ammo buttons are disabled.
