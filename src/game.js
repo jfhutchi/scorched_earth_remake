@@ -3,7 +3,7 @@ import { Tank } from './tank.js';
 import { Projectile, Explosion } from './projectile.js';
 import { AudioManager } from './audio.js';
 import { CPUController } from './cpu.js';
-import { CONFIG, CPU_DIFFICULTY, GAME_VERSION, WEAPONS, clamp, getWeaponById, maxAmmoFor } from './config.js';
+import { CONFIG, CPU_DIFFICULTY, GAME_VERSION, WEAPONS, clamp, getWeaponById, limitedWeapons, maxAmmoFor } from './config.js';
 
 export class Game {
     constructor(canvas, ui) {
@@ -32,6 +32,7 @@ export class Game {
         this.playerData = [];
         this.currentPlayer = 0;
         this.projectile = null;
+        this.projectiles = [];
         this.explosions = [];
         this.wind = 0;
         this.lastResult = 'Choose a mode to start.';
@@ -40,6 +41,7 @@ export class Game {
         this.roundStats = this._createRoundStats();
         this.lastSummary = null;
         this.shopCpuPurchased = false;
+        this.lastCpuShopPurchases = [];
         this.roundStartMessages = [];
 
         this._setupInput();
@@ -56,6 +58,7 @@ export class Game {
         this.tanks = [];
         this.terrain = null;
         this.projectile = null;
+        this.projectiles = [];
         this.explosions = [];
         this.gameOver = false;
         this.lastSummary = null;
@@ -63,12 +66,13 @@ export class Game {
         this.shotInfo = null;
         this.roundStats = this._createRoundStats();
         this.wind = 0;
+        this.lastCpuShopPurchases = [];
         this.statusMessage = 'Pre-round shop. Spend your starting money, then Start Round.';
         this.lastResult = `Pre-round shop. Each player starts with $${this.playerData[0].money}.`;
         this.ui.hideAllOverlays();
         this._clearCanvas();
 
-        // v0.6.3: open the shop BEFORE round 1 so starting money is useful.
+        // Open the shop before round 1 so starting money is useful.
         this._openShop({ preRound: true });
 
         if (!this.running) {
@@ -88,6 +92,7 @@ export class Game {
         this.running = false;
         this.phase = 'menu';
         this.projectile = null;
+        this.projectiles = [];
         this.explosions = [];
         this.cpuTimer = 0;
         this.keys.clear();
@@ -127,6 +132,7 @@ export class Game {
     _openShop({ preRound = false } = {}) {
         this.phase = 'shop';
         this.shopCpuPurchased = false;
+        this.lastCpuShopPurchases = [];
         if (this.gameMode === 'cpu') this._runCpuShop();
         this.ui.showShop(this._state(), this.getShopItems());
     }
@@ -140,7 +146,7 @@ export class Game {
     buyShopItem(playerIndex, itemId) {
         if (this.phase !== 'shop') return false;
         const player = this.playerData[playerIndex];
-        const item = CONFIG.shop[itemId];
+        const item = this._getShopItem(itemId);
         if (this.gameMode === 'cpu' && playerIndex === 1) return false;
         if (!player || !item) return false;
 
@@ -162,16 +168,38 @@ export class Game {
     }
 
     getShopItems() {
-        return Object.entries(CONFIG.shop).map(([id, item]) => ({
+        const configuredItems = Object.entries(CONFIG.shop).map(([id, item]) => ({
             id,
             ...item,
             refillToMax: item.weaponId ? maxAmmoFor(item.weaponId) : null,
         }));
+        const configuredWeaponIds = new Set(configuredItems
+            .filter((item) => item.weaponId)
+            .map((item) => item.weaponId));
+        const generatedAmmoItems = limitedWeapons()
+            .filter((weapon) => !configuredWeaponIds.has(weapon.id))
+            .map((weapon) => ({
+                id: `${weapon.id}Ammo`,
+                label: `${weapon.name} Ammo`,
+                refillLabel: `${weapon.name} Ammo`,
+                fullLabel: `${weapon.name} Ammo Full`,
+                price: weapon.shopRefillPrice,
+                weaponId: weapon.id,
+                refillToMax: weapon.ammo,
+                description: weapon.description,
+            }));
+        const configuredAmmoItems = configuredItems.filter((item) => item.weaponId);
+        const utilityItems = configuredItems.filter((item) => !item.weaponId);
+        return [...configuredAmmoItems, ...generatedAmmoItems, ...utilityItems];
+    }
+
+    _getShopItem(itemId) {
+        return this.getShopItems().find((item) => item.id === itemId) || null;
     }
 
     _canPurchase(player, itemId) {
         if (!player) return false;
-        const item = CONFIG.shop[itemId];
+        const item = this._getShopItem(itemId);
         if (!item) return false;
         if (item.weaponId) {
             const max = maxAmmoFor(item.weaponId);
@@ -311,6 +339,11 @@ export class Game {
                     weapon: this.projectile.weapon.name,
                 }
                 : null,
+            bomblets: this.projectiles.map((projectile) => ({
+                x: Math.round(projectile.x),
+                y: Math.round(projectile.y),
+                weapon: projectile.weapon.name,
+            })),
         };
         return JSON.stringify(payload);
     }
@@ -335,6 +368,7 @@ export class Game {
         if (shooter && weaponIndex !== -1) shooter.selectedWeaponIndex = weaponIndex;
 
         this.projectile = null;
+        this.projectiles = [];
         this.shotInfo = {
             shooterIndex,
             targetIndex,
@@ -345,18 +379,28 @@ export class Game {
             enemyDamage: 0,
             selfDamage: 0,
             totalDamage: 0,
+            shieldAbsorbed: 0,
             minTargetDistance: 0,
+            clusterImpactCount: 0,
         };
 
         const result = this._applyExplosionDamage(x, y, weapon, 'terrain');
         const terrainMessage = this._applyTerrainEffect(x, y, weapon);
+        this._settleDestroyedTanks();
         const fallMessages = this._settleTanksWithFallDamage();
-        const explosion = new Explosion(x, y, weapon.explosionRadius, weapon);
+        const effectY = weapon.behavior === 'napalm' && this.terrain ? this.terrain.heightAt(x) : y;
+        const explosion = new Explosion(
+            x,
+            effectY,
+            weapon.explosionRadius,
+            weapon,
+            weapon.behavior === 'napalm' ? { surfacePoints: this._sampleNapalmSurface(x, weapon) } : undefined
+        );
         this.explosions.push(explosion);
         this.lastResult = `${result.message} ${terrainMessage}${fallMessages.length ? ` ${fallMessages.join(' ')}` : ''}`;
         this.statusMessage = `Debug impact: ${weapon.name}.`;
         this.phase = 'resolving';
-        this.phaseTimer = Math.max(CONFIG.turn.impactDelaySeconds, explosion.duration + 0.15);
+        this.phaseTimer = Math.max(CONFIG.turn.impactDelaySeconds, this._remainingExplosionTime() + 0.15);
         this._draw();
         this.ui.update(this._state());
 
@@ -377,6 +421,7 @@ export class Game {
         const winnerIndex = playerIndex === 1 ? 1 : 0;
         const loserIndex = winnerIndex === 0 ? 1 : 0;
         this.projectile = null;
+        this.projectiles = [];
         this.explosions = [];
         this.tanks[winnerIndex].alive = true;
         this.tanks[winnerIndex].health = Math.max(1, this.tanks[winnerIndex].health);
@@ -453,6 +498,7 @@ export class Game {
 
         this.currentPlayer = 0;
         this.projectile = null;
+        this.projectiles = [];
         this.explosions = [];
         this.phaseTimer = 0;
         this.cpuTimer = 0;
@@ -520,11 +566,7 @@ export class Game {
         data.shieldCharge = Math.max(0, tank.shieldCharge);
         data.repairKits = Math.max(0, tank.repairKits);
         data.parachutes = Math.max(0, tank.parachutes);
-        data.ammo = {
-            standard: Infinity,
-            heavy: tank.ammoFor('heavy'),
-            dirt: tank.ammoFor('dirt'),
-        };
+        data.ammo = ammoSnapshotFromTank(tank);
     }
 
     _syncTankInventoryFromPlayerData(index) {
@@ -561,6 +603,7 @@ export class Game {
             gameOver: this.gameOver,
             matchWinnerIndex: this.matchWinnerIndex,
             lastSummary: this.lastSummary,
+            lastCpuShopPurchases: [...this.lastCpuShopPurchases],
             muted: this.audio.muted,
         };
     }
@@ -703,7 +746,7 @@ export class Game {
 
         this.tanks.forEach((tank) => tank.update(dt));
 
-        if (this.projectile && this.phase === 'projectile') {
+        if ((this.projectile || this.projectiles.length > 0) && this.phase === 'projectile') {
             this._updateProjectile(dt);
         }
 
@@ -825,6 +868,7 @@ export class Game {
         const muzzle = shooter.muzzlePosition();
         const velocity = shooter.fireVelocity(weapon);
         this.projectile = new Projectile(muzzle.x, muzzle.y, velocity.vx, velocity.vy, weapon);
+        this.projectiles = [];
         this.shotInfo = {
             shooterIndex: this.currentPlayer,
             targetIndex: this.currentPlayer === 0 ? 1 : 0,
@@ -835,7 +879,9 @@ export class Game {
             enemyDamage: 0,
             selfDamage: 0,
             totalDamage: 0,
+            shieldAbsorbed: 0,
             minTargetDistance: Infinity,
+            clusterImpactCount: 0,
         };
         this.phase = 'projectile';
         this.statusMessage = `${shooter.name} fired ${weapon.name}.`;
@@ -848,31 +894,65 @@ export class Game {
         const windAccel = this.wind * CONFIG.physics.windAccelScale;
         let remaining = dt;
 
-        while (remaining > 0 && this.projectile) {
+        while (remaining > 0 && (this.projectile || this.projectiles.length > 0)) {
             const step = Math.min(remaining, CONFIG.physics.projectileStep);
-            this.projectile.update(step, CONFIG.physics.gravity, windAccel);
-            this._trackProjectileDistance();
-            this._checkProjectileCollision();
+            if (this.projectile) this._updateOneProjectile(this.projectile, step, windAccel);
+            for (const projectile of [...this.projectiles]) {
+                this._updateOneProjectile(projectile, step, windAccel);
+            }
+            this.projectiles = this.projectiles.filter((projectile) => !projectile.done);
+            if (!this.projectile && this.projectiles.length === 0 && this.phase === 'projectile') {
+                if (this.shotInfo && this.shotInfo.weaponId === 'cluster') {
+                    this._completeClusterShot();
+                } else {
+                    this._resolveMiss(this.shotInfo?.impactX || 0, this.shotInfo?.impactY || 0);
+                }
+            }
             remaining -= step;
         }
     }
 
-    _trackProjectileDistance() {
-        if (!this.projectile || !this.shotInfo) return;
+    _updateOneProjectile(projectile, dt, windAccel) {
+        if (!projectile || projectile.done || this.phase !== 'projectile') return;
+
+        if (projectile.rolling) {
+            this._updateRollingProjectile(projectile, dt);
+            return;
+        }
+
+        projectile.update(dt, CONFIG.physics.gravity, windAccel);
+        this._trackProjectileDistance(projectile);
+
+        if (projectile.weapon.behavior === 'cluster' && !projectile.isBomblet && this._shouldSplitCluster(projectile)) {
+            this._splitClusterProjectile(projectile);
+            return;
+        }
+
+        this._checkProjectileCollision(projectile);
+    }
+
+    _trackProjectileDistance(projectile = this.projectile) {
+        if (!projectile || !this.shotInfo) return;
         const target = this.tanks[this.shotInfo.targetIndex];
         if (!target) return;
         const circle = target.boundingCircle();
-        const dx = this.projectile.x - circle.x;
-        const dy = this.projectile.y - circle.y;
+        const dx = projectile.x - circle.x;
+        const dy = projectile.y - circle.y;
         this.shotInfo.minTargetDistance = Math.min(this.shotInfo.minTargetDistance, Math.sqrt(dx * dx + dy * dy));
     }
 
-    _checkProjectileCollision() {
-        if (this.gameOver || !this.projectile) return;
+    _checkProjectileCollision(projectile = this.projectile) {
+        if (this.gameOver || !projectile) return;
 
-        const p = this.projectile;
+        const p = projectile;
         if (p.x < -80 || p.x > this.width + 80 || p.y > this.height + 90) {
-            this._resolveMiss(p.x, p.y);
+            if (p.isBomblet) {
+                p.done = true;
+                this.shotInfo.impactX = p.x;
+                this.shotInfo.impactY = p.y;
+            } else {
+                this._resolveMiss(p.x, p.y);
+            }
             return;
         }
 
@@ -886,7 +966,7 @@ export class Game {
             const dy = p.y - circle.y;
             const hitRadius = circle.r + p.radius;
             if (dx * dx + dy * dy <= hitRadius * hitRadius) {
-                this._resolveImpact(p.x, p.y, 'tank');
+                this._resolveProjectileImpact(p, p.x, p.y, 'tank', { final: !p.isBomblet });
                 return;
             }
         }
@@ -894,8 +974,91 @@ export class Game {
         if (p.x >= 0 && p.x < this.width) {
             const groundY = this.terrain.heightAt(p.x);
             if (p.y >= groundY) {
-                this._resolveImpact(p.x, groundY, 'terrain');
+                if (p.weapon.behavior === 'roller' && !p.rolling) {
+                    this._startRollingProjectile(p, groundY);
+                    return;
+                }
+                this._resolveProjectileImpact(p, p.x, groundY, 'terrain', { final: !p.isBomblet });
             }
+        }
+    }
+
+    _shouldSplitCluster(projectile) {
+        return projectile.age >= (projectile.weapon.clusterSplitMinAge || 0.4) && projectile.vy >= -20;
+    }
+
+    _splitClusterProjectile(projectile) {
+        const weapon = projectile.weapon;
+        const count = weapon.bomblets || 5;
+        const baseSpeed = Math.max(85, Math.abs(projectile.vx) * 0.35);
+        this.projectile = null;
+        for (let i = 0; i < count; i++) {
+            const spread = i - (count - 1) / 2;
+            const bomblet = new Projectile(
+                projectile.x + spread * 3,
+                projectile.y,
+                projectile.vx * 0.38 + spread * baseSpeed * 0.34,
+                Math.max(20, projectile.vy * 0.35) + Math.abs(spread) * 8,
+                createBombletWeapon(weapon)
+            );
+            bomblet.isBomblet = true;
+            bomblet.parentWeapon = weapon;
+            this.projectiles.push(bomblet);
+        }
+        this.statusMessage = `${weapon.name} split into bomblets.`;
+        this.audio.playClusterSplit();
+    }
+
+    _startRollingProjectile(projectile, groundY) {
+        projectile.rolling = true;
+        projectile.rollAge = 0;
+        projectile.rollDirection = Math.sign(projectile.vx) || this.tanks[this.shotInfo.shooterIndex].facing || 1;
+        projectile.rollSpeed = clamp(Math.abs(projectile.vx) * 0.26, 58, 128);
+        projectile.x = clamp(projectile.x, 1, this.width - 2);
+        projectile.y = groundY - projectile.radius;
+        projectile.trail = [];
+        this.statusMessage = `${projectile.weapon.name} is rolling along the slope.`;
+        this.audio.playRollerRumble();
+    }
+
+    _updateRollingProjectile(projectile, dt) {
+        projectile.age += dt;
+        projectile.rollAge += dt;
+        projectile.trail.push({ x: projectile.x, y: projectile.y });
+        if (projectile.trail.length > projectile.maxTrail) projectile.trail.shift();
+
+        const previousX = projectile.x;
+        const previousGround = this.terrain.heightAt(previousX);
+        const nextX = previousX + projectile.rollDirection * projectile.rollSpeed * dt;
+        if (nextX < 4 || nextX > this.width - 4) {
+            this._resolveProjectileImpact(projectile, previousX, previousGround, 'terrain');
+            return;
+        }
+
+        const nextGround = this.terrain.heightAt(nextX);
+        const slopeDelta = nextGround - previousGround;
+        const obstruction = Math.abs(slopeDelta) > 18;
+        projectile.rollSpeed = clamp(projectile.rollSpeed + slopeDelta * projectile.rollDirection * 0.35 - 18 * dt, 18, 142);
+        projectile.x = nextX;
+        projectile.y = nextGround - projectile.radius;
+        this._trackProjectileDistance(projectile);
+
+        for (let i = 0; i < this.tanks.length; i++) {
+            const tank = this.tanks[i];
+            if (!tank.alive) continue;
+            if (this.shotInfo && i === this.shotInfo.shooterIndex && projectile.rollAge < 0.25) continue;
+            const circle = tank.boundingCircle();
+            const dx = projectile.x - circle.x;
+            const dy = projectile.y - circle.y;
+            const nearRadius = circle.r + projectile.radius + 10;
+            if (dx * dx + dy * dy <= nearRadius * nearRadius) {
+                this._resolveProjectileImpact(projectile, projectile.x, this.terrain.heightAt(projectile.x), 'tank');
+                return;
+            }
+        }
+
+        if (obstruction || projectile.rollAge > 2.8 || projectile.rollSpeed <= 20) {
+            this._resolveProjectileImpact(projectile, projectile.x, this.terrain.heightAt(projectile.x), 'terrain');
         }
     }
 
@@ -913,27 +1076,64 @@ export class Game {
 
     _resolveImpact(x, y, collision) {
         if (!this.projectile || !this.shotInfo) return;
+        this._resolveProjectileImpact(this.projectile, x, y, collision);
+    }
 
-        const weapon = this.projectile.weapon;
+    _resolveProjectileImpact(projectile, x, y, collision, { final = true } = {}) {
+        if (!projectile || !this.shotInfo) return;
+
+        const weapon = projectile.weapon;
         this.shotInfo.impactX = x;
         this.shotInfo.impactY = y;
         this.shotInfo.collision = collision;
-        this.projectile = null;
+        if (projectile === this.projectile) this.projectile = null;
+        else projectile.done = true;
 
-        const result = this._applyExplosionDamage(x, y, weapon, collision);
+        const result = this._applyExplosionDamage(x, y, weapon, collision, { accumulate: projectile.isBomblet });
         const terrainMessage = this._applyTerrainEffect(x, y, weapon);
+        this._settleDestroyedTanks();
         const fallMessages = this._settleTanksWithFallDamage();
-        this.lastResult = `${result.message} ${terrainMessage}${fallMessages.length ? ` ${fallMessages.join(' ')}` : ''}`;
+        if (projectile.isBomblet) {
+            this.shotInfo.clusterImpactCount += 1;
+        } else {
+            this.lastResult = `${result.message} ${terrainMessage}${fallMessages.length ? ` ${fallMessages.join(' ')}` : ''}`;
+        }
         this.statusMessage = 'Impact resolving.';
 
-        const explosion = new Explosion(x, y, weapon.explosionRadius, weapon);
+        const effectY = weapon.behavior === 'napalm' && this.terrain ? this.terrain.heightAt(x) : y;
+        const explosion = new Explosion(
+            x,
+            effectY,
+            weapon.explosionRadius,
+            weapon,
+            weapon.behavior === 'napalm' ? { surfacePoints: this._sampleNapalmSurface(x, weapon) } : undefined
+        );
         this.explosions.push(explosion);
-        this.phase = 'resolving';
-        this.phaseTimer = Math.max(CONFIG.turn.impactDelaySeconds, explosion.duration + 0.15);
-
         this.audio.playExplosion(weapon);
         if (result.totalDamage > 0) this.audio.playHit();
         if (result.shieldAbsorbed > 0) this.audio.playShieldAbsorb();
+
+        if (!final) return;
+
+        this.phase = 'resolving';
+        this.phaseTimer = Math.max(CONFIG.turn.impactDelaySeconds, this._remainingExplosionTime() + 0.15);
+    }
+
+    _completeClusterShot() {
+        if (!this.shotInfo) return;
+        const target = this.tanks[this.shotInfo.targetIndex];
+        const shooter = this.tanks[this.shotInfo.shooterIndex];
+        const details = [];
+        if (this.shotInfo.enemyDamage > 0) details.push(`${target.name} took ${this.shotInfo.enemyDamage} damage.`);
+        if (this.shotInfo.selfDamage > 0) details.push(`${shooter.name} took ${this.shotInfo.selfDamage} self-damage.`);
+        if (this.shotInfo.shieldAbsorbed > 0) details.push(`Shields absorbed ${this.shotInfo.shieldAbsorbed}.`);
+        if (!details.length) details.push('No damage.');
+        const impacts = this.shotInfo.clusterImpactCount || 0;
+        const prefix = this.shotInfo.enemyDamage > 0 ? 'Cluster hit!' : 'Cluster spread.';
+        this.lastResult = `${prefix} ${impacts} bomblets impacted. ${details.join(' ')} Cluster Bomb peppered the terrain with small craters.`;
+        this.statusMessage = 'Cluster impacts resolving.';
+        this.phase = 'resolving';
+        this.phaseTimer = Math.max(CONFIG.turn.impactDelaySeconds, this._remainingExplosionTime() + 0.18);
     }
 
     _applyTerrainEffect(x, y, weapon) {
@@ -941,16 +1141,70 @@ export class Game {
             this.terrain.addMound(x, y, weapon.terrainEffectRadius, weapon.terrainEffectStrength);
             return weapon.terrainMessage;
         }
+        if (weapon.behavior === 'napalm') {
+            return weapon.terrainMessage;
+        }
 
         this.terrain.explode(x, y, weapon.terrainEffectRadius, weapon.terrainEffectStrength);
         return weapon.terrainMessage;
     }
 
-    _applyExplosionDamage(x, y, weapon, collision) {
+    _sampleNapalmSurface(centerX, weapon) {
+        if (!this.terrain) return [];
+        const width = weapon.flameWidth || 140;
+        const step = 8;
+        const start = Math.max(0, Math.floor(centerX - width / 2));
+        const end = Math.min(this.width - 1, Math.ceil(centerX + width / 2));
+        const points = [];
+        for (let x = start; x <= end; x += step) {
+            points.push({
+                x,
+                y: this.terrain.heightAt(x),
+                seed: Math.random(),
+            });
+        }
+        const last = points[points.length - 1];
+        if (!last || last.x < end) {
+            points.push({ x: end, y: this.terrain.heightAt(end), seed: Math.random() });
+        }
+        return points;
+    }
+
+    _remainingExplosionTime() {
+        return this.explosions.reduce((max, explosion) => {
+            return Math.max(max, Math.max(0, explosion.duration - explosion.t));
+        }, 0);
+    }
+
+    _triggerTankDeathEffects(tankIndices) {
+        let triggered = 0;
+        let longest = 0;
+        for (const index of tankIndices) {
+            const tank = this.tanks[index];
+            if (!tank || tank.alive || tank.deathEffectPlayed) continue;
+            tank.deathEffectPlayed = true;
+            tank.wreckSmokeTime = 0;
+            const delay = triggered * 0.16;
+            const explosion = new Explosion(
+                tank.x,
+                tank.y - tank.height * 0.72,
+                92,
+                createTankDeathVisual(tank)
+            );
+            this.explosions.push(explosion);
+            this.audio.playTankDestroyed(delay);
+            longest = Math.max(longest, explosion.duration + delay);
+            triggered += 1;
+        }
+        return longest;
+    }
+
+    _applyExplosionDamage(x, y, weapon, collision, { accumulate = false } = {}) {
         let totalDamage = 0;
         let enemyDamage = 0;
         let selfDamage = 0;
         let shieldAbsorbed = 0;
+        const newlyDestroyed = [];
         const shooter = this.tanks[this.shotInfo.shooterIndex];
         const target = this.tanks[this.shotInfo.targetIndex];
 
@@ -959,30 +1213,52 @@ export class Game {
             if (!tank.alive) continue;
 
             const circle = tank.boundingCircle();
-            const dx = circle.x - x;
-            const dy = circle.y - y;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-            if (dist > weapon.damageRadius + circle.r * 0.35) continue;
+            let falloff = 0;
+            if (weapon.behavior === 'napalm') {
+                const halfWidth = (weapon.flameWidth || weapon.damageRadius * 2) / 2;
+                const horizontal = Math.abs(circle.x - x);
+                const groundY = this.terrain ? this.terrain.heightAt(circle.x) : y;
+                const verticalClearance = Math.max(0, Math.abs(circle.y - groundY) - circle.r);
+                if (horizontal > halfWidth + circle.r * 0.45 || verticalClearance > tank.height + 14) continue;
+                const normalized = clamp(1 - horizontal / Math.max(1, halfWidth), 0, 1);
+                falloff = Math.pow(normalized, weapon.damageFalloff);
+            } else {
+                const dx = circle.x - x;
+                const dy = circle.y - y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist > weapon.damageRadius + circle.r * 0.35) continue;
 
-            const normalized = clamp(1 - dist / weapon.damageRadius, 0, 1);
-            let falloff = Math.pow(normalized, weapon.damageFalloff);
+                const normalized = clamp(1 - dist / weapon.damageRadius, 0, 1);
+                falloff = Math.pow(normalized, weapon.damageFalloff);
+            }
             const directBonus = collision === 'tank' && i === this.shotInfo.targetIndex ? 1.08 : 1;
             if (collision === 'tank' && i === this.shotInfo.targetIndex) {
-                falloff = Math.max(falloff, 0.82);
+                falloff = Math.max(falloff, weapon.behavior === 'napalm' ? 0.78 : 0.82);
             }
             const rawDamage = Math.min(weapon.maxDamage, weapon.maxDamage * falloff * directBonus);
+            const wasAlive = tank.alive;
             const damage = tank.applyDamage(rawDamage, { useShield: true });
             shieldAbsorbed += tank.lastShieldAbsorbed;
             totalDamage += damage;
             this.roundStats[i].damageTaken += damage;
             if (i === this.shotInfo.targetIndex) enemyDamage += damage;
             if (i === this.shotInfo.shooterIndex) selfDamage += damage;
+            if (wasAlive && !tank.alive) newlyDestroyed.push(i);
             this._syncPlayerDataFromTank(i);
         }
+        const deathEffectDuration = this._triggerTankDeathEffects(newlyDestroyed);
 
-        this.shotInfo.totalDamage = totalDamage;
-        this.shotInfo.enemyDamage = enemyDamage;
-        this.shotInfo.selfDamage = selfDamage;
+        if (accumulate) {
+            this.shotInfo.totalDamage += totalDamage;
+            this.shotInfo.enemyDamage += enemyDamage;
+            this.shotInfo.selfDamage += selfDamage;
+            this.shotInfo.shieldAbsorbed += shieldAbsorbed;
+        } else {
+            this.shotInfo.totalDamage = totalDamage;
+            this.shotInfo.enemyDamage = enemyDamage;
+            this.shotInfo.selfDamage = selfDamage;
+            this.shotInfo.shieldAbsorbed = shieldAbsorbed;
+        }
         this.roundStats[this.shotInfo.shooterIndex].damageDealt += enemyDamage;
 
         const prefix = collision === 'tank' || enemyDamage >= weapon.maxDamage * 0.55
@@ -1003,12 +1279,14 @@ export class Game {
         return {
             totalDamage,
             shieldAbsorbed,
+            deathEffectDuration,
             message: `${prefix} ${details.join(' ')}`,
         };
     }
 
     _settleTanksWithFallDamage() {
         const messages = [];
+        const newlyDestroyed = [];
         for (let i = 0; i < this.tanks.length; i++) {
             const tank = this.tanks[i];
             if (!tank.alive) continue;
@@ -1035,14 +1313,24 @@ export class Game {
             }
 
             if (fallDamage > 0) {
+                const wasAlive = tank.alive;
                 const actual = tank.applyDamage(fallDamage);
                 this.roundStats[i].damageTaken += actual;
                 this.roundStats[i].fallDamageTaken += actual;
                 messages.push(`${tank.name} took ${actual} fall damage.`);
+                if (wasAlive && !tank.alive) newlyDestroyed.push(i);
             }
             this._syncPlayerDataFromTank(i);
         }
+        this._triggerTankDeathEffects(newlyDestroyed);
         return messages;
+    }
+
+    _settleDestroyedTanks() {
+        if (!this.terrain) return;
+        for (const tank of this.tanks) {
+            if (!tank.alive) tank.settleOn(this.terrain);
+        }
     }
 
     _finishShotResolution() {
@@ -1086,6 +1374,7 @@ export class Game {
         this.gameOver = true;
         this.phase = 'roundSummary';
         this.projectile = null;
+        this.projectiles = [];
         this.keys.clear();
         this.statusMessage = this.matchWinnerIndex === null ? 'Round summary.' : 'Match complete.';
         this.lastResult = winnerIndex === null
@@ -1114,11 +1403,7 @@ export class Game {
             player.shieldCharge = Math.max(0, tank.shieldCharge);
             player.repairKits = Math.max(0, tank.repairKits);
             player.parachutes = Math.max(0, tank.parachutes);
-            player.ammo = {
-                standard: Infinity,
-                heavy: tank.ammoFor('heavy'),
-                dirt: tank.ammoFor('dirt'),
-            };
+            player.ammo = ammoSnapshotFromTank(tank);
             this._syncTankInventoryFromPlayerData(i);
         }
 
@@ -1139,13 +1424,15 @@ export class Game {
     _runCpuShop() {
         if (this.shopCpuPurchased) return;
         this.shopCpuPurchased = true;
+        this.lastCpuShopPurchases = [];
         const cpuIndex = 1;
         const cpu = this.playerData[cpuIndex];
         const profile = CPU_DIFFICULTY[this.settings.cpuDifficulty] || CPU_DIFFICULTY.normal;
         if (!cpu) return;
+        const purchases = [];
 
         const tryBuy = (itemId, chance) => {
-            const item = CONFIG.shop[itemId];
+            const item = this._getShopItem(itemId);
             const reserve = profile.reserveMoney ?? 0;
             const urgentRepair = itemId === 'repair' && cpu.health < 55;
             if (!item || cpu.money < item.price || Math.random() > chance) return false;
@@ -1154,22 +1441,24 @@ export class Game {
             if (!urgentRepair && cpu.money - item.price < reserve) return false;
             cpu.money -= item.price;
             this._grantShopItem(cpu, itemId);
+            purchases.push(item.refillLabel || item.label);
             return true;
         };
 
         if (cpu.health < 85) tryBuy('repair', cpu.health < 55 ? Math.min(1, profile.repairBuyChance + 0.25) : profile.repairBuyChance);
         if (cpu.shieldCharge < CONFIG.utilities.shieldPurchaseCharge) tryBuy('shield', profile.shieldBuyChance);
-        // v0.6: ammo now refills to max, so the CPU only buys when actually low.
-        if (cpu.ammo.heavy < maxAmmoFor('heavy')) tryBuy('heavyAmmo', profile.ammoBuyChance);
-        if (cpu.ammo.dirt < maxAmmoFor('dirt')) tryBuy('dirtAmmo', profile.ammoBuyChance * 0.45);
+        for (const weapon of limitedWeapons()) {
+            if ((cpu.ammo[weapon.id] || 0) >= maxAmmoFor(weapon.id)) continue;
+            tryBuy(`${weapon.id}Ammo`, cpuAmmoBuyChance(weapon.id, profile, cpu.money));
+        }
         if (cpu.parachutes < 1) tryBuy('parachute', profile.shieldBuyChance * 0.45);
+        this.lastCpuShopPurchases = purchases;
         this._syncTankInventoryFromPlayerData(cpuIndex);
     }
 
     _grantShopItem(player, itemId) {
-        // v0.6: ammo purchases refill that weapon to its max carried ammo.
-        if (itemId === 'heavyAmmo') player.ammo.heavy = maxAmmoFor('heavy');
-        if (itemId === 'dirtAmmo') player.ammo.dirt = maxAmmoFor('dirt');
+        const item = this._getShopItem(itemId);
+        if (item && item.weaponId) player.ammo[item.weaponId] = maxAmmoFor(item.weaponId);
         if (itemId === 'shield') {
             player.shieldCharge = Math.min(
                 CONFIG.utilities.shieldMaxCharge,
@@ -1206,6 +1495,7 @@ export class Game {
         }
 
         if (this.projectile) this.projectile.draw(ctx);
+        for (const projectile of this.projectiles) projectile.draw(ctx);
         for (const explosion of this.explosions) explosion.draw(ctx);
 
         this._drawWindIndicator(ctx);
@@ -1226,16 +1516,70 @@ export class Game {
     }
 
     _drawWreck(ctx, tank) {
-        const bodyX = tank.x - tank.width / 2;
         const bodyY = tank.y - tank.height;
+        const smokeTime = tank.wreckSmokeTime || 0;
         ctx.save();
-        ctx.fillStyle = '#2a2a2a';
-        ctx.fillRect(bodyX, bodyY, tank.width, tank.height);
-        ctx.fillStyle = 'rgba(65, 65, 65, 0.55)';
+
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.32)';
         ctx.beginPath();
-        ctx.arc(tank.x - 5, bodyY - 8, 7, 0, Math.PI * 2);
-        ctx.arc(tank.x + 5, bodyY - 20, 10, 0, Math.PI * 2);
+        ctx.ellipse(tank.x, tank.y + 4, tank.width / 2 + 7, 5, 0, 0, Math.PI * 2);
         ctx.fill();
+
+        for (let i = 0; i < 5; i++) {
+            const cycle = (smokeTime * 0.32 + i * 0.21 + (tank.wreckSeed || 0) * 0.013) % 1;
+            const rise = 12 + cycle * 54;
+            const drift = Math.sin(smokeTime * 1.2 + i * 1.7 + (tank.wreckSeed || 0)) * (5 + cycle * 10);
+            const alpha = (1 - cycle) * 0.24;
+            const radius = 7 + cycle * 18;
+            ctx.fillStyle = `rgba(38, 37, 35, ${alpha})`;
+            ctx.beginPath();
+            ctx.ellipse(tank.x + drift, bodyY - rise, radius * 1.2, radius, 0, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        ctx.translate(tank.x, tank.y - tank.height / 2);
+        ctx.rotate(-0.08 * tank.facing);
+
+        ctx.fillStyle = '#17191a';
+        ctx.beginPath();
+        ctx.moveTo(-tank.width / 2 - 3, 2);
+        ctx.lineTo(tank.width / 2 - 2, -2);
+        ctx.lineTo(tank.width / 2 - 7, tank.height / 2 + 5);
+        ctx.lineTo(-tank.width / 2 + 5, tank.height / 2 + 4);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = '#2a2a2a';
+        ctx.fillRect(-tank.width / 2 + 3, -tank.height / 2 + 2, tank.width - 6, tank.height - 4);
+
+        ctx.fillStyle = '#111315';
+        ctx.beginPath();
+        ctx.arc(-2, -tank.height / 2 + 1, 10, Math.PI, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = '#111315';
+        ctx.lineWidth = 5;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(3, -tank.height / 2);
+        ctx.lineTo(20 * tank.facing, -tank.height / 2 + 10);
+        ctx.stroke();
+
+        ctx.strokeStyle = 'rgba(255, 95, 38, 0.45)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(-12, -2);
+        ctx.lineTo(-4, 6);
+        ctx.lineTo(4, 1);
+        ctx.lineTo(13, 8);
+        ctx.stroke();
+
+        ctx.fillStyle = 'rgba(255, 88, 32, 0.55)';
+        ctx.beginPath();
+        ctx.arc(-tank.width * 0.18, tank.height * 0.22, 3, 0, Math.PI * 2);
+        ctx.arc(tank.width * 0.25, tank.height * 0.08, 2.4, 0, Math.PI * 2);
+        ctx.fill();
+
         ctx.restore();
     }
 
@@ -1327,17 +1671,11 @@ function normalizeSettings(settings = {}) {
 }
 
 function createStartingAmmo() {
-    // v0.6.3: Heavy Shell and Dirt Bomb start at 1 carried each (max remains
-    // 3/4) so the new pre-round shop has meaningful refill purchases.
-    // Standard Shell remains unlimited.
-    const STARTING_LIMITED_AMMO = { heavy: 1, dirt: 1 };
     const ammo = {};
     for (const weapon of WEAPONS) {
-        if (Object.prototype.hasOwnProperty.call(STARTING_LIMITED_AMMO, weapon.id)) {
-            ammo[weapon.id] = STARTING_LIMITED_AMMO[weapon.id];
-        } else {
-            ammo[weapon.id] = weapon.ammo;
-        }
+        ammo[weapon.id] = Number.isFinite(weapon.ammo)
+            ? Math.min(weapon.ammo, Math.max(0, weapon.startingAmmo || 0))
+            : Infinity;
     }
     return ammo;
 }
@@ -1345,13 +1683,61 @@ function createStartingAmmo() {
 function summarizeInventory(player) {
     return {
         money: player.money,
-        heavyAmmo: player.ammo.heavy,
-        dirtAmmo: player.ammo.dirt,
+        ammo: { ...player.ammo },
         shieldCharge: Math.round(player.shieldCharge),
         repairKits: player.repairKits,
         parachutes: player.parachutes,
         health: player.health,
     };
+}
+
+function ammoSnapshotFromTank(tank) {
+    const ammo = {};
+    for (const weapon of WEAPONS) {
+        ammo[weapon.id] = tank.ammoFor(weapon.id);
+    }
+    ammo.standard = Infinity;
+    return ammo;
+}
+
+function createBombletWeapon(parent) {
+    return {
+        ...parent,
+        id: 'clusterBomblet',
+        name: 'Cluster Bomblet',
+        compactName: 'Bomblet',
+        behavior: 'crater',
+        maxDamage: parent.bombletMaxDamage || 18,
+        damageRadius: parent.bombletDamageRadius || 24,
+        damageFalloff: 1.1,
+        explosionRadius: 26,
+        terrainEffectRadius: parent.bombletTerrainRadius || 20,
+        terrainEffectStrength: 0.46,
+        projectileRadius: 3.5,
+        color: '#ffe28a',
+        trailColor: '255, 224, 138',
+        impactVisual: 'clusterMiniBlast',
+        terrainMessage: 'Cluster bomblet made a small crater.',
+    };
+}
+
+function createTankDeathVisual(tank) {
+    return {
+        id: 'tankDeath',
+        name: `${tank.name} destroyed`,
+        impactVisual: 'tankDeath',
+        color: tank.color,
+    };
+}
+
+function cpuAmmoBuyChance(weaponId, profile, money) {
+    const base = profile.ammoBuyChance || 0.4;
+    if (weaponId === 'dirt') return base * 0.42;
+    if (weaponId === 'roller') return base * 0.62;
+    if (weaponId === 'napalm') return base * 0.58;
+    if (weaponId === 'cluster') return base * 0.44;
+    if (weaponId === 'mega') return money >= 220 ? base * 0.18 : base * 0.08;
+    return base;
 }
 
 function drawCloud(ctx, x, y, scale) {

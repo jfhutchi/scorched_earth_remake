@@ -11,8 +11,6 @@ export class UI {
         this.summaryStats = document.getElementById('summaryStats');
         this.shopContent = document.getElementById('shopContent');
         this.menuVersion = document.getElementById('menuVersion');
-        this.versionChip = document.getElementById('versionChip');
-        this.mhudVersion = document.getElementById('mhudVersion');
 
         this.twoPlayerBtn = document.getElementById('twoPlayerBtn');
         this.cpuBtn = document.getElementById('cpuBtn');
@@ -39,6 +37,12 @@ export class UI {
         this.p2Health = document.getElementById('p2Health');
         this.p1HealthText = document.getElementById('p1HealthText');
         this.p2HealthText = document.getElementById('p2HealthText');
+        this.p1ShieldRow = document.getElementById('p1ShieldRow');
+        this.p2ShieldRow = document.getElementById('p2ShieldRow');
+        this.p1ShieldFill = document.getElementById('p1ShieldFill');
+        this.p2ShieldFill = document.getElementById('p2ShieldFill');
+        this.p1ShieldText = document.getElementById('p1ShieldText');
+        this.p2ShieldText = document.getElementById('p2ShieldText');
         this.p1Score = document.getElementById('p1Score');
         this.p2Score = document.getElementById('p2Score');
         this.p1Inventory = document.getElementById('p1Inventory');
@@ -60,6 +64,8 @@ export class UI {
         this.mhudTurn = document.getElementById('mhudTurn');
         this.mhudP1Hp = document.getElementById('mhudP1Hp');
         this.mhudP2Hp = document.getElementById('mhudP2Hp');
+        this.mhudP1Shield = document.getElementById('mhudP1Shield');
+        this.mhudP2Shield = document.getElementById('mhudP2Shield');
         this.mhudWind = document.getElementById('mhudWind');
         this.mhudWeapon = document.getElementById('mhudWeapon');
         this.mhudAngle = document.getElementById('mhudAngle');
@@ -91,13 +97,15 @@ export class UI {
         this.mhudTurn.style.background = currentPlayer === 0 ? 'rgba(199, 82, 47, 0.86)' : 'rgba(45, 117, 199, 0.78)';
         this.mhudP1Hp.textContent = String(Math.max(0, Math.round(p1.health)));
         this.mhudP2Hp.textContent = String(Math.max(0, Math.round(p2.health)));
+        if (this.mhudP1Shield) this.mhudP1Shield.textContent = formatShieldCompact(p1);
+        if (this.mhudP2Shield) this.mhudP2Shield.textContent = formatShieldCompact(p2);
         this.mhudWind.textContent = formatWindShort(wind);
-        if (selectedWeapon) this.mhudWeapon.textContent = shortWeaponName(selectedWeapon.name);
+        if (selectedWeapon) this.mhudWeapon.textContent = shortWeaponName(selectedWeapon);
         this.mhudAngle.textContent = String(Math.round(active.angle));
         this.mhudPower.textContent = String(Math.round(active.power));
         if (selectedWeapon) {
             const a = active.ammoFor(selectedWeapon.id);
-            this.mhudAmmo.textContent = Number.isFinite(a) ? String(a) : '∞';
+            this.mhudAmmo.textContent = Number.isFinite(a) ? String(a) : 'Inf';
         }
 
         if (this.mhudP1Inv) this.mhudP1Inv.textContent = `P1 ${shortInv(p1)}`;
@@ -115,8 +123,6 @@ export class UI {
 
     setVersion(version) {
         if (this.menuVersion) this.menuVersion.textContent = version;
-        if (this.versionChip) this.versionChip.textContent = version;
-        if (this.mhudVersion) this.mhudVersion.textContent = version;
     }
 
     loadSettings() {
@@ -181,7 +187,7 @@ export class UI {
                 <p>Direct / near hits: <b>${stat.directHits} / ${stat.nearHits}</b></p>
                 <p>Money earned: <b>$${stat.moneyEarned}</b></p>
                 <p>Money now: <b>$${stat.money}</b></p>
-                <p>${inventoryText(stat.inventory, { includeMoney: false })}</p>
+                <p>${inventoryText(stat.inventory, { includeMoney: false, context: 'summary' })}</p>
             </section>
         `).join('');
 
@@ -191,7 +197,7 @@ export class UI {
 
     showShop(state, items) {
         this.summaryOverlay.classList.add('hidden');
-        // v0.6.3: when opening the shop before round 1 (roundNumber === 0),
+        // When opening the shop before round 1 (roundNumber === 0),
         // the primary button reads "Start Round" instead of "Start Next Round".
         const isPreRound = state.roundNumber === 0;
         if (this.startNextRoundBtn) {
@@ -204,7 +210,7 @@ export class UI {
         const shopSubtitle = this.shopOverlay && this.shopOverlay.querySelector('.subtitle');
         if (shopSubtitle) {
             shopSubtitle.textContent = isPreRound
-                ? 'Spend your starting money before Round 1. Ammo refills set Heavy Shells to 3 and Dirt Bombs to 4.'
+                ? 'Spend your starting money before Round 1. Limited weapon ammo purchases refill that weapon to max.'
                 : 'First Aid Kits fully heal between rounds. Ammo purchases refill that weapon to its carried max.';
         }
         // Player names and shop labels are static config values, not user
@@ -217,19 +223,30 @@ export class UI {
         players.forEach((player, playerIndex) => {
             const isCpu = state.gameMode === 'cpu' && playerIndex === 1;
             const card = document.createElement('section');
-            card.className = 'shop-card';
+            card.className = `shop-card ${isCpu ? 'cpu-shop-card' : 'human-shop-card'}`;
 
             const h3 = document.createElement('h3');
-            h3.textContent = `${player.name}${isCpu ? ' (auto-bought)' : ''}`;
+            h3.textContent = isCpu ? player.name : `${player.name} Purchases`;
             card.appendChild(h3);
 
             const money = document.createElement('p');
             money.className = 'money-line';
-            money.textContent = `$${player.money}`;
+            money.textContent = `Money: $${player.money}`;
             card.appendChild(money);
 
-            const inv = document.createElement('p');
-            inv.textContent = inventoryText(player);
+            if (isCpu) {
+                card.appendChild(createCpuShopSummary(player, state.lastCpuShopPurchases || []));
+                root.appendChild(card);
+                return;
+            }
+
+            const inv = document.createElement('div');
+            inv.className = 'inventory-list';
+            for (const line of inventoryLines(player)) {
+                const row = document.createElement('p');
+                row.textContent = line;
+                inv.appendChild(row);
+            }
             card.appendChild(inv);
 
             const actions = document.createElement('div');
@@ -247,7 +264,7 @@ export class UI {
                 if (full) btn.classList.add('full');
 
                 if (full) {
-                    btn.textContent = item.fullLabel || `${item.label} (Full)`;
+                    btn.textContent = item.fullLabel || `${item.label} Full`;
                 } else if (item.weaponId && item.refillToMax) {
                     btn.textContent = `${item.refillLabel || item.label} (to ${item.refillToMax}) - $${item.price}`;
                 } else {
@@ -279,11 +296,11 @@ export class UI {
         this.p2Name.textContent = p2.name;
         this.p1Score.textContent = String(state.score[0]);
         this.p2Score.textContent = String(state.score[1]);
-        this.p1Inventory.textContent = inventoryText(p1);
-        this.p2Inventory.textContent = inventoryText(p2);
+        this.p1Inventory.textContent = inventoryText(p1, { context: 'hud' });
+        this.p2Inventory.textContent = inventoryText(p2, { context: 'hud' });
 
-        this._updateHealth(p1, this.p1Health, this.p1HealthText);
-        this._updateHealth(p2, this.p2Health, this.p2HealthText);
+        this._updateHealth(p1, this.p1Health, this.p1HealthText, this.p1ShieldRow, this.p1ShieldFill, this.p1ShieldText);
+        this._updateHealth(p2, this.p2Health, this.p2HealthText, this.p2ShieldRow, this.p2ShieldFill, this.p2ShieldText);
 
         this.p1Panel.classList.toggle('active', currentPlayer === 0 && !state.gameOver);
         this.p2Panel.classList.toggle('active', currentPlayer === 1 && !state.gameOver);
@@ -300,7 +317,7 @@ export class UI {
 
         this.angleVal.textContent = `${Math.round(active.angle)} deg`;
         this.powerVal.textContent = String(Math.round(active.power));
-        this.windVal.textContent = `${formatWind(wind)} (${state.settings.windMode})`;
+        this.windVal.textContent = `${formatWindShort(wind)} ${state.settings.windMode}`;
         this.weaponVal.textContent = selectedWeapon.name;
         this.ammoVal.textContent = formatAmmo(active.ammoFor(selectedWeapon.id));
         this.moveVal.textContent = `${Math.round(active.movementFuel)} px`;
@@ -310,11 +327,15 @@ export class UI {
         this.controlsHint.textContent = this._controlsText(state);
     }
 
-    _updateHealth(tank, bar, text) {
+    _updateHealth(tank, bar, text, shieldRow, shieldFill, shieldText) {
         const percent = Math.max(0, Math.min(100, tank.health));
         bar.style.width = `${percent}%`;
         bar.style.background = healthColor(percent);
         text.textContent = `${tank.health}/100`;
+        const shield = Math.max(0, Math.round(tank.shieldCharge || 0));
+        if (shieldRow) shieldRow.classList.toggle('empty', shield <= 0);
+        if (shieldFill) shieldFill.style.width = `${Math.min(100, shield / 180 * 100)}%`;
+        if (shieldText) shieldText.textContent = String(shield);
     }
 
     _turnText(state) {
@@ -328,37 +349,94 @@ export class UI {
     }
 
     _controlsText(state) {
-        if (state.phase === 'roundSummary') return 'Keys: N continue, Esc menu, M mute. Touch: N or ≡.';
+        if (state.phase === 'roundSummary') return 'Keys: N continue, Esc menu, M mute. Touch: N or menu.';
         if (state.phase === 'shop') return 'Buy items, then Start Next Round. Keys: N next round. Touch: N.';
-        if (state.gameOver) return 'Keys: N continue, Esc menu, M mute. Touch: N or ≡.';
+        if (state.gameOver) return 'Keys: N continue, Esc menu, M mute. Touch: N or menu.';
         if (state.phase === 'cpuThinking') return 'CPU is aiming. Controls locked.';
         if (state.phase !== 'aiming') return 'Controls locked until the shot resolves.';
         if (state.active.isCpu) return 'CPU turn. Controls locked.';
         if (state.active.movementFuel <= 0) {
-            return 'Keys: arrows aim, Space fire, Tab/W weapon, R restart, M mute, Esc menu. Touch: ↺↻ aim, PWR ± power, FIRE, WPN, ♪ mute, ≡ menu.';
+            return 'Keys: arrows aim, Space fire, Tab/W weapon, R restart, M mute, Esc menu. Touch: up/down angle, PWR-/PWR+, FIRE, WPN, mute, menu.';
         }
-        return 'Keys: arrows aim, A/D move, Space fire, Tab/W weapon, R restart, M mute, Esc menu. Touch: ◀▶ move, ↺↻ aim, PWR ± power, FIRE, WPN.';
+        return 'Keys: arrows aim, A/D move, Space fire, Tab/W weapon, R restart, M mute, Esc menu. Touch: move, up/down angle, PWR-/PWR+, FIRE, WPN.';
     }
 }
 
-function inventoryText(entity, { includeMoney = true } = {}) {
+function inventoryText(entity, { includeMoney = true, context = 'hud' } = {}) {
     const money = Math.round(entity.money || 0);
-    const ammo = entity.ammo || {};
-    const heavy = typeof entity.ammoFor === 'function'
-        ? entity.ammoFor('heavy')
-        : (ammo.heavy ?? entity.heavyAmmo ?? 0);
-    const dirt = typeof entity.ammoFor === 'function'
-        ? entity.ammoFor('dirt')
-        : (ammo.dirt ?? entity.dirtAmmo ?? 0);
     const shield = Math.round(entity.shieldCharge || 0);
     const repairs = entity.repairKits || 0;
     const parachutes = entity.parachutes || 0;
     const parts = [];
-    if (includeMoney) parts.push(`$${money}`);
-    parts.push(`H ${heavy} D ${dirt}`);
-    parts.push(`Sh ${shield} FA ${repairs} P ${parachutes}`);
-    if (Number.isFinite(entity.health)) parts.push(`HP ${Math.round(entity.health)}`);
+    if (includeMoney) parts.push(context === 'hud' ? `$${money}` : `Money: $${money}`);
+    for (const weapon of WEAPONS.filter((candidate) => Number.isFinite(candidate.ammo))) {
+        const have = ammoForEntity(entity, weapon.id);
+        const label = context === 'hud' ? weapon.compactName : weapon.inventoryName;
+        parts.push(context === 'hud'
+            ? `${label} ${have}`
+            : `${weapon.inventoryName}: ${have}/${weapon.ammo}`);
+    }
+    parts.push(context === 'hud' ? `Shield ${shield}` : `Shield: ${shield}`);
+    parts.push(context === 'hud' ? `Aid ${repairs}` : `First Aid: ${repairs}`);
+    parts.push(context === 'hud' ? `Chute ${parachutes}` : `Parachutes: ${parachutes}`);
+    if (context !== 'hud' && Number.isFinite(entity.health)) parts.push(`HP: ${Math.round(entity.health)}/100`);
     return parts.join(' | ');
+}
+
+function inventoryLines(entity) {
+    const lines = [];
+    for (const weapon of WEAPONS.filter((candidate) => Number.isFinite(candidate.ammo))) {
+        lines.push(`${weapon.inventoryName}: ${ammoForEntity(entity, weapon.id)}/${weapon.ammo}`);
+    }
+    lines.push(`Shield: ${Math.round(entity.shieldCharge || 0)}`);
+    lines.push(`First Aid: ${entity.repairKits || 0}`);
+    lines.push(`Parachutes: ${entity.parachutes || 0}`);
+    if (Number.isFinite(entity.health)) lines.push(`HP: ${Math.round(entity.health)}/100`);
+    return lines;
+}
+
+function createCpuShopSummary(player, purchases) {
+    const fragment = document.createDocumentFragment();
+    const count = purchases.length;
+
+    const summary = document.createElement('p');
+    summary.className = 'cpu-shop-note';
+    summary.textContent = count > 0 ? `CPU bought ${count} item${count === 1 ? '' : 's'}.` : 'CPU auto-shopped.';
+    fragment.appendChild(summary);
+
+    const details = document.createElement('details');
+    details.className = 'cpu-shop-details';
+    details.open = !isCompactShopViewport();
+
+    const toggle = document.createElement('summary');
+    toggle.textContent = 'Details';
+    details.appendChild(toggle);
+
+    const list = document.createElement('div');
+    list.className = 'cpu-purchase-list';
+    const purchaseLine = document.createElement('p');
+    purchaseLine.textContent = count > 0 ? purchases.join(', ') : 'No purchases this visit.';
+    list.appendChild(purchaseLine);
+
+    const inventoryLine = document.createElement('p');
+    inventoryLine.textContent = inventoryText(player, { includeMoney: false, context: 'summary' });
+    list.appendChild(inventoryLine);
+
+    details.appendChild(list);
+    fragment.appendChild(details);
+    return fragment;
+}
+
+function isCompactShopViewport() {
+    return typeof window !== 'undefined'
+        && window.matchMedia
+        && window.matchMedia('(max-width: 768px)').matches;
+}
+
+function ammoForEntity(entity, weaponId) {
+    if (typeof entity.ammoFor === 'function') return entity.ammoFor(weaponId);
+    const ammo = entity.ammo || {};
+    return ammo[weaponId] ?? entity[`${weaponId}Ammo`] ?? 0;
 }
 
 function isShopItemFull(player, item) {
@@ -377,6 +455,11 @@ function isShopItemFull(player, item) {
     return false;
 }
 
+function formatShieldCompact(tank) {
+    const shield = Math.round(tank.shieldCharge || 0);
+    return shield > 0 ? `+Shield ${shield}` : '';
+}
+
 function formatWind(wind) {
     if (wind === 0) return '0';
     return `${wind > 0 ? 'right' : 'left'} ${Math.abs(wind).toFixed(1)}`;
@@ -384,25 +467,26 @@ function formatWind(wind) {
 
 function formatWindShort(wind) {
     if (!wind) return '0';
-    const arrow = wind > 0 ? '→' : '←';
+    const arrow = wind > 0 ? 'R' : 'L';
     return `${arrow}${Math.abs(wind).toFixed(1)}`;
 }
 
-function shortWeaponName(name) {
-    if (!name) return '';
-    if (name.includes('Standard')) return 'Std';
-    if (name.includes('Heavy')) return 'Hvy';
-    if (name.includes('Dirt')) return 'Dirt';
-    return name.length > 8 ? name.slice(0, 8) : name;
+function shortWeaponName(weapon) {
+    if (!weapon) return '';
+    return weapon.compactName || (weapon.name.length > 8 ? weapon.name.slice(0, 8) : weapon.name);
 }
 
 function shortInv(tank) {
     if (!tank) return '';
     const money = Math.round(tank.money || 0);
-    const heavy = typeof tank.ammoFor === 'function' ? tank.ammoFor('heavy') : 0;
-    const dirt = typeof tank.ammoFor === 'function' ? tank.ammoFor('dirt') : 0;
-    const fa = tank.repairKits || 0;
-    return `$${money} H${heavy} D${dirt} FA${fa}`;
+    const parts = [`$${money}`];
+    for (const weapon of WEAPONS.filter((candidate) => Number.isFinite(candidate.ammo))) {
+        parts.push(`${weapon.compactName} ${ammoForEntity(tank, weapon.id)}`);
+    }
+    parts.push(`Shield ${Math.round(tank.shieldCharge || 0)}`);
+    parts.push(`Aid ${tank.repairKits || 0}`);
+    parts.push(`Chute ${tank.parachutes || 0}`);
+    return parts.join(' | ');
 }
 
 function formatAmmo(ammo) {

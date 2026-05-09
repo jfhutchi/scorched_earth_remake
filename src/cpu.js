@@ -26,7 +26,7 @@ export class CPUController {
 
     chooseAction({ shooter, target, terrain, wind, difficulty = 'normal' }) {
         const profile = CPU_DIFFICULTY[difficulty] || CPU_DIFFICULTY.normal;
-        const weapon = this._chooseWeapon(shooter, target, profile);
+        const weapon = this._chooseWeapon(shooter, target, terrain, profile, difficulty);
         const solution = this._findAimSolution(shooter, target, terrain, wind, weapon, profile);
         const learningScale = Math.max(0.45, 1 - this.missStreak * CONFIG.cpu.missLearning);
         const learnedPower = this.lastMissX * CONFIG.cpu.lastMissPowerCorrection;
@@ -48,12 +48,25 @@ export class CPUController {
         };
     }
 
-    _chooseWeapon(shooter, target, profile) {
+    _chooseWeapon(shooter, target, terrain, profile, difficulty) {
         const available = WEAPONS.filter((weapon) => shooter.ammoFor(weapon.id) > 0);
         const heavy = available.find((weapon) => weapon.id === 'heavy');
         const dirt = available.find((weapon) => weapon.id === 'dirt');
+        const roller = available.find((weapon) => weapon.id === 'roller');
+        const napalm = available.find((weapon) => weapon.id === 'napalm');
+        const cluster = available.find((weapon) => weapon.id === 'cluster');
+        const mega = available.find((weapon) => weapon.id === 'mega');
         const standard = available.find((weapon) => weapon.id === 'standard') || available[0];
+        const distance = Math.abs(target.x - shooter.x);
+        const targetLower = terrain ? terrain.heightAt(target.x) - terrain.heightAt(shooter.x) > 18 : false;
+        const targetSlope = terrain ? terrain.slopeAt(target.x, 26) : 0;
 
+        if (mega && difficulty === 'hard' && distance < 720 && Math.random() < profile.megaUseChance) return mega;
+        if (mega && target.health <= 55 && Math.random() < profile.megaUseChance * 1.8) return mega;
+        if (cluster && (this.missStreak >= 2 || distance > 560) && Math.random() < profile.clusterUseChance + 0.08) return cluster;
+        if (napalm && (targetSlope > 0.45 || this.missStreak >= 1) && Math.random() < profile.napalmUseChance + 0.08) return napalm;
+        if (roller && targetLower && Math.random() < profile.rollerUseChance + 0.12) return roller;
+        if (roller && this.missStreak >= 2 && Math.random() < profile.rollerUseChance * 0.6) return roller;
         if (heavy && target.health <= 68 && Math.random() < profile.heavyShellUseChance + 0.2) return heavy;
         if (heavy && this.missStreak <= 1 && Math.random() < profile.heavyShellUseChance) return heavy;
         if (dirt && this.missStreak >= 3 && Math.random() < profile.dirtBombUseChance) return dirt;

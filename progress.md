@@ -27,3 +27,24 @@ Original prompt: Upgrade the existing local browser Scorched Earth-style artille
 - v0.5 browser verification covered version display, debug-helper gating, Arrow vs A/D control separation, Standard/Heavy/Dirt impact helpers, summary -> shop -> next round flow, shop purchase prices, wind off, shield absorb, repair messages, parachute fall mitigation, 1280x720 / 1366x768 / 1920x1080 screenshots, and the dedicated web-game Playwright client with no console errors.
 - Optional next pass: hand-play full best-of-three matches on each CPU difficulty and tune aim errors, shop preferences, and money pacing if needed.
 - Optional future feature: add Bouncer Shell once core economy and utility balance feel stable.
+
+## v0.6.4 Notes
+
+- Updated the version target to `v0.6.4` and removed the gameplay version badge; only the main menu shows the version while `window.GAME_VERSION` remains available.
+- Added clear shield display in player panels, mobile HUD, shop inventory, and summary inventory.
+- Replaced cryptic HUD/shop inventory abbreviations with clear labels.
+- Changed mobile angle controls to up/down arrows and kept power buttons adjacent.
+- Moved ammo shop entries to weapon-driven generation so Heavy/Dirt remain in the shop as `Heavy Shell Ammo` and `Dirt Bomb Ammo`, with Roller/Napalm/Cluster/Mega added consistently.
+- Added Roller Shell, Napalm Canister, Cluster Bomb, and Mega Bomb definitions, CPU shop/weapon preferences, rolling projectile behavior, cluster bomblets, flame visuals, expanded blast rings, and distinct generated sounds.
+- Updated README.md and TESTING.md for v0.6.4.
+
+## v0.6.5 Notes
+
+- Updated the version target to `v0.6.5`; the main menu and `window.GAME_VERSION` now report v0.6.5 while gameplay remains free of a floating version chip.
+- Added generated tank destruction audio with a deep boom, low rumble, metallic crack/pop, and debris noise, triggered only on fresh death transitions.
+- Added tank death blast visuals, charred wreck drawing, and looping dark smoke so destroyed tanks are clearly disabled.
+- Reworked Napalm Canister impact visuals into terrain-sampled ground fire that spreads along the surface, flickers, smokes lightly, and lingers before fading.
+- Changed Napalm terrain behavior to avoid crater carving while preserving immediate flame-area damage.
+- Compact mobile shop polish now keeps the human purchase card primary, uses smaller mobile shop spacing/buttons, and collapses CPU auto-shop purchases behind a Details toggle on phone-sized screens.
+- Updated README.md and TESTING.md for v0.6.5.
+- Verification: `node --check` passed for edited JS files; the web-game Playwright smoke client reported `v0.6.5`; targeted browser checks covered menu version, no gameplay version chip, desktop/mobile CPU shop summaries, mobile compact shop reachability, Napalm ground fire/damage, tank death wreck/blast, and no console/page errors.

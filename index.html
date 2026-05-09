@@ -14,8 +14,8 @@
         <div id="menu" class="screen">
             <main class="menu-card">
                 <h1 class="title">Tank Artillery Duel</h1>
-                <p id="menuVersion" class="version-line">v0.6.3</p>
-                <p class="subtitle">Destroy the opposing tank across a shifting battlefield of wind, craters, dirt mounds, and limited heavy ammo.</p>
+                <p id="menuVersion" class="version-line">v0.6.5</p>
+                <p class="subtitle">Destroy the opposing tank across a shifting battlefield of wind, craters, dirt mounds, rolling shells, flame patches, and limited special ammo.</p>
 
                 <div class="menu-actions">
                     <button id="mobilePlayBtn" class="btn primary mobile-only">Play</button>
@@ -76,14 +76,14 @@
                         <li><b>N</b> next round after a win</li>
                         <li><b>Escape</b> return to this menu</li>
                     </ul>
-                    <p class="note">Weapons: Standard Shell makes a normal crater, Heavy Shell hits harder with a larger blast, and Dirt Bomb piles up a much larger mound to build cover or fill craters.</p>
+                    <p class="note">Weapons: Standard Shell is unlimited; limited ammo includes Heavy Shell, Dirt Bomb, Roller Shell, Napalm Canister, Cluster Bomb, and Mega Bomb.</p>
                 </section>
 
                 <section class="instructions mobile-instructions" aria-label="Touch instructions">
                     <h2>Touch Controls</h2>
                     <ul>
                         <li><b>◀ ▶</b> on the left move the tank</li>
-                        <li><b>↺ ↻</b> on the right adjust cannon angle</li>
+                        <li><b>&uarr; &darr;</b> on the right adjust cannon angle</li>
                         <li><b>PWR-</b> / <b>PWR+</b> change shot power</li>
                         <li><b>FIRE</b> launches one shot per tap</li>
                         <li><b>WPN</b> cycles weapons; <b>♪</b> mutes</li>
@@ -101,10 +101,9 @@
                 <div id="mobileHud" class="mobile-hud" aria-hidden="true">
                     <div class="mhud-row mhud-row-top">
                         <span class="mhud-pill mhud-turn" id="mhudTurn">P1</span>
-                        <span class="mhud-pill mhud-hp p1"><b>P1</b> <span id="mhudP1Hp">100</span></span>
-                        <span class="mhud-pill mhud-hp p2"><b>P2</b> <span id="mhudP2Hp">100</span></span>
+                        <span class="mhud-pill mhud-hp p1"><b>P1</b> <span id="mhudP1Hp">100</span> <span class="mhud-shield" id="mhudP1Shield"></span></span>
+                        <span class="mhud-pill mhud-hp p2"><b>P2</b> <span id="mhudP2Hp">100</span> <span class="mhud-shield" id="mhudP2Shield"></span></span>
                         <span class="mhud-pill mhud-wind">W <span id="mhudWind">0</span></span>
-                        <span class="mhud-pill mhud-version" id="mhudVersion">v0.6.3</span>
                         <button type="button" id="mhudInfoBtn" class="mhud-pill mhud-info" aria-label="Toggle extra info">i</button>
                     </div>
                     <div class="mhud-row mhud-row-bottom">
@@ -132,7 +131,12 @@
                             <div class="health-bar"><div class="health-fill" id="p1Health"></div></div>
                             <span class="health-text" id="p1HealthText">100/100</span>
                         </div>
-                        <div class="inventory-row" id="p1Inventory">$150 | H 3 D 4 | Sh 0 FA 0 P 0</div>
+                        <div class="shield-row" id="p1ShieldRow">
+                            <span class="label">Shield</span>
+                            <div class="shield-bar"><div class="shield-fill" id="p1ShieldFill"></div></div>
+                            <span class="shield-text" id="p1ShieldText">0</span>
+                        </div>
+                        <div class="inventory-row" id="p1Inventory">$150 | Heavy 1 | Dirt 1 | Shield 0 | Aid 0 | Chute 0</div>
                     </section>
 
                     <section class="hud-panel center" id="turnPanel">
@@ -143,10 +147,10 @@
                             <span id="modeVal">Two Player Local</span>
                         </div>
                         <div class="stat-grid">
-                            <span>Angle <b id="angleVal">45 deg</b></span>
-                            <span>Power <b id="powerVal">50</b></span>
+                            <span>A <b id="angleVal">45 deg</b></span>
+                            <span>P <b id="powerVal">50</b></span>
                             <span>Wind <b id="windVal">0</b></span>
-                            <span>Weapon <b id="weaponVal">Standard Shell</b></span>
+                            <span>Wpn <b id="weaponVal">Standard Shell</b></span>
                             <span>Ammo <b id="ammoVal">Unlimited</b></span>
                             <span>Move <b id="moveVal">90 px</b></span>
                         </div>
@@ -163,12 +167,16 @@
                             <div class="health-bar"><div class="health-fill" id="p2Health"></div></div>
                             <span class="health-text" id="p2HealthText">100/100</span>
                         </div>
-                        <div class="inventory-row" id="p2Inventory">$150 | H 3 D 4 | Sh 0 FA 0 P 0</div>
+                        <div class="shield-row" id="p2ShieldRow">
+                            <span class="label">Shield</span>
+                            <div class="shield-bar"><div class="shield-fill" id="p2ShieldFill"></div></div>
+                            <span class="shield-text" id="p2ShieldText">0</span>
+                        </div>
+                        <div class="inventory-row" id="p2Inventory">$150 | Heavy 1 | Dirt 1 | Shield 0 | Aid 0 | Chute 0</div>
                     </section>
                 </div>
 
                 <div id="controlsHint">Left/Right: Angle   Up/Down: Power   A/D: Move   Space: Fire   Tab/W: Weapon   R: Restart   M: Mute   Esc: Menu</div>
-                <div id="versionChip" class="version-chip">v0.6.3</div>
                 <button id="muteBtn" class="mute-chip">Sound: On</button>
 
                 <div id="touchControls" class="touch-controls hidden" aria-hidden="true">
@@ -177,8 +185,8 @@
                         <button type="button" class="touch-btn move repeat" data-touch-action="moveRight" aria-label="Move tank right">▶</button>
                     </div>
                     <div class="touch-cluster right-cluster">
-                        <button type="button" class="touch-btn aim repeat" data-touch-action="aimLeft" aria-label="Aim cannon left">↺</button>
-                        <button type="button" class="touch-btn aim repeat" data-touch-action="aimRight" aria-label="Aim cannon right">↻</button>
+                        <button type="button" class="touch-btn aim repeat" data-touch-action="aimRight" aria-label="Angle up">&uarr;</button>
+                        <button type="button" class="touch-btn aim repeat" data-touch-action="aimLeft" aria-label="Angle down">&darr;</button>
                         <button type="button" class="touch-btn power repeat" data-touch-action="powerDown" aria-label="Decrease power">PWR-</button>
                         <button type="button" class="touch-btn power repeat" data-touch-action="powerUp" aria-label="Increase power">PWR+</button>
                         <button type="button" class="touch-btn fire" data-touch-action="fire" aria-label="Fire">FIRE</button>
