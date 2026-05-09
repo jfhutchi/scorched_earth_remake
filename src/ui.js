@@ -223,16 +223,22 @@ export class UI {
         players.forEach((player, playerIndex) => {
             const isCpu = state.gameMode === 'cpu' && playerIndex === 1;
             const card = document.createElement('section');
-            card.className = 'shop-card';
+            card.className = `shop-card ${isCpu ? 'cpu-shop-card' : 'human-shop-card'}`;
 
             const h3 = document.createElement('h3');
-            h3.textContent = `${player.name}${isCpu ? ' (auto-bought)' : ''}`;
+            h3.textContent = isCpu ? player.name : `${player.name} Purchases`;
             card.appendChild(h3);
 
             const money = document.createElement('p');
             money.className = 'money-line';
             money.textContent = `Money: $${player.money}`;
             card.appendChild(money);
+
+            if (isCpu) {
+                card.appendChild(createCpuShopSummary(player, state.lastCpuShopPurchases || []));
+                root.appendChild(card);
+                return;
+            }
 
             const inv = document.createElement('div');
             inv.className = 'inventory-list';
@@ -387,6 +393,44 @@ function inventoryLines(entity) {
     lines.push(`Parachutes: ${entity.parachutes || 0}`);
     if (Number.isFinite(entity.health)) lines.push(`HP: ${Math.round(entity.health)}/100`);
     return lines;
+}
+
+function createCpuShopSummary(player, purchases) {
+    const fragment = document.createDocumentFragment();
+    const count = purchases.length;
+
+    const summary = document.createElement('p');
+    summary.className = 'cpu-shop-note';
+    summary.textContent = count > 0 ? `CPU bought ${count} item${count === 1 ? '' : 's'}.` : 'CPU auto-shopped.';
+    fragment.appendChild(summary);
+
+    const details = document.createElement('details');
+    details.className = 'cpu-shop-details';
+    details.open = !isCompactShopViewport();
+
+    const toggle = document.createElement('summary');
+    toggle.textContent = 'Details';
+    details.appendChild(toggle);
+
+    const list = document.createElement('div');
+    list.className = 'cpu-purchase-list';
+    const purchaseLine = document.createElement('p');
+    purchaseLine.textContent = count > 0 ? purchases.join(', ') : 'No purchases this visit.';
+    list.appendChild(purchaseLine);
+
+    const inventoryLine = document.createElement('p');
+    inventoryLine.textContent = inventoryText(player, { includeMoney: false, context: 'summary' });
+    list.appendChild(inventoryLine);
+
+    details.appendChild(list);
+    fragment.appendChild(details);
+    return fragment;
+}
+
+function isCompactShopViewport() {
+    return typeof window !== 'undefined'
+        && window.matchMedia
+        && window.matchMedia('(max-width: 768px)').matches;
 }
 
 function ammoForEntity(entity, weaponId) {

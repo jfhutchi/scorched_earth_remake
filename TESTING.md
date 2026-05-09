@@ -91,6 +91,17 @@ For mobile testing, either visit the LAN IP from a phone (`http://<your-laptop-i
 - [ ] CPU does not buy full ammo.
 - [ ] Mobile shop clearly shows disabled/full state.
 
+## v0.6.5 Mobile Shop Compacting
+
+- [ ] Mobile shop cards are smaller and cleaner than the desktop shop cards.
+- [ ] Human player money, inventory, and purchase buttons are the main focus.
+- [ ] Purchase buttons remain touch-friendly without dominating the screen.
+- [ ] Start Round / Start Next Round remains reachable on mobile.
+- [ ] CPU purchase details are summarized or collapsed on mobile.
+- [ ] CPU purchase Details toggle can reveal exact CPU purchases.
+- [ ] Desktop shop still shows enough CPU auto-shop detail.
+- [ ] CPU does not double-buy when the shop re-renders after human purchases.
+
 ## v0.6.5 Weapons
 
 - [ ] Standard Shell fires and remains unlimited.

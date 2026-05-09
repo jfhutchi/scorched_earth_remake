@@ -45,5 +45,6 @@ Original prompt: Upgrade the existing local browser Scorched Earth-style artille
 - Added tank death blast visuals, charred wreck drawing, and looping dark smoke so destroyed tanks are clearly disabled.
 - Reworked Napalm Canister impact visuals into terrain-sampled ground fire that spreads along the surface, flickers, smokes lightly, and lingers before fading.
 - Changed Napalm terrain behavior to avoid crater carving while preserving immediate flame-area damage.
+- Compact mobile shop polish now keeps the human purchase card primary, uses smaller mobile shop spacing/buttons, and collapses CPU auto-shop purchases behind a Details toggle on phone-sized screens.
 - Updated README.md and TESTING.md for v0.6.5.
-- Verification: `node --check` passed for edited JS files; the web-game Playwright smoke client reported `v0.6.5`; targeted browser checks covered menu version, no gameplay version chip, shop ammo entries, desktop keyboard separation, Napalm ground fire/damage, tank death wreck/blast, summary flow, mobile touch weapon cycling, and a CPU turn smoke pass with no console/page errors.
+- Verification: `node --check` passed for edited JS files; the web-game Playwright smoke client reported `v0.6.5`; targeted browser checks covered menu version, no gameplay version chip, desktop/mobile CPU shop summaries, mobile compact shop reachability, Napalm ground fire/damage, tank death wreck/blast, and no console/page errors.

@@ -67,6 +67,8 @@ Phone landscape remains the intended mobile gameplay mode.
 - Phone portrait shows the rotate overlay unless the player chooses to continue.
 - The mobile HUD uses compact pills for turn, HP, shield when charged, wind, selected weapon, angle, power, and ammo.
 - The extra info row shows readable inventory labels instead of unexplained abbreviations.
+- The mobile shop uses tighter cards, two-column purchase buttons, and a sticky start-round action area so buying does not bury the next step.
+- In CPU mode, the mobile shop prioritizes the human purchase card and collapses CPU auto-shop details behind a small `Details` toggle.
 - Touch controls remain translucent and corner-positioned for phone landscape playability.
 
 ### On-Screen Controls
@@ -191,6 +193,8 @@ Money earned after each round:
 | `Parachute` | `$45` | Reduces one fall-damage event. |
 
 Ammo purchases refill the weapon to max carried ammo. If ammo is already full, the button is greyed out, says `Full`, cannot be bought, and does not charge money. The CPU uses the same money, inventory, and full-ammo rules as the human player.
+
+On phone-sized screens, the shop is compact: the human player's money, inventory, and purchase buttons are the primary content, and the start-round controls stay reachable at the bottom of the shop panel. CPU purchases are summarized as `CPU bought N items.` or `CPU auto-shopped.`, with a `Details` toggle for the exact purchases and CPU inventory.
 
 ## Defensive Utilities
 

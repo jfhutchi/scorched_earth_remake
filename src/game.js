@@ -41,6 +41,7 @@ export class Game {
         this.roundStats = this._createRoundStats();
         this.lastSummary = null;
         this.shopCpuPurchased = false;
+        this.lastCpuShopPurchases = [];
         this.roundStartMessages = [];
 
         this._setupInput();
@@ -65,6 +66,7 @@ export class Game {
         this.shotInfo = null;
         this.roundStats = this._createRoundStats();
         this.wind = 0;
+        this.lastCpuShopPurchases = [];
         this.statusMessage = 'Pre-round shop. Spend your starting money, then Start Round.';
         this.lastResult = `Pre-round shop. Each player starts with $${this.playerData[0].money}.`;
         this.ui.hideAllOverlays();
@@ -130,6 +132,7 @@ export class Game {
     _openShop({ preRound = false } = {}) {
         this.phase = 'shop';
         this.shopCpuPurchased = false;
+        this.lastCpuShopPurchases = [];
         if (this.gameMode === 'cpu') this._runCpuShop();
         this.ui.showShop(this._state(), this.getShopItems());
     }
@@ -600,6 +603,7 @@ export class Game {
             gameOver: this.gameOver,
             matchWinnerIndex: this.matchWinnerIndex,
             lastSummary: this.lastSummary,
+            lastCpuShopPurchases: [...this.lastCpuShopPurchases],
             muted: this.audio.muted,
         };
     }
@@ -1420,10 +1424,12 @@ export class Game {
     _runCpuShop() {
         if (this.shopCpuPurchased) return;
         this.shopCpuPurchased = true;
+        this.lastCpuShopPurchases = [];
         const cpuIndex = 1;
         const cpu = this.playerData[cpuIndex];
         const profile = CPU_DIFFICULTY[this.settings.cpuDifficulty] || CPU_DIFFICULTY.normal;
         if (!cpu) return;
+        const purchases = [];
 
         const tryBuy = (itemId, chance) => {
             const item = this._getShopItem(itemId);
@@ -1435,6 +1441,7 @@ export class Game {
             if (!urgentRepair && cpu.money - item.price < reserve) return false;
             cpu.money -= item.price;
             this._grantShopItem(cpu, itemId);
+            purchases.push(item.refillLabel || item.label);
             return true;
         };
 
@@ -1445,6 +1452,7 @@ export class Game {
             tryBuy(`${weapon.id}Ammo`, cpuAmmoBuyChance(weapon.id, profile, cpu.money));
         }
         if (cpu.parachutes < 1) tryBuy('parachute', profile.shieldBuyChance * 0.45);
+        this.lastCpuShopPurchases = purchases;
         this._syncTankInventoryFromPlayerData(cpuIndex);
     }
 
