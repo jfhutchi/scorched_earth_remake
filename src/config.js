@@ -1,4 +1,4 @@
-export const GAME_VERSION = 'v0.6.7';
+export const GAME_VERSION = 'v0.6.8';
 
 export const CONFIG = {
     debug: false,
@@ -337,15 +337,15 @@ export const WEAPONS = [
         behavior: 'crater',
         ammo: 1,
         startingAmmo: 0,
-        shopRefillPrice: 175,
-        maxDamage: 85,
-        damageRadius: 85,
-        damageFalloff: 1.25,
+        shopRefillPrice: 375,
+        maxDamage: 82,
+        damageRadius: 82,
+        damageFalloff: 1.85,
         terrainEffectType: 'crater',
         explosionRadius: 92,
-        terrainEffectRadius: 82,
+        terrainEffectRadius: 88,
         terrainEffectStrength: 1.62,
-        speedScale: 0.98,
+        speedScale: 0.92,
         projectileRadius: 7,
         color: '#ff6f36',
         trailColor: '255, 108, 54',
@@ -354,7 +354,7 @@ export const WEAPONS = [
         fireSoundType: 'mega',
         impactSoundType: 'mega',
         terrainMessage: 'Mega Bomb tore open a massive crater.',
-        description: 'Rare, expensive heavy blast with the largest crater and highest blast damage.',
+        description: 'Late-match premium blast: expensive, heavy-arc, largest crater, and scary near-hit damage.',
     },
 ];
 

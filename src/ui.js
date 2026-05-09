@@ -54,7 +54,6 @@ export class UI {
         this.modeVal = document.getElementById('modeVal');
         this.angleVal = document.getElementById('angleVal');
         this.powerVal = document.getElementById('powerVal');
-        this.windVal = document.getElementById('windVal');
         this.weaponVal = document.getElementById('weaponVal');
         this.ammoVal = document.getElementById('ammoVal');
         this.moveVal = document.getElementById('moveVal');
@@ -66,7 +65,6 @@ export class UI {
         this.mhudP2Hp = document.getElementById('mhudP2Hp');
         this.mhudP1Shield = document.getElementById('mhudP1Shield');
         this.mhudP2Shield = document.getElementById('mhudP2Shield');
-        this.mhudWind = document.getElementById('mhudWind');
         this.mhudWeapon = document.getElementById('mhudWeapon');
         this.mhudAngle = document.getElementById('mhudAngle');
         this.mhudPower = document.getElementById('mhudPower');
@@ -87,7 +85,6 @@ export class UI {
         const active = state ? state.active : tanks[game.currentPlayer];
         if (!active) return;
         const currentPlayer = state ? state.currentPlayer : game.currentPlayer;
-        const wind = state ? state.wind : game.wind;
         const selectedWeapon = state ? state.selectedWeapon : (active.selectedWeapon ? active.selectedWeapon() : null);
 
         const p1 = tanks[0];
@@ -99,7 +96,6 @@ export class UI {
         this.mhudP2Hp.textContent = String(Math.max(0, Math.round(p2.health)));
         if (this.mhudP1Shield) this.mhudP1Shield.textContent = formatShieldCompact(p1);
         if (this.mhudP2Shield) this.mhudP2Shield.textContent = formatShieldCompact(p2);
-        this.mhudWind.textContent = formatWindShort(wind);
         if (selectedWeapon) this.mhudWeapon.textContent = shortWeaponName(selectedWeapon);
         this.mhudAngle.textContent = String(Math.round(active.angle));
         this.mhudPower.textContent = String(Math.round(active.power));
@@ -286,7 +282,7 @@ export class UI {
     }
 
     update(state) {
-        const { tanks, currentPlayer, active, selectedWeapon, wind } = state;
+        const { tanks, currentPlayer, active, selectedWeapon } = state;
         if (!tanks || tanks.length < 2 || !active) return;
 
         const p1 = tanks[0];
@@ -317,7 +313,6 @@ export class UI {
 
         this.angleVal.textContent = `${Math.round(active.angle)} deg`;
         this.powerVal.textContent = String(Math.round(active.power));
-        this.windVal.textContent = `${formatWindShort(wind)} ${state.settings.windMode}`;
         this.weaponVal.textContent = selectedWeapon.name;
         this.ammoVal.textContent = formatAmmo(active.ammoFor(selectedWeapon.id));
         this.moveVal.textContent = `${Math.round(active.movementFuel)} px`;
@@ -458,17 +453,6 @@ function isShopItemFull(player, item) {
 function formatShieldCompact(tank) {
     const shield = Math.round(tank.shieldCharge || 0);
     return shield > 0 ? `+Shield ${shield}` : '';
-}
-
-function formatWind(wind) {
-    if (wind === 0) return '0';
-    return `${wind > 0 ? 'right' : 'left'} ${Math.abs(wind).toFixed(1)}`;
-}
-
-function formatWindShort(wind) {
-    if (!wind) return '0';
-    const arrow = wind > 0 ? 'R' : 'L';
-    return `${arrow}${Math.abs(wind).toFixed(1)}`;
 }
 
 function shortWeaponName(weapon) {

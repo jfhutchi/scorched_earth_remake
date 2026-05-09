@@ -472,10 +472,6 @@ button {
     white-space: nowrap;
 }
 
-.stat-grid span:nth-child(4) {
-    grid-column: span 2;
-}
-
 .stat-grid span.available {
     background: rgba(63, 159, 77, 0.18);
 }

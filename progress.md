@@ -1,71 +1,97 @@
+# Project Progress
+
+Current Version: v0.6.8
+
+Current Branch: Claude
+
+Release History Source: RELEASE_NOTES.md
+
+## Latest Completed Work
+
+- Implemented v0.6.8 in the working tree: Mega Bomb rebalance, Mega Bomb economy gating, tank movement audio, page-hidden audio lifecycle handling, duplicate wind HUD cleanup, documentation cleanup, release notes, and generated artifact ignore cleanup.
+- Updated the central version constant so the main menu and `window.GAME_VERSION` report `v0.6.8`; gameplay remains free of a floating version badge.
+- Kept the existing architecture, current weapon list, desktop keyboard controls, mobile touch controls, mobile Play behavior, shop flow, pre-round shop, CPU shopping, generated Web Audio system, mute persistence, destructible terrain, wind physics, shields, First Aid, and parachutes.
+- Documentation now treats RELEASE_NOTES.md as the concise release-history source.
+- Local verification for this pass: `node --check` passed for all `src/*.js`; the web-game Playwright smoke client reported `v0.6.8`; targeted Playwright checks covered main menu version, no gameplay version badge, Normal pre-round Mega Bomb affordability, Round 1 start, keyboard movement/fuel use, Standard Shell firing transition, Mega Bomb reach/debug values, Mega Bomb near-hit damage, shield absorption against Mega Bomb, mobile Play to CPU mode, mobile landscape HUD/controls, wind HUD cleanup, simulated page-hide movement clearing, screenshot review, and no console/page errors.
+
+## Current Known Issues
+
+- CPU aiming is intentionally simple and CPU tanks do not drive with movement fuel.
+- Real-phone app switching, phone locking, auditory movement-sound quality, and GitHub Pages deployment still need manual verification before cutting a public release.
+- Terrain remains heightmap-based, so caves and overhangs are out of scope.
+- Two Player Local is intentionally hidden on phone-sized viewports.
+
+## Next Candidate
+
+- Run longer full-match playtests on Easy, Normal, and Hard CPU after v0.6.8 to tune CPU economy and weapon preferences with more data.
+- Consider optional drag aiming/power controls after mobile layout remains stable.
+- Consider CPU driving logic only after current movement and audio behavior is fully verified.
+
+## Recent Release Notes
+
+### v0.6.8
+
+- Mega Bomb now costs `$375`, remains max ammo 1, uses a heavier `0.92` speed scale, has max damage `82`, damage radius `82`, steeper `1.85` damage falloff, and crater radius `88`.
+- Mega Bomb remains the biggest visual/audio spectacle and largest crater weapon, but medium-distance hits should no longer reliably delete a full-health tank.
+- CPU shop logic avoids Mega Bomb when ammo is full, before it can afford it, and when critical First Aid or Shield needs should come first.
+- Added generated tank tread movement audio for real human tank movement on desktop and mobile controls.
+- Added page lifecycle handling for `visibilitychange`, `pagehide`, `blur`, `focus`, and `freeze` so active generated sounds stop/suspend when the page is inactive.
+- Removed duplicated wind text from the upper desktop/mobile HUD while preserving the battlefield wind indicator and wind physics.
+- Reworked README.md, TESTING.md, and this progress file around current v0.6.8 state.
+- Added RELEASE_NOTES.md.
+- Expanded `.gitignore` for generated browser/test output folders and trace/report artifacts.
+
+### v0.6.7
+
+- Normalized Heavy Shell and Mega Bomb reach in v0.6.7 so Mega Bomb became practical at high power.
+- Replaced simple generated tones with a categorized Web Audio mixer, layered generated weapon/explosion/UI/utility sounds, subtle positional panning, safer gain staging, and generated theme ambience.
+- Added debug-only `window.testWeaponReach()` and `window.setupAimTest()` helpers.
+- Reworked the mobile landscape firing controls into a compact one-row right cluster.
+- Verified at the time with `node --check`, local Playwright/client checks, debug helper checks, mute persistence, desktop key holds, mobile landscape sizes, screenshot review, and no console/page errors.
+
+### v0.6.6
+
+- Added original runtime-generated visual systems: battlefield themes, layered backgrounds, procedural terrain details, generated projectile sprites, cached tread/projectile art, improved tank rendering, terrain rendering, blast visuals, and subtle screen shake.
+- Kept core game flow unchanged while polishing CSS, HUD, canvas presentation, and mobile controls.
+- Verified at the time with `node --check`, Playwright smoke checks, debug weapon visuals, mobile Play, visible mobile controls, screenshot review, and no console/page errors.
+
+### v0.6.5
+
+- Added generated tank destruction audio, tank death blast visuals, wreck rendering, and smoke.
+- Reworked Napalm Canister into terrain-sampled ground fire with flicker, smoke, linger, and minimal terrain deformation.
+- Polished compact mobile shop behavior and CPU purchase detail collapsing.
+- Verified at the time with static JS checks, web-game smoke checks, desktop/mobile CPU shop summaries, Napalm behavior, tank death visuals/audio, and no console/page errors.
+
+### v0.6.4
+
+- Removed the gameplay version badge while keeping main menu version display and `window.GAME_VERSION`.
+- Added shield display in player panels, mobile HUD, shop inventory, and summary inventory.
+- Replaced cryptic HUD/shop abbreviations with clearer labels.
+- Added Roller Shell, Napalm Canister, Cluster Bomb, and Mega Bomb definitions, behavior, visuals, generated sounds, and CPU preferences.
+- Moved limited ammo shop entries to weapon-driven generation while preserving Standard Shell as unlimited.
+
+## Archived Earlier Progress
+
 Original prompt: Upgrade the existing local browser Scorched Earth-style artillery MVP into a playable v0.2 with game modes, CPU opponent, weapons and ammo, turn flow polish, rounds and score, improved terrain, trajectory preview, HUD/menu/visual/audio/responsive improvements, documentation, and manual testing coverage.
 
-## Progress
+### v0.2-v0.3 Foundation
 
-- Inspected existing vanilla Canvas structure: `index.html`, `styles.css`, and modules under `src/`.
-- Decision: preserve the current MVP architecture and add targeted modules for shared config, audio, and CPU aiming.
-- Implemented v0.2 core systems across the existing game: mode selection, CPU turn logic, weapons/ammo, score and round flow, richer HUD, improved terrain/tanks/projectiles, generated Web Audio sounds, mute persistence, responsive layout, and browser testing hooks.
-- Static JavaScript parse checks passed for all `src/*.js` files.
-- Started v0.3 correction pass: split weapon terrain/damage stats, changed Dirt Bomb to add terrain, added movement fuel fields and A/D movement handling, and improved trajectory preview contrast.
-- Updated README and TESTING for v0.3 weapon, movement, Dirt Bomb, and preview behavior.
-- Browser verification covered A/D movement fuel, weapon cycling, Dirt Bomb terrain addition and ammo use, CPU turn flow after movement changes, direct-damage values, crater-vs-mound height changes, preview visibility, and 1280x720 / 1920x1080 HUD screenshots with no console errors.
-- Started v0.4 replayability pass: added match settings controls, settings persistence plumbing, economy/player inventories, round summary and shop overlays, CPU shop purchases, shield/repair/parachute utilities, fall damage, wind/terrain setting hooks, and event-code based input separation.
-- Completed v0.4 input-control fix: `ArrowLeft`/`ArrowRight` adjust cannon angle only, while `A`/`D` move the active human tank only.
-- Completed v0.4 replayability systems: economy, summary screen, between-round shop, player and CPU purchases, defensive utilities, CPU difficulty profiles, saved match settings, HUD inventory display, and documentation updates.
-- Browser verification covered two-player input separation, firing control lockout, CPU turn progression, settings persistence, economy/shop math, shield absorb, repair kit healing, parachute fall mitigation, summary/shop overlays, and dedicated web-game Playwright client smoke testing with no console errors.
-- Started v0.5 stabilization pass: added `v0.5.0` version display, tuned weapon feedback, added a Dirt Bomb dirt-puff effect, tightened shop/state guards, added repair-use messaging, added CPU shop reserves, and documented debug helpers.
+- Preserved the existing vanilla Canvas structure and added targeted modules for shared config, generated audio, and CPU aiming.
+- Implemented mode selection, CPU turn logic, weapons/ammo, score and round flow, richer HUD, improved terrain/tanks/projectiles, generated Web Audio sounds, mute persistence, responsive layout, and browser testing hooks.
+- Split weapon terrain/damage stats, changed Dirt Bomb to add terrain, added movement fuel fields and `A`/`D` movement handling, and improved trajectory preview contrast.
+- Updated early README and TESTING coverage for weapon, movement, Dirt Bomb, and preview behavior.
 
-## Notes
+### v0.4 Replayability
 
-- No dependencies or build step are present.
-- Use a local static server for testing because ES modules are blocked by some browsers on `file://`.
-- Browser verification covered two-player smoke play, CPU smoke play, HUD screenshots, mute persistence, forced win scoring, next-round state, new-match state, and 1280x720 / 1366x768 / 1920x1080 screenshots with no console errors.
-- v0.5 debug helpers are available only when loading the page with `?debug=1`.
+- Added match settings, settings persistence, economy/player inventories, round summary and shop overlays, CPU shop purchases, shield/repair/parachute utilities, fall damage, wind/terrain setting hooks, and event-code based input separation.
+- Completed input separation so `Left Arrow`/`Right Arrow` adjust cannon angle only while `A`/`D` move the active human tank only.
+- Added pre-round and between-round shop behavior that later releases continue to preserve.
 
-## TODO
+### v0.5 Stabilization
 
-- v0.5 browser verification covered version display, debug-helper gating, Arrow vs A/D control separation, Standard/Heavy/Dirt impact helpers, summary -> shop -> next round flow, shop purchase prices, wind off, shield absorb, repair messages, parachute fall mitigation, 1280x720 / 1366x768 / 1920x1080 screenshots, and the dedicated web-game Playwright client with no console errors.
-- Optional next pass: hand-play full best-of-three matches on each CPU difficulty and tune aim errors, shop preferences, and money pacing if needed.
-- Optional future feature: add Bouncer Shell once core economy and utility balance feel stable.
+- Added version display, tuned weapon feedback, added Dirt Bomb dirt-puff effects, tightened shop/state guards, added repair-use messaging, added CPU shop reserves, and documented debug helpers.
+- Browser verification at the time covered version display, debug-helper gating, Arrow vs A/D control separation, Standard/Heavy/Dirt impact helpers, summary -> shop -> next round flow, shop purchase prices, wind off, shield absorb, repair messages, parachute fall mitigation, multiple desktop viewports, and the web-game Playwright client with no console errors.
 
-## v0.6.4 Notes
+### Archived Ideas
 
-- Updated the version target to `v0.6.4` and removed the gameplay version badge; only the main menu shows the version while `window.GAME_VERSION` remains available.
-- Added clear shield display in player panels, mobile HUD, shop inventory, and summary inventory.
-- Replaced cryptic HUD/shop inventory abbreviations with clear labels.
-- Changed mobile angle controls to up/down arrows and kept power buttons adjacent.
-- Moved ammo shop entries to weapon-driven generation so Heavy/Dirt remain in the shop as `Heavy Shell Ammo` and `Dirt Bomb Ammo`, with Roller/Napalm/Cluster/Mega added consistently.
-- Added Roller Shell, Napalm Canister, Cluster Bomb, and Mega Bomb definitions, CPU shop/weapon preferences, rolling projectile behavior, cluster bomblets, flame visuals, expanded blast rings, and distinct generated sounds.
-- Updated README.md and TESTING.md for v0.6.4.
-
-## v0.6.5 Notes
-
-- Updated the version target to `v0.6.5`; the main menu and `window.GAME_VERSION` now report v0.6.5 while gameplay remains free of a floating version chip.
-- Added generated tank destruction audio with a deep boom, low rumble, metallic crack/pop, and debris noise, triggered only on fresh death transitions.
-- Added tank death blast visuals, charred wreck drawing, and looping dark smoke so destroyed tanks are clearly disabled.
-- Reworked Napalm Canister impact visuals into terrain-sampled ground fire that spreads along the surface, flickers, smokes lightly, and lingers before fading.
-- Changed Napalm terrain behavior to avoid crater carving while preserving immediate flame-area damage.
-- Compact mobile shop polish now keeps the human purchase card primary, uses smaller mobile shop spacing/buttons, and collapses CPU auto-shop purchases behind a Details toggle on phone-sized screens.
-- Updated README.md and TESTING.md for v0.6.5.
-- Verification: `node --check` passed for edited JS files; the web-game Playwright smoke client reported `v0.6.5`; targeted browser checks covered menu version, no gameplay version chip, desktop/mobile CPU shop summaries, mobile compact shop reachability, Napalm ground fire/damage, tank death wreck/blast, and no console/page errors.
-
-## v0.6.6 Notes
-
-- Updated the version target to `v0.6.6`; the main menu and `window.GAME_VERSION` now report v0.6.6 while gameplay remains free of a floating version chip.
-- Added original runtime-generated visual systems: battlefield themes, layered backgrounds, procedural terrain texture/detail rendering, generated projectile sprites, and cached tread/projectile art.
-- Upgraded tanks with stylized armored hulls, treads, turret/cannon details, slope-aligned bodies, recoil, muzzle flash, low-health smoke, shield arcs, and improved wreck rendering.
-- Upgraded terrain rendering with theme-aware fills, strata, embedded stones, surface highlights, crater shadows, scorch marks, napalm scorch, and Dirt Bomb mound highlights.
-- Upgraded combat presentation with projectile trails/sprites, richer smoke/debris on explosions, weapon-specific visual identity, and subtle screen shake for impacts.
-- Polished CSS for menu, HUD panels, buttons, health/shield bars, canvas frame, and mobile controls without changing core flow.
-- Updated README.md and TESTING.md for v0.6.6 visual QA and the new rendering modules.
-- Verification: `node --check` passed for all `src/*.js`; the web-game Playwright client reported `v0.6.6`; targeted Playwright checks covered main menu version, no gameplay version badge, desktop round start, keyboard angle/movement/fire transitions, debug weapon impact visuals for Standard/Heavy/Dirt/Roller/Napalm/Cluster/Mega, mobile Play to CPU mode, visible mobile touch controls, mobile fire transition, screenshot review, and no console/page errors.
-
-## v0.6.7 Notes
-
-- Updated the version target to `v0.6.7`; the main menu and `window.GAME_VERSION` now report v0.6.7 while gameplay remains free of a floating version chip.
-- Normalized Heavy Shell and Mega Bomb speed scales to `0.98` so Mega Bomb uses a practical high-power artillery arc without changing damage, economy, or global physics.
-- Replaced the simple generated tone sounds with a categorized Web Audio mixer, layered weapon/explosion/UI/utility sounds, subtle positional panning, safer gain staging, and generated theme ambience that respects mute and stops at the menu.
-- Added debug-only `window.testWeaponReach()` and `window.setupAimTest()` helpers for quick ballistic validation.
-- Reworked the mobile landscape right control cluster as a one-row grid for `↑`, `↓`, `PWR-`, `PWR+`, and `FIRE`.
-- Updated README.md and TESTING.md for v0.6.7 audio, Mega Bomb reach, mobile controls, debug helpers, and deployment checks.
-- Verification: `node --check` passed for all `src/*.js`; local Playwright checks reported `v0.6.7`, no gameplay version badge, `window.testWeaponReach()`/`window.setupAimTest()` available in debug mode, Mega Bomb speed scale `0.98` and direct-hit reach at power 100 in the aim test, mute persistence, desktop angle/power key holds, mobile landscape one-row controls at 844x390 / 932x430 / 915x412, mobile PWR hold, mobile FIRE tap, screenshot review, and no console/page errors.
+- Bouncer Shell was previously mentioned as an optional future idea, but it is not a current v0.6.8 plan.
