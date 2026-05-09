@@ -8,6 +8,7 @@ const MIX = {
     impacts: 0.46,
     ui: 0.42,
     utilities: 0.50,
+    movement: 0.34,
     ambience: 0.22,
 };
 
@@ -20,6 +21,9 @@ export class AudioManager {
         this.muted = localStorage.getItem(STORAGE_KEY) === 'true';
         this.ambience = null;
         this.ambienceTheme = null;
+        this.tankMoveLoop = null;
+        this.activeSounds = new Set();
+        this.pageActive = typeof document === 'undefined' ? true : !document.hidden;
     }
 
     toggleMute() {
@@ -33,12 +37,12 @@ export class AudioManager {
         localStorage.setItem(STORAGE_KEY, String(this.muted));
         if (this.muted) {
             this._setMasterVolume(0);
-            this.stopAmbience({ rememberTheme: true });
+            this.stopAllSounds({ rememberAmbienceTheme: true });
             return;
         }
 
         this._setMasterVolume(MIX.master);
-        if (this.ambienceTheme) this.startAmbience(this.ambienceTheme);
+        if (this.pageActive && this.ambienceTheme) this.startAmbience(this.ambienceTheme);
     }
 
     playMenu() {
@@ -216,9 +220,133 @@ export class AudioManager {
         this._noiseLayer({ category: 'ui', duration: 0.045, volume: 0.018, filterType: 'lowpass', frequency: 360, delay: 0.02, color: 'brown' });
     }
 
+    startTankMoveLoop(spatial = {}) {
+        if (this.muted || !this.pageActive || this.tankMoveLoop) return;
+
+        const ctx = this._ensureContext();
+        if (!ctx) return;
+
+        const start = ctx.currentTime + 0.01;
+        const tread = ctx.createBufferSource();
+        tread.buffer = this._createTreadBuffer(0.36);
+        tread.loop = true;
+
+        const treadFilter = ctx.createBiquadFilter();
+        treadFilter.type = 'bandpass';
+        treadFilter.frequency.setValueAtTime(260, start);
+        treadFilter.Q.setValueAtTime(0.85, start);
+
+        const treadGain = ctx.createGain();
+        treadGain.gain.setValueAtTime(0.0001, start);
+        treadGain.gain.linearRampToValueAtTime(0.030, start + 0.055);
+
+        tread.connect(treadFilter);
+        treadFilter.connect(treadGain);
+        const treadCleanup = this._connectToCategory(treadGain, 'movement', spatial);
+
+        const thump = ctx.createOscillator();
+        thump.type = 'triangle';
+        thump.frequency.setValueAtTime(36 + Math.random() * 4, start);
+
+        const thumpGain = ctx.createGain();
+        thumpGain.gain.setValueAtTime(0.0001, start);
+        thumpGain.gain.linearRampToValueAtTime(0.0065, start + 0.055);
+
+        thump.connect(thumpGain);
+        const thumpCleanup = this._connectToCategory(thumpGain, 'movement', spatial);
+
+        const loop = {
+            sources: [tread, thump],
+            gains: [treadGain, thumpGain],
+            stopped: false,
+            cleanup: () => {
+                treadCleanup([tread, treadFilter, treadGain]);
+                thumpCleanup([thump, thumpGain]);
+            },
+        };
+
+        const finish = () => {
+            if (loop.stopped) return;
+            loop.stopped = true;
+            loop.cleanup();
+            if (this.tankMoveLoop === loop) this.tankMoveLoop = null;
+        };
+
+        tread.onended = finish;
+        thump.onended = finish;
+        this.tankMoveLoop = loop;
+        tread.start(start);
+        thump.start(start);
+    }
+
+    stopTankMoveLoop({ fade = 0.07, force = false } = {}) {
+        const loop = this.tankMoveLoop;
+        if (!loop) return;
+
+        const ctx = this.context;
+        const finish = () => {
+            if (loop.stopped) return;
+            loop.stopped = true;
+            loop.cleanup();
+            if (this.tankMoveLoop === loop) this.tankMoveLoop = null;
+        };
+
+        if (force || !ctx || ctx.state === 'closed') {
+            for (const source of loop.sources) {
+                try { source.onended = null; } catch (_err) { /* ignore */ }
+                try { source.stop(0); } catch (_err) { /* already stopped */ }
+            }
+            finish();
+            return;
+        }
+
+        const end = ctx.currentTime + Math.max(0, fade);
+        for (const gain of loop.gains) {
+            try {
+                gain.gain.cancelScheduledValues(ctx.currentTime);
+                gain.gain.setTargetAtTime(0.0001, ctx.currentTime, 0.018);
+            } catch (_err) {
+                /* ignore */
+            }
+        }
+        for (const source of loop.sources) {
+            try { source.stop(end + 0.03); } catch (_err) { /* already stopped */ }
+        }
+    }
+
+    stopAllSounds({ rememberAmbienceTheme = false } = {}) {
+        this.stopTankMoveLoop({ fade: 0, force: true });
+        this.stopAmbience({ rememberTheme: rememberAmbienceTheme });
+
+        const stopAt = this.context ? this.context.currentTime : 0;
+        for (const entry of [...this.activeSounds]) {
+            this.activeSounds.delete(entry);
+            try { entry.source.onended = null; } catch (_err) { /* ignore */ }
+            try { entry.source.stop(stopAt); } catch (_err) { /* already stopped or not started */ }
+            try { entry.cleanup(entry.nodes); } catch (_err) { /* already disconnected */ }
+        }
+    }
+
+    handlePageHidden() {
+        this.pageActive = false;
+        this.stopAllSounds({ rememberAmbienceTheme: true });
+        if (this.context && this.context.state !== 'closed') {
+            try {
+                const suspend = this.context.suspend();
+                if (suspend && typeof suspend.catch === 'function') suspend.catch(() => {});
+            } catch (_err) {
+                /* ignore */
+            }
+        }
+    }
+
+    handlePageVisible() {
+        this.pageActive = true;
+    }
+
     startAmbience(theme) {
         this.ambienceTheme = theme || { id: 'green' };
-        if (this.muted) {
+        if (this.muted || !this.pageActive) {
             this.stopAmbience({ rememberTheme: true });
             return;
         }
@@ -372,7 +500,7 @@ export class AudioManager {
 
         osc.connect(gain);
         const cleanup = this._connectToCategory(gain, category, { x, width });
-        osc.onended = () => cleanup([osc, gain]);
+        this._trackSource(osc, [osc, gain], cleanup);
         osc.start(start);
         osc.stop(end + 0.04);
     }
@@ -419,10 +547,21 @@ export class AudioManager {
         gain.gain.exponentialRampToValueAtTime(Math.max(0.0001, level), start + Math.min(attack, actualDuration * 0.4));
         gain.gain.exponentialRampToValueAtTime(0.0001, end);
 
+        const nodes = filter ? [source, filter, gain] : [source, gain];
         const cleanup = this._connectToCategory(gain, category, { x, width });
-        source.onended = () => cleanup(filter ? [source, filter, gain] : [source, gain]);
+        this._trackSource(source, nodes, cleanup);
         source.start(start);
         source.stop(end + 0.04);
+    }
+
+    _trackSource(source, nodes, cleanup) {
+        const entry = { source, nodes, cleanup };
+        this.activeSounds.add(entry);
+        source.onended = () => {
+            if (!this.activeSounds.delete(entry)) return;
+            cleanup(nodes);
+        };
+        return entry;
     }
 
     _createNoiseBuffer(duration, color = 'white', looping = false) {
@@ -459,6 +598,27 @@ export class AudioManager {
         return buffer;
     }
 
+    _createTreadBuffer(duration) {
+        const ctx = this.context;
+        const sampleCount = Math.max(1, Math.floor(ctx.sampleRate * duration));
+        const buffer = ctx.createBuffer(1, sampleCount, ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        let last = 0;
+        const beatLength = 0.085;
+        const phase = Math.random() * beatLength;
+
+        for (let i = 0; i < sampleCount; i++) {
+            const time = i / ctx.sampleRate;
+            const beat = ((time + phase) % beatLength) / beatLength;
+            const pulse = Math.exp(-beat * 10.5);
+            const white = Math.random() * 2 - 1;
+            last = last * 0.68 + white * 0.32;
+            data[i] = last * (0.16 + pulse * 0.84) * 0.62;
+        }
+
+        return buffer;
+    }
+
     _connectToCategory(node, category, spatial) {
         const ctx = this.context;
         const bus = this._categoryGain(category);
@@ -483,7 +643,7 @@ export class AudioManager {
     }
 
     _ensureContext() {
-        if (this.muted) return null;
+        if (this.muted || !this.pageActive) return null;
         if (!this.context) {
             const AudioContextClass = window.AudioContext || window.webkitAudioContext;
             if (!AudioContextClass) return null;

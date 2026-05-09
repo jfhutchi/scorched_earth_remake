@@ -53,6 +53,7 @@ export class Game {
         this.roundStartMessages = [];
 
         this._setupInput();
+        this._setupPageLifecycle();
         this.ui.setMuted(this.audio.muted);
     }
 
@@ -78,6 +79,7 @@ export class Game {
         this.roundStats = this._createRoundStats();
         this.wind = 0;
         this.lastCpuShopPurchases = [];
+        this.audio.stopTankMoveLoop({ fade: 0, force: true });
         this.audio.stopAmbience();
         this.statusMessage = 'Pre-round shop. Spend your starting money, then Start Round.';
         this.lastResult = `Pre-round shop. Each player starts with $${this.playerData[0].money}.`;
@@ -108,6 +110,7 @@ export class Game {
         this.explosions = [];
         this.cpuTimer = 0;
         this.keys.clear();
+        this.audio.stopTankMoveLoop({ fade: 0, force: true });
         this.audio.stopAmbience();
     }
 
@@ -144,6 +147,7 @@ export class Game {
 
     _openShop({ preRound = false } = {}) {
         this.phase = 'shop';
+        this.audio.stopTankMoveLoop();
         this.shopCpuPurchased = false;
         this.lastCpuShopPurchases = [];
         if (this.gameMode === 'cpu') this._runCpuShop();
@@ -296,6 +300,7 @@ export class Game {
 
     clearTouchHolds() {
         ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'KeyA', 'KeyD'].forEach((code) => this.keys.delete(code));
+        this.audio.stopTankMoveLoop();
     }
 
     advanceTime(ms) {
@@ -454,17 +459,25 @@ export class Game {
                     ? simulateTerrainReach({ shooter, terrain: this.terrain, weapon, angle: maxRangeAngle, power, wind: 0 })
                     : null;
                 const bestReach = Math.max(levelReach45, levelReach60);
+                const currentThreatReach = terrainReach45
+                    ? Math.max(bestReach, terrainReach45.horizontalReach)
+                    : bestReach;
                 return {
                     id: weapon.id,
                     name: weapon.name,
                     speedScale: weapon.speedScale,
+                    shopRefillPrice: weapon.shopRefillPrice,
+                    maxDamage: weapon.maxDamage,
+                    damageRadius: weapon.damageRadius,
+                    damageFalloff: weapon.damageFalloff,
+                    terrainEffectRadius: weapon.terrainEffectRadius,
                     approximateReachAt45: Math.round(levelReach45),
                     approximateReachAt60: Math.round(levelReach60),
                     currentTerrainReachAt45: terrainReach45 ? Math.round(terrainReach45.horizontalReach) : null,
                     canReachTypicalEnemySpawnDistance: bestReach + weapon.damageRadius >= typicalEnemySpawnDistance,
                     canThreatenCurrentEnemy: currentTankDistance === null
                         ? null
-                        : bestReach + weapon.damageRadius >= currentTankDistance,
+                        : currentThreatReach + weapon.damageRadius >= currentTankDistance,
                     notes: reachNotes(weapon),
                 };
             }),
@@ -830,6 +843,34 @@ export class Game {
         });
     }
 
+    _setupPageLifecycle() {
+        const hide = () => this._handlePageInactive();
+        const show = () => this._handlePageActive();
+
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) hide();
+            else show();
+        });
+        window.addEventListener('pagehide', hide);
+        window.addEventListener('blur', hide);
+        window.addEventListener('focus', show);
+        if (typeof document.addEventListener === 'function') {
+            document.addEventListener('freeze', hide);
+        }
+    }
+
+    _handlePageInactive() {
+        this.keys.clear();
+        this.audio.handlePageHidden();
+    }
+
+    _handlePageActive() {
+        this.audio.handlePageVisible();
+        if (this.running && this.theme && ['aiming', 'cpuThinking', 'projectile', 'resolving'].includes(this.phase)) {
+            this.audio.startAmbience(this.theme);
+        }
+    }
+
     _cycleWeapon() {
         if (!this._canHumanControl()) return;
         const tank = this._activeTank();
@@ -900,6 +941,8 @@ export class Game {
         if (this.phase === 'aiming' && this._canHumanControl()) {
             this._updateHumanAim(dt);
             this._updateHumanMovement(dt);
+        } else {
+            this.audio.stopTankMoveLoop();
         }
 
         if (this.phase === 'cpuThinking') {
@@ -942,15 +985,24 @@ export class Game {
 
     _updateHumanMovement(dt) {
         const tank = this._activeTank();
-        if (tank.movementFuel <= 0) return;
+        if (tank.movementFuel <= 0) {
+            this.audio.stopTankMoveLoop();
+            return;
+        }
 
         let direction = 0;
         if (this.keys.has('KeyA')) direction -= 1;
         if (this.keys.has('KeyD')) direction += 1;
-        if (direction === 0) return;
+        if (direction === 0) {
+            this.audio.stopTankMoveLoop();
+            return;
+        }
 
         const distance = Math.min(CONFIG.tank.moveSpeed * dt, tank.movementFuel);
-        if (distance <= 0) return;
+        if (distance <= 0) {
+            this.audio.stopTankMoveLoop();
+            return;
+        }
 
         const moved = this._tryMoveTank(tank, direction * distance);
         if (moved) {
@@ -958,7 +1010,10 @@ export class Game {
             this.statusMessage = tank.movementFuel > 0
                 ? `${tank.name} is repositioning.`
                 : `${tank.name} has no movement fuel left.`;
+            if (tank.movementFuel > 0) this.audio.startTankMoveLoop({ x: tank.x, width: this.width });
+            else this.audio.stopTankMoveLoop();
         } else {
+            this.audio.stopTankMoveLoop();
             this.statusMessage = `${tank.name} cannot drive there.`;
         }
     }
@@ -1016,6 +1071,7 @@ export class Game {
         if (this.gameOver || this.projectile || this.phase !== 'aiming') return false;
         const shooter = this._activeTank();
         if (!shooter || !shooter.alive) return false;
+        this.audio.stopTankMoveLoop();
 
         const weapon = shooter.selectedWeapon();
         if (!shooter.canUseWeapon(weapon.id)) {
@@ -1544,6 +1600,7 @@ export class Game {
         this.projectile = null;
         this.projectiles = [];
         this.keys.clear();
+        this.audio.stopTankMoveLoop();
         this.statusMessage = this.matchWinnerIndex === null ? 'Round summary.' : 'Match complete.';
         this.lastResult = winnerIndex === null
             ? `Round ${this.roundNumber} ended in a draw.`
@@ -1618,6 +1675,7 @@ export class Game {
         if (cpu.shieldCharge < CONFIG.utilities.shieldPurchaseCharge) tryBuy('shield', profile.shieldBuyChance);
         for (const weapon of limitedWeapons()) {
             if ((cpu.ammo[weapon.id] || 0) >= maxAmmoFor(weapon.id)) continue;
+            if (weapon.id === 'mega' && (cpu.health < 70 || cpu.shieldCharge < CONFIG.utilities.shieldPurchaseCharge)) continue;
             tryBuy(`${weapon.id}Ammo`, cpuAmmoBuyChance(weapon.id, profile, cpu.money));
         }
         if (cpu.parachutes < 1) tryBuy('parachute', profile.shieldBuyChance * 0.45);
@@ -1732,7 +1790,7 @@ export class Game {
 
     _drawWindIndicator(ctx) {
         const cx = this.width / 2;
-        const cy = 88;
+        const cy = 224;
         const direction = Math.sign(this.wind);
         const length = 24 + Math.abs(this.wind) * 13;
 
@@ -1846,7 +1904,7 @@ function cpuAmmoBuyChance(weaponId, profile, money) {
     if (weaponId === 'roller') return base * 0.62;
     if (weaponId === 'napalm') return base * 0.58;
     if (weaponId === 'cluster') return base * 0.44;
-    if (weaponId === 'mega') return money >= 220 ? base * 0.18 : base * 0.08;
+    if (weaponId === 'mega') return money >= 425 ? base * 0.16 : 0;
     return base;
 }
 
@@ -1887,7 +1945,7 @@ function reachNotes(weapon) {
     if (weapon.id === 'napalm') return 'Area threat depends on flame width after impact.';
     if (weapon.id === 'cluster') return 'Carrier reach is shown; bomblets spread after split.';
     if (weapon.id === 'dirt') return 'Low damage utility mound, reach uses normal arcing ballistics.';
-    if (weapon.id === 'mega') return 'v0.6.7 normalized speed scale keeps the heavy blast practical to aim.';
+    if (weapon.id === 'mega') return 'v0.6.8 heavier speed scale, premium price, steep falloff, and largest crater.';
     return 'Normal arcing projectile.';
 }
 
