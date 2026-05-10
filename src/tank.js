@@ -2,8 +2,12 @@ import { CONFIG, WEAPONS, clamp, getWeaponById } from './config.js';
 import { drawTank } from './tankRenderer.js';
 
 export class Tank {
-    constructor({ id, name, x, color, facing, isCpu = false }) {
+    constructor({ id, name, x, color, facing, isCpu = false, playerIndex = 0, label = null }) {
+        // Identity is intentionally per-tank so future online multiplayer
+        // can serialize tanks without leaking shared global state.
         this.id = id;
+        this.playerIndex = playerIndex;
+        this.label = label || name;
         this.name = name;
         this.x = x;
         this.y = 0;

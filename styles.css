@@ -1851,3 +1851,57 @@ body.is-mobile-game.is-landscape .mhud-row {
         min-height: 40px;
     }
 }
+
+/* ========================
+   v0.6.10 Local turn handoff overlay
+   ======================== */
+
+.handoff-overlay {
+    z-index: 25;
+    background: rgba(8, 14, 18, 0.78);
+}
+
+.handoff-card {
+    max-width: 460px;
+    width: min(460px, calc(100vw - 32px));
+    text-align: center;
+    padding: 24px 22px;
+}
+
+.handoff-card .title {
+    margin: 6px 0 4px;
+    font-size: 26px;
+}
+
+.handoff-card .subtitle {
+    margin: 0 0 6px;
+    font-size: 16px;
+}
+
+.handoff-tag {
+    display: inline-block;
+    margin: 0 auto 8px;
+    padding: 5px 14px;
+    border-radius: 999px;
+    font-weight: 800;
+    font-size: 14px;
+    letter-spacing: 0.04em;
+    background: rgba(45, 117, 199, 0.85);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+.handoff-card.is-p1 .handoff-tag { background: rgba(199, 82, 47, 0.88); }
+.handoff-card.is-p2 .handoff-tag { background: rgba(45, 117, 199, 0.88); }
+
+.handoff-card .menu-actions {
+    margin-top: 14px;
+    display: flex;
+    justify-content: center;
+}
+
+@media (max-width: 480px) {
+    .handoff-card { padding: 18px 16px; }
+    .handoff-card .title { font-size: 22px; }
+    .handoff-card .subtitle { font-size: 14px; }
+}

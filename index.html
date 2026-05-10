@@ -14,7 +14,7 @@
         <div id="menu" class="screen">
             <main class="menu-card">
                 <h1 class="title">Tank Artillery Duel</h1>
-                <p id="menuVersion" class="version-line">v0.6.9</p>
+                <p id="menuVersion" class="version-line">v0.6.10</p>
                 <p class="subtitle">Destroy the opposing tank across a shifting battlefield of wind, craters, dirt mounds, rolling shells, flame patches, and limited special ammo.</p>
 
                 <div class="menu-actions">
@@ -253,6 +253,18 @@
                     <div class="rotate-actions">
                         <button type="button" id="rotateContinueBtn" class="btn primary">Continue Anyway</button>
                         <button type="button" id="rotateMenuBtn" class="btn">Back to Menu</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="handoffOverlay" class="overlay hidden handoff-overlay" role="dialog" aria-modal="true" aria-label="Pass the device to the next player">
+                <div class="menu-card overlay-card handoff-card">
+                    <div class="handoff-tag" id="handoffTag">P2</div>
+                    <h1 id="handoffTitle" class="title">Player 2 Turn</h1>
+                    <p id="handoffSubtitle" class="subtitle">Pass the keyboard or device to Player 2.</p>
+                    <p class="note">Inputs are locked until Start Turn is pressed. Enter (desktop) or tap Start Turn (mobile) to begin.</p>
+                    <div class="menu-actions">
+                        <button id="handoffStartBtn" type="button" class="btn primary">Start Turn</button>
                     </div>
                 </div>
             </div>

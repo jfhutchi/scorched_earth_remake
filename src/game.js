@@ -39,6 +39,15 @@ export class Game {
         this.tanks = [];
         this.playerData = [];
         this.currentPlayer = 0;
+        // Turn state ownership lives on the Game so future online multiplayer
+        // can serialize/transfer it without untangling per-tank/per-key state.
+        this.turnState = {
+            activePlayerId: 0,
+            turnNumber: 0,
+            handoffPending: false,
+            inputLocked: false,
+            lastResultAudioRound: -1,
+        };
         this.projectile = null;
         this.projectiles = [];
         this.explosions = [];
@@ -66,6 +75,13 @@ export class Game {
         this.score = [0, 0];
         this.roundNumber = 0;
         this.matchWinnerIndex = null;
+        this.turnState = {
+            activePlayerId: 0,
+            turnNumber: 0,
+            handoffPending: false,
+            inputLocked: false,
+            lastResultAudioRound: -1,
+        };
         this.playerData = this._createPlayerData();
         this.tanks = [];
         this.terrain = null;
@@ -136,6 +152,10 @@ export class Game {
     }
 
     nextRound() {
+        if (this.phase === 'handoff' && this.turnState.handoffPending) {
+            this.acknowledgeHandoff();
+            return;
+        }
         if (this.phase === 'roundSummary') {
             this.openShop();
             return;
@@ -309,6 +329,108 @@ export class Game {
 
     canHumanControl() {
         return this._canHumanControl();
+    }
+
+    isHandoffPending() {
+        return Boolean(this.turnState && this.turnState.handoffPending);
+    }
+
+    getDebugTurnState() {
+        const active = this._activeTank();
+        return {
+            mode: this.gameMode,
+            phase: this.phase,
+            roundNumber: this.roundNumber,
+            turnNumber: this.turnState.turnNumber,
+            activePlayerId: this.turnState.activePlayerId,
+            activePlayerLabel: active ? active.label || active.name : null,
+            inputLocked: this.turnState.inputLocked,
+            handoffPending: this.turnState.handoffPending,
+            gameOver: this.gameOver,
+            matchWinnerIndex: this.matchWinnerIndex,
+        };
+    }
+
+    getDebugMovementState() {
+        return {
+            mode: this.gameMode,
+            phase: this.phase,
+            activePlayerId: this.turnState.activePlayerId,
+            movementInputActive: this._isMovementInputActive(),
+            movementAudioActive: Boolean(this.audio.tankMoveLoop),
+            tanks: this.tanks.map((tank, index) => ({
+                playerIndex: tank.playerIndex ?? index,
+                label: tank.label || tank.name,
+                isCpu: !!tank.isCpu,
+                alive: !!tank.alive,
+                movementFuel: Math.round(tank.movementFuel),
+                movementFuelMax: CONFIG.tank.movementFuelPerTurn,
+                isActive: index === this.currentPlayer,
+            })),
+        };
+    }
+
+    exportDebugGameState() {
+        // Returns a safe JSON-serializable snapshot for future multiplayer
+        // serialization tests. DOM nodes, audio nodes, functions, and
+        // circular references are intentionally excluded.
+        return {
+            version: GAME_VERSION,
+            mode: this.gameMode,
+            phase: this.phase,
+            settings: { ...this.settings },
+            roundNumber: this.roundNumber,
+            roundsToWin: this.settings.roundsToWin,
+            matchWinnerIndex: this.matchWinnerIndex,
+            score: [...this.score],
+            wind: this.wind,
+            theme: this.theme ? { id: this.theme.id, label: this.theme.label || null } : null,
+            terrain: this.terrain ? { width: this.terrain.width, height: this.terrain.height } : null,
+            turnState: { ...this.turnState },
+            currentPlayer: this.currentPlayer,
+            players: this.playerData.map((player, index) => ({
+                playerIndex: index,
+                name: player.name,
+                isCpu: this.gameMode === 'cpu' && index === 1,
+                money: player.money,
+                health: player.health,
+                ammo: { ...player.ammo },
+                shieldCharge: Math.round(player.shieldCharge || 0),
+                repairKits: player.repairKits || 0,
+                parachutes: player.parachutes || 0,
+            })),
+            tanks: this.tanks.map((tank, index) => ({
+                playerIndex: tank.playerIndex ?? index,
+                id: tank.id,
+                label: tank.label || tank.name,
+                color: tank.color,
+                facing: tank.facing,
+                isCpu: !!tank.isCpu,
+                alive: !!tank.alive,
+                health: tank.health,
+                x: Math.round(tank.x),
+                y: Math.round(tank.y),
+                angle: Math.round(tank.angle),
+                power: Math.round(tank.power),
+                movementFuel: Math.round(tank.movementFuel),
+                movementFuelMax: CONFIG.tank.movementFuelPerTurn,
+                shieldCharge: Math.round(tank.shieldCharge || 0),
+                repairKits: tank.repairKits || 0,
+                parachutes: tank.parachutes || 0,
+                selectedWeaponId: tank.selectedWeapon().id,
+                ammo: WEAPONS.reduce((map, weapon) => {
+                    const value = tank.ammoFor(weapon.id);
+                    map[weapon.id] = Number.isFinite(value) ? value : 'unlimited';
+                    return map;
+                }, {}),
+            })),
+        };
+    }
+
+    _isMovementInputActive() {
+        if (!this._canHumanControl()) return false;
+        if (!this.keys || typeof this.keys.has !== 'function') return false;
+        return this.keys.has('KeyA') || this.keys.has('KeyD');
     }
 
     clearTouchHolds() {
@@ -550,8 +672,8 @@ export class Game {
             }
         }
 
-        const p1 = new Tank({ id: 1, name: 'Player 1', x: x1, color: '#f16f45', facing: 1 });
-        const p2 = new Tank({ id: 2, name: 'Player 2', x: x2, color: '#3b87d6', facing: -1 });
+        const p1 = new Tank({ id: 1, playerIndex: 0, name: 'Player 1', label: 'Player 1', x: x1, color: '#f16f45', facing: 1 });
+        const p2 = new Tank({ id: 2, playerIndex: 1, name: 'Player 2', label: 'Player 2', x: x2, color: '#3b87d6', facing: -1 });
         this.tanks = [p1, p2];
         this._syncTankFromPlayerData(0);
         this._syncTankFromPlayerData(1);
@@ -567,6 +689,10 @@ export class Game {
         this.wind = 0;
         this.keys.clear();
         this.cpu.resetRound();
+        this.turnState.activePlayerId = 0;
+        this.turnState.turnNumber = 0;
+        this.turnState.handoffPending = false;
+        this.turnState.inputLocked = false;
         this.audio.startAmbience(this.theme);
         this._startTurn(false);
         p1.angle = 45;
@@ -715,10 +841,20 @@ export class Game {
         this.playerData[1].name = p2IsCpu ? 'CPU' : 'Player 2';
         this.roundStartMessages = this._applyRepairKitsForNewRound();
 
-        const p1 = new Tank({ id: 1, name: 'Player 1', x: x1, color: '#f16f45', facing: 1 });
+        const p1 = new Tank({
+            id: 1,
+            playerIndex: 0,
+            name: 'Player 1',
+            label: 'Player 1',
+            x: x1,
+            color: '#f16f45',
+            facing: 1,
+        });
         const p2 = new Tank({
             id: 2,
+            playerIndex: 1,
             name: p2IsCpu ? 'CPU' : 'Player 2',
+            label: p2IsCpu ? 'CPU' : 'Player 2',
             x: x2,
             color: '#3b87d6',
             facing: -1,
@@ -747,6 +883,13 @@ export class Game {
         this.shopCpuPurchased = false;
         this.cpu.resetRound();
         this.keys.clear();
+        // Reset per-round turn ownership. Each round starts at turn 0; the
+        // very first turn never shows the local handoff overlay.
+        this.turnState.activePlayerId = 0;
+        this.turnState.turnNumber = 0;
+        this.turnState.handoffPending = false;
+        this.turnState.inputLocked = false;
+        this.turnState.lastResultAudioRound = -1;
         this._rollWind();
         this.audio.startAmbience(this.theme);
 
@@ -755,6 +898,7 @@ export class Game {
             : `Round ${this.roundNumber} ready.`;
         this.statusMessage = 'Player 1 is aiming.';
         this.ui.hideAllOverlays();
+        if (typeof this.ui.hideHandoff === 'function') this.ui.hideHandoff();
         this._startTurn(false);
         for (const event of this.roundStartHealEvents) {
             const tank = this.tanks[event.index];
@@ -852,6 +996,7 @@ export class Game {
             lastSummary: this.lastSummary,
             lastCpuShopPurchases: [...this.lastCpuShopPurchases],
             muted: this.audio.muted,
+            turnState: { ...this.turnState },
         };
     }
 
@@ -881,6 +1026,18 @@ export class Game {
             if (code === 'Escape') {
                 e.preventDefault();
                 this.returnToMenu();
+                return;
+            }
+
+            // Handoff overlay: Enter starts the next local human turn. Space
+            // is intentionally NOT mapped here so the inactive player can't
+            // accidentally fire a weapon by tapping the spacebar before
+            // confirming the handoff.
+            if (this.phase === 'handoff' && this.turnState.handoffPending) {
+                if ((code === 'Enter' || code === 'NumpadEnter') && !e.repeat) {
+                    e.preventDefault();
+                    this.acknowledgeHandoff();
+                }
                 return;
             }
 
@@ -944,7 +1101,7 @@ export class Game {
 
     _handlePageActive() {
         this.audio.handlePageVisible();
-        if (this.running && this.theme && ['aiming', 'cpuThinking', 'projectile', 'resolving'].includes(this.phase)) {
+        if (this.running && this.theme && ['aiming', 'cpuThinking', 'projectile', 'resolving', 'handoff'].includes(this.phase)) {
             this.audio.startAmbience(this.theme);
         }
     }
@@ -969,6 +1126,8 @@ export class Game {
             this.running &&
             !this.gameOver &&
             this.phase === 'aiming' &&
+            !this.turnState.inputLocked &&
+            !this.turnState.handoffPending &&
             active &&
             active.alive &&
             !active.isCpu &&
@@ -976,11 +1135,45 @@ export class Game {
         );
     }
 
-    _startTurn(playSound = true) {
+    _startTurn(playSound = true, { fromHandoff = false } = {}) {
         if (this.gameOver) return;
         const active = this._activeTank();
+        if (!active) return;
+        // Movement allowance is per-tank/per-turn. Only the active tank's fuel
+        // is reset here; the inactive tank keeps its remaining fuel from its
+        // own previous turn and will be reset when it next becomes active.
         active.ensureAvailableWeapon();
         active.resetMovementFuel();
+
+        // Clear any stuck movement keys that may have leaked from the previous
+        // player's input on shared-keyboard local play.
+        ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'KeyA', 'KeyD', 'Space'].forEach((code) => this.keys.delete(code));
+        this.audio.stopTankMoveLoop({ fade: 0, force: true });
+
+        this.turnState.activePlayerId = this.currentPlayer;
+        this.turnState.turnNumber = (this.turnState.turnNumber || 0) + 1;
+
+        const needsLocalHandoff = !fromHandoff
+            && this.gameMode === 'two-player'
+            && !active.isCpu
+            && this.turnState.turnNumber > 1;
+
+        if (needsLocalHandoff) {
+            this.turnState.handoffPending = true;
+            this.turnState.inputLocked = true;
+            this.phase = 'handoff';
+            this.statusMessage = `${active.name}: pass the keyboard or device, then press Start Turn.`;
+            this.lastResult = `${active.name} is up next. Pass the keyboard/device.`;
+            if (typeof this.ui.showHandoff === 'function') {
+                this.ui.showHandoff(this._state(), active);
+            }
+            this.ui.update(this._state());
+            return;
+        }
+
+        this.turnState.handoffPending = false;
+        this.turnState.inputLocked = false;
+        if (typeof this.ui.hideHandoff === 'function') this.ui.hideHandoff();
 
         if (active.isCpu) {
             const profile = CPU_DIFFICULTY[this.settings.cpuDifficulty] || CPU_DIFFICULTY.normal;
@@ -994,6 +1187,16 @@ export class Game {
 
         if (playSound) this.audio.playTurn();
         this.ui.update(this._state());
+    }
+
+    acknowledgeHandoff() {
+        if (this.phase !== 'handoff' || !this.turnState.handoffPending) return false;
+        this.turnState.handoffPending = false;
+        this.turnState.inputLocked = false;
+        if (typeof this.ui.hideHandoff === 'function') this.ui.hideHandoff();
+        this.audio.playContinue();
+        this._startTurn(true, { fromHandoff: true });
+        return true;
     }
 
     loop = (now) => {
@@ -1819,6 +2022,11 @@ export class Game {
     }
 
     _playResultAudio(winnerIndex) {
+        // Guard against duplicate result audio for the same round-end, in case
+        // _checkWinCondition is reached more than once in a single resolution.
+        if (this.turnState.lastResultAudioRound === this.roundNumber) return;
+        this.turnState.lastResultAudioRound = this.roundNumber;
+
         if (winnerIndex === null) {
             this.audio.playNeutralRoundEnd();
             return;
@@ -1838,6 +2046,9 @@ export class Game {
             return;
         }
 
+        // Two Player Local: the app does not have a "human player" perspective,
+        // so use the neutral round-end stinger for round results and the
+        // celebratory match-win stinger when the match concludes.
         if (isMatch) this.audio.playMatchWin();
         else this.audio.playNeutralRoundEnd();
     }

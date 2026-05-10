@@ -1,4 +1,4 @@
-export const GAME_VERSION = 'v0.6.9';
+export const GAME_VERSION = 'v0.6.10';
 
 export const CONFIG = {
     debug: false,
