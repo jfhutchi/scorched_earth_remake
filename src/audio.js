@@ -154,6 +154,10 @@ export class AudioManager {
     playFire(weapon, spatial = {}) {
         const id = weapon?.id || 'standard';
         switch (id) {
+            case 'precision':
+                this._cannonFire(spatial, { body: 172, sub: 96, crack: 0.070, pressure: 0.10, tail: 0.14, metal: 920, volume: 0.72 });
+                this._oscLayer({ category: 'weapons', ...spatial, type: 'triangle', frequency: 1180, endFrequency: 760, duration: 0.055, volume: 0.020, delay: 0.018 });
+                break;
             case 'heavy':
                 this._cannonFire(spatial, { body: 78, sub: 48, crack: 0.060, pressure: 0.21, tail: 0.32, metal: 360, volume: 1.05 });
                 break;
@@ -162,14 +166,40 @@ export class AudioManager {
                 this._noiseLayer({ category: 'weapons', ...spatial, duration: 0.30, volume: 0.075, filterType: 'lowpass', frequency: 520, color: 'brown' });
                 this._noiseLayer({ category: 'weapons', ...spatial, duration: 0.12, volume: 0.036, filterType: 'bandpass', frequency: 760, delay: 0.025, color: 'dust' });
                 break;
+            case 'mound':
+                this._oscLayer({ category: 'weapons', ...spatial, type: 'sine', frequency: 82, endFrequency: 48, duration: 0.26, volume: 0.076 });
+                this._noiseLayer({ category: 'weapons', ...spatial, duration: 0.34, volume: 0.080, filterType: 'lowpass', frequency: 460, color: 'dust' });
+                this._noiseLayer({ category: 'weapons', ...spatial, duration: 0.16, volume: 0.038, filterType: 'bandpass', frequency: 680, delay: 0.04, color: 'dust' });
+                break;
+            case 'excavator':
+                this._cannonFire(spatial, { body: 86, sub: 42, crack: 0.050, pressure: 0.20, tail: 0.30, metal: 300, volume: 0.92 });
+                this._noiseLayer({ category: 'weapons', ...spatial, duration: 0.24, volume: 0.052, filterType: 'lowpass', frequency: 360, delay: 0.05, color: 'dust' });
+                break;
             case 'roller':
                 this._cannonFire(spatial, { body: 118, sub: 68, crack: 0.044, pressure: 0.13, tail: 0.18, metal: 620, volume: 0.82 });
                 this._rattle(spatial, 5, 0.03, 0.16, 0.014);
+                break;
+            case 'heavyRoller':
+                this._cannonFire(spatial, { body: 72, sub: 42, crack: 0.052, pressure: 0.20, tail: 0.30, metal: 330, volume: 0.98 });
+                this._rattle(spatial, 7, 0.02, 0.20, 0.018);
                 break;
             case 'napalm':
                 this._oscLayer({ category: 'weapons', ...spatial, type: 'sine', frequency: 132, endFrequency: 86, duration: 0.18, volume: 0.052 });
                 this._noiseLayer({ category: 'weapons', ...spatial, duration: 0.40, volume: 0.078, filterType: 'highpass', frequency: 720, endFrequency: 1480, color: 'soft' });
                 this._noiseLayer({ category: 'weapons', ...spatial, duration: 0.26, volume: 0.042, filterType: 'bandpass', frequency: 1320, delay: 0.08, color: 'crackle' });
+                break;
+            case 'firestorm':
+                this._oscLayer({ category: 'weapons', ...spatial, type: 'sawtooth', frequency: 116, endFrequency: 72, duration: 0.24, volume: 0.060 });
+                this._noiseLayer({ category: 'weapons', ...spatial, duration: 0.52, volume: 0.088, filterType: 'highpass', frequency: 620, endFrequency: 1780, color: 'soft' });
+                this._noiseLayer({ category: 'weapons', ...spatial, duration: 0.34, volume: 0.052, filterType: 'bandpass', frequency: 1580, delay: 0.08, color: 'crackle' });
+                break;
+            case 'airburst':
+                this._cannonFire(spatial, { body: 138, sub: 82, crack: 0.046, pressure: 0.11, tail: 0.16, metal: 680, volume: 0.76 });
+                this._oscLayer({ category: 'weapons', ...spatial, type: 'sine', frequency: 920, endFrequency: 1380, duration: 0.16, volume: 0.024, delay: 0.03 });
+                break;
+            case 'splitter':
+                this._cannonFire(spatial, { body: 108, sub: 64, crack: 0.048, pressure: 0.15, tail: 0.20, metal: 520, volume: 0.84 });
+                this._oscLayer({ category: 'weapons', ...spatial, type: 'triangle', frequency: 360, endFrequency: 520, duration: 0.10, volume: 0.026, delay: 0.05 });
                 break;
             case 'cluster':
                 this._cannonFire(spatial, { body: 104, sub: 62, crack: 0.044, pressure: 0.16, tail: 0.22, metal: 430, volume: 0.88 });
@@ -189,6 +219,10 @@ export class AudioManager {
     playExplosion(weapon, spatial = {}) {
         const id = weapon?.id || 'standard';
         switch (id) {
+            case 'precision':
+                this._explosion(spatial, { crack: 0.046, boom: 118, rumble: 80, blast: 0.055, debris: 3, duration: 0.20, volume: 0.50 });
+                this._oscLayer({ category: 'explosions', ...spatial, type: 'triangle', frequency: 980, endFrequency: 520, duration: 0.070, volume: 0.020, delay: 0.02 });
+                break;
             case 'heavy':
                 this._explosion(spatial, { crack: 0.092, boom: 58, rumble: 34, blast: 0.22, debris: 11, duration: 0.58, volume: 1.08 });
                 break;
@@ -197,15 +231,44 @@ export class AudioManager {
                 this._oscLayer({ category: 'explosions', ...spatial, type: 'sine', frequency: 82, endFrequency: 48, duration: 0.25, volume: 0.070 });
                 this._debris(spatial, 9, 0.05, 0.30, 0.020, 'dust');
                 break;
+            case 'mound':
+                this._noiseLayer({ category: 'explosions', ...spatial, duration: 0.44, volume: 0.140, filterType: 'lowpass', frequency: 360, endFrequency: 150, color: 'dust' });
+                this._oscLayer({ category: 'explosions', ...spatial, type: 'sine', frequency: 68, endFrequency: 44, duration: 0.28, volume: 0.060 });
+                this._debris(spatial, 12, 0.04, 0.34, 0.022, 'dust');
+                break;
+            case 'excavator':
+                this._explosion(spatial, { crack: 0.064, boom: 52, rumble: 30, blast: 0.17, debris: 13, duration: 0.52, volume: 0.96 });
+                this._noiseLayer({ category: 'explosions', ...spatial, duration: 0.54, volume: 0.090, filterType: 'lowpass', frequency: 300, endFrequency: 130, delay: 0.04, color: 'dust' });
+                break;
             case 'roller':
                 this._rattle(spatial, 4, 0, 0.08, 0.012);
                 this._explosion(spatial, { crack: 0.058, boom: 74, rumble: 44, blast: 0.15, debris: 7, duration: 0.36, volume: 0.82 });
+                break;
+            case 'heavyRoller':
+                this._rattle(spatial, 6, 0, 0.12, 0.016);
+                this._explosion(spatial, { crack: 0.070, boom: 58, rumble: 34, blast: 0.19, debris: 9, duration: 0.48, volume: 0.96 });
                 break;
             case 'napalm':
                 this._noiseLayer({ category: 'explosions', ...spatial, duration: 0.70, volume: 0.125, filterType: 'highpass', frequency: 520, endFrequency: 1300, color: 'soft' });
                 this._noiseLayer({ category: 'explosions', ...spatial, duration: 0.48, volume: 0.070, filterType: 'bandpass', frequency: 1700, delay: 0.08, color: 'crackle' });
                 this._oscLayer({ category: 'explosions', ...spatial, type: 'sine', frequency: 108, endFrequency: 76, duration: 0.22, volume: 0.038, delay: 0.02 });
                 this._debris(spatial, 7, 0.10, 0.65, 0.014, 'crackle');
+                break;
+            case 'firestorm':
+                this._noiseLayer({ category: 'explosions', ...spatial, duration: 0.92, volume: 0.145, filterType: 'highpass', frequency: 430, endFrequency: 1550, color: 'soft' });
+                this._noiseLayer({ category: 'explosions', ...spatial, duration: 0.62, volume: 0.082, filterType: 'bandpass', frequency: 1900, delay: 0.06, color: 'crackle' });
+                this._oscLayer({ category: 'explosions', ...spatial, type: 'sawtooth', frequency: 92, endFrequency: 58, duration: 0.32, volume: 0.046, delay: 0.01 });
+                this._debris(spatial, 10, 0.08, 0.72, 0.016, 'crackle');
+                break;
+            case 'airburst':
+                this._noiseLayer({ category: 'explosions', ...spatial, duration: 0.11, volume: 0.055, filterType: 'highpass', frequency: 1600, color: 'soft' });
+                this._oscLayer({ category: 'explosions', ...spatial, type: 'sine', frequency: 620, endFrequency: 210, duration: 0.20, volume: 0.038 });
+                this._oscLayer({ category: 'explosions', ...spatial, type: 'triangle', frequency: 1240, endFrequency: 860, duration: 0.10, volume: 0.020, delay: 0.04 });
+                break;
+            case 'splitter':
+            case 'splitterShard':
+                this._explosion(spatial, { crack: 0.044, boom: 98, rumble: 64, blast: 0.070, debris: 5, duration: 0.24, volume: 0.52 });
+                this._oscLayer({ category: 'explosions', ...spatial, type: 'triangle', frequency: 720, endFrequency: 420, duration: 0.070, volume: 0.018, delay: 0.025 });
                 break;
             case 'cluster':
             case 'clusterBomblet':
@@ -222,10 +285,11 @@ export class AudioManager {
         }
     }
 
-    playClusterSplit(spatial = {}) {
-        this._noiseLayer({ category: 'weapons', ...spatial, duration: 0.045, volume: 0.035, filterType: 'highpass', frequency: 1200 });
-        this._oscLayer({ category: 'weapons', ...spatial, type: 'triangle', frequency: 470, endFrequency: 720, duration: 0.075, volume: 0.036 });
-        this._oscLayer({ category: 'weapons', ...spatial, type: 'triangle', frequency: 680, endFrequency: 930, duration: 0.070, volume: 0.026, delay: 0.045 });
+    playClusterSplit(spatial = {}, weapon = null) {
+        const splitter = weapon?.id === 'splitter';
+        this._noiseLayer({ category: 'weapons', ...spatial, duration: 0.045, volume: splitter ? 0.030 : 0.035, filterType: 'highpass', frequency: splitter ? 1500 : 1200 });
+        this._oscLayer({ category: 'weapons', ...spatial, type: 'triangle', frequency: splitter ? 620 : 470, endFrequency: splitter ? 880 : 720, duration: 0.075, volume: 0.036 });
+        this._oscLayer({ category: 'weapons', ...spatial, type: 'triangle', frequency: splitter ? 840 : 680, endFrequency: splitter ? 1120 : 930, duration: 0.070, volume: 0.026, delay: 0.045 });
     }
 
     playRollerRumble(spatial = {}) {

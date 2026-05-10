@@ -171,7 +171,7 @@ export class Terrain {
             y: cy,
             radius,
             type,
-            alpha: type === 'napalm' ? 1 : 0.78,
+            alpha: type === 'napalm' || type === 'firestorm' ? 1 : 0.78,
             seed: Math.random() * 1000,
         });
         if (this.scorchMarks.length > 32) this.scorchMarks.shift();

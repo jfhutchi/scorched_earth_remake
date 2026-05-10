@@ -61,11 +61,12 @@ export function getProjectileSprite(weapon) {
     const color = weapon.color || '#ffd257';
     const dark = shadeColor(color, -44);
     const light = shadeColor(color, 32);
+    const shape = weapon.iconProfile?.shape || weapon.id;
 
     ctx.shadowColor = colorWithAlpha(color, 0.42);
-    ctx.shadowBlur = weapon.id === 'mega' || weapon.id === 'napalm' ? 8 : 4;
+    ctx.shadowBlur = weapon.id === 'mega' || weapon.id === 'napalm' || weapon.id === 'firestorm' ? 8 : 4;
 
-    if (weapon.id === 'napalm') {
+    if (shape === 'canister' || shape === 'firestormCanister') {
         roundRect(ctx, -13, -8, 26, 16, 6);
         ctx.fillStyle = dark;
         ctx.fill();
@@ -75,7 +76,17 @@ export function getProjectileSprite(weapon) {
         ctx.fillStyle = 'rgba(255, 236, 150, 0.72)';
         ctx.fillRect(-5, -5, 4, 10);
         ctx.fillRect(3, -5, 3, 10);
-    } else if (weapon.id === 'dirt') {
+        if (shape === 'firestormCanister') {
+            ctx.strokeStyle = '#ffd36f';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(-9, -8);
+            ctx.lineTo(9, 8);
+            ctx.moveTo(-2, -8);
+            ctx.lineTo(12, 5);
+            ctx.stroke();
+        }
+    } else if (shape === 'dirtBall' || shape === 'mound') {
         ctx.fillStyle = '#3b2a1c';
         ctx.beginPath();
         ctx.arc(0, 0, 9, 0, Math.PI * 2);
@@ -88,20 +99,30 @@ export function getProjectileSprite(weapon) {
         ctx.beginPath();
         ctx.arc(4, 3, 3, 0, Math.PI * 2);
         ctx.fill();
-    } else if (weapon.id === 'roller') {
+        if (shape === 'mound') {
+            ctx.fillStyle = 'rgba(170, 205, 92, 0.72)';
+            ctx.beginPath();
+            ctx.moveTo(-8, -3);
+            ctx.quadraticCurveTo(0, -13, 9, -2);
+            ctx.lineTo(8, 3);
+            ctx.quadraticCurveTo(0, 8, -9, 3);
+            ctx.closePath();
+            ctx.fill();
+        }
+    } else if (shape === 'roller' || shape === 'heavyRoller') {
         ctx.fillStyle = '#1d2428';
         ctx.beginPath();
-        ctx.arc(0, 0, 9, 0, Math.PI * 2);
+        ctx.arc(0, 0, shape === 'heavyRoller' ? 11 : 9, 0, Math.PI * 2);
         ctx.fill();
         ctx.strokeStyle = '#d8e2e6';
-        ctx.lineWidth = 2;
+        ctx.lineWidth = shape === 'heavyRoller' ? 3 : 2;
         for (let i = 0; i < 3; i++) {
             ctx.beginPath();
-            ctx.arc(0, 0, 4 + i * 2, 0, Math.PI * 1.55);
+            ctx.arc(0, 0, 4 + i * 2.2, 0, Math.PI * 1.55);
             ctx.stroke();
         }
-    } else if (weapon.id === 'cluster' || weapon.id === 'clusterBomblet') {
-        const scale = weapon.id === 'clusterBomblet' ? 0.68 : 1;
+    } else if (shape === 'cluster' || shape === 'splitter' || shape === 'clusterBomblet' || shape === 'splitterShard') {
+        const scale = shape === 'clusterBomblet' || shape === 'splitterShard' ? 0.68 : 1;
         ctx.scale(scale, scale);
         roundRect(ctx, -12, -6, 24, 12, 5);
         ctx.fillStyle = dark;
@@ -112,6 +133,73 @@ export function getProjectileSprite(weapon) {
         ctx.fillStyle = colorWithAlpha(light, 0.9);
         ctx.fillRect(-5, -4, 3, 8);
         ctx.fillRect(2, -4, 3, 8);
+        if (shape === 'splitter' || shape === 'splitterShard') {
+            ctx.strokeStyle = '#ecfff5';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(-10, 0);
+            ctx.lineTo(10, -7);
+            ctx.moveTo(-8, 4);
+            ctx.lineTo(11, 5);
+            ctx.stroke();
+        }
+    } else if (shape === 'airburst') {
+        ctx.strokeStyle = colorWithAlpha(light, 0.9);
+        ctx.lineWidth = 2.6;
+        ctx.beginPath();
+        ctx.arc(0, 0, 11, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(-13, 0);
+        ctx.lineTo(13, 0);
+        ctx.moveTo(0, -13);
+        ctx.lineTo(0, 13);
+        ctx.stroke();
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(0, 0, 4.5, 0, Math.PI * 2);
+        ctx.fill();
+    } else if (shape === 'drillBomb') {
+        ctx.fillStyle = dark;
+        ctx.beginPath();
+        ctx.moveTo(14, 0);
+        ctx.lineTo(1, -9);
+        ctx.lineTo(-12, -7);
+        ctx.lineTo(-15, 0);
+        ctx.lineTo(-12, 7);
+        ctx.lineTo(1, 9);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = color;
+        for (let i = -8; i <= 4; i += 6) {
+            ctx.beginPath();
+            ctx.moveTo(i, -7);
+            ctx.lineTo(i + 6, 0);
+            ctx.lineTo(i, 7);
+            ctx.lineTo(i - 3, 4);
+            ctx.lineTo(i + 1, 0);
+            ctx.lineTo(i - 3, -4);
+            ctx.closePath();
+            ctx.fill();
+        }
+    } else if (shape === 'dart') {
+        ctx.fillStyle = '#111820';
+        ctx.beginPath();
+        ctx.moveTo(16, 0);
+        ctx.lineTo(-6, -5);
+        ctx.lineTo(-13, -11);
+        ctx.lineTo(-10, 0);
+        ctx.lineTo(-13, 11);
+        ctx.lineTo(-6, 5);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.moveTo(14, 0);
+        ctx.lineTo(-8, -3.5);
+        ctx.lineTo(-8, 3.5);
+        ctx.closePath();
+        ctx.fill();
     } else {
         const shellScale = weapon.id === 'mega' ? 1.22 : (weapon.id === 'heavy' ? 1.1 : 0.92);
         ctx.scale(shellScale, shellScale);
@@ -169,7 +257,8 @@ export function drawWeaponIcon(ctx, weapon, x, y, size = 44) {
     ctx.beginPath();
     ctx.arc(0, 0, size * 0.48, 0, Math.PI * 2);
     ctx.fill();
-    ctx.rotate(weapon.id === 'roller' ? 0 : -0.22);
+    const shape = weapon.iconProfile?.shape || weapon.id;
+    ctx.rotate(shape === 'roller' || shape === 'heavyRoller' || shape === 'airburst' ? 0 : -0.22);
     ctx.drawImage(sprite, -size / 2, -size / 2, size, size);
     ctx.restore();
 }
