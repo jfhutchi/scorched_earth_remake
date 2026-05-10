@@ -1,6 +1,49 @@
 # Release Notes
 
-## v0.6.9 - Pending
+## v0.6.10 - Pending
+
+### Summary
+
+v0.6.10 is a focused local multiplayer state, audio bugfix, and future-multiplayer foundation pass. It fixes the Two Player Local movement-state bug, adds a clear local turn handoff overlay between human turns, improves player identity in the HUD/turn label/summary, makes tank movement audio actually audible, gives victory and defeat audio clearly distinct generated identities, adds debug-only turn/movement/state helpers for future multiplayer testing, and cleans up turn-state ownership so future online multiplayer is easier to add later. v0.6.10 does not add new weapons, online multiplayer, a backend, or any external assets.
+
+### Added
+
+- Two Player Local turn handoff overlay (`Player 2 Turn / Pass the keyboard or device / Start Turn`) shown between human turns. Inputs are locked until Start Turn is pressed.
+- `Enter` keyboard shortcut for starting the next local turn from the handoff overlay (Space is intentionally not mapped here so the inactive player cannot accidentally fire).
+- Game-level `turnState` (active player ID, turn number, input lock, handoff pending, last-result-audio round) so future online/room-code multiplayer can serialize and transfer turn ownership cleanly.
+- Per-tank `playerIndex` and `label` fields for clearer player identity in code and debug output.
+- Debug-only helpers (only available with `?debug=1`): `window.debugTurnState()`, `window.debugMovementState()`, and `window.exportDebugGameState()`.
+
+### Changed
+
+- Updated version target to `v0.6.10`.
+- Updated central game version constant; the main menu now shows `v0.6.10` and `window.GAME_VERSION` returns `"v0.6.10"`. Gameplay continues to have no floating version badge.
+- Boosted the movement audio bus and the tread/tick layers so the tank movement loop is reliably audible on laptop and phone speakers without becoming loud.
+- Replaced round-win, round-loss, match-win, and match-loss generated stingers so victory and defeat have clearly different character. Match-level stingers are longer (~2-3 s) than the round-level stingers (~1 s) and use distinct musical phrases instead of shared sequences.
+- Improved player identity clarity across HUD, mobile HUD turn pill, turn label color (CPU now visually distinguished from Player 2), summary score, and the new handoff overlay.
+- Round summary now reads `Score: <P1 name> X - <P2/CPU name> Y` so both player names appear consistently.
+- Page lifecycle audio handling now treats the new `handoff` phase the same as gameplay phases when restarting ambience after returning to the tab.
+
+### Fixed
+
+- Fixed the Two Player Local movement-state bug: Player 1 using all movement no longer prevents Player 2 from moving on Player 2's turn. Movement allowance is now treated as strictly per-tank and per-turn, with the active tank being the only one whose movement is reset at turn start.
+- Movement audio is now actually audible when desktop `A`/`D` or mobile movement buttons move the active tank, while remaining subtle and below weapon/explosion volumes.
+- Cleared stuck movement keys at every turn start so a held key from a previous shared-keyboard turn cannot drive the next active tank.
+- Result stingers no longer double-play when `_checkWinCondition` is reached more than once for the same round-end.
+
+### Testing
+
+- Local checks performed: `node --check` for all `src/*.js`; manual code review of turn state, handoff flow, movement state ownership, and audio routing.
+- Not verified yet: real auditory comparison of round-win vs round-loss and match-win vs match-loss stingers on speakers and headphones, real-phone Two Player Local handoff usability, real-phone movement-audio audibility, and GitHub Pages deployment of v0.6.10.
+
+### Known Limitations
+
+- v0.6.10 does not add online multiplayer, room codes, networking, accounts, or a backend. The `turnState` cleanup is preparation only.
+- CPU tanks still do not drive with movement fuel; CPU aiming remains intentionally simple.
+- Two Player Local remains intentionally hidden on phone-sized viewports (the existing single-button `Play` mobile entry stays Single Player vs CPU).
+- Terrain remains heightmap-based and cannot represent caves or overhangs.
+
+## v0.6.9 - Previous
 
 ### Summary
 

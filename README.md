@@ -1,10 +1,12 @@
 # Tank Artillery Duel
 
-Current version: `v0.6.9`
+Current version: `v0.6.10`
 
 Tank Artillery Duel is a local browser-based 2D artillery tank game inspired by classic tank duel games. Two tanks fight across destructible hilly terrain with wind, turn-based aiming, movement fuel, limited special weapons, generated Web Audio effects, match scoring, money, a pre-round and between-round shop, and an optional CPU opponent.
 
-v0.6.9 is a focused clarity, balance, shop presentation, combat feedback, result-audio, parachute, Napalm, help, settings, and documentation pass. It changes the default starting economy to no money, makes Heavy Shell meaningfully heavier than Standard Shell, keeps Mega Bomb late-match, upgrades shop cards and icons, improves combat/summary feedback, adds generated victory/defeat/result stingers, makes parachutes more noticeable, and adds minor Napalm burn ticks.
+v0.6.10 is a focused local multiplayer state, audio bugfix, and future-multiplayer foundation pass. It fixes the Two Player Local movement-state bug, adds a clear local turn handoff overlay between human players, improves player identity in the HUD/turn label/summary, makes tank movement audio actually audible, gives victory and defeat sounds clearly distinct generated identities, adds debug-only turn/movement/state helpers for future multiplayer testing, and cleans up turn-state ownership so future online or share-code multiplayer is easier to add later. v0.6.10 does not add new weapons, online multiplayer, a backend, or any external assets.
+
+Earlier work in v0.6.9 covered the default `$0` starting economy, Heavy Shell heavier-but-practical arc, Mega Bomb late-match gating, shop card redesign, generated weapon/item icons, floating combat feedback, generated result stingers, parachute usefulness, Napalm burn ticks, and Help / How to Play.
 
 The project is pure HTML, CSS, vanilla JavaScript, HTML5 Canvas, and the Web Audio API. It has no backend, no build step, no paid services, and no external image or audio assets.
 
@@ -32,19 +34,22 @@ To test from a phone on the same Wi-Fi, use your machine's LAN IP, for example `
 
 ## GitHub Pages Verification
 
-The live game displays `v0.6.9` on the main menu only. Gameplay intentionally does not show a floating version badge over the canvas, HUD, or touch controls. `window.GAME_VERSION` remains available and returns `"v0.6.9"`.
+The live game displays `v0.6.10` on the main menu only. Gameplay intentionally does not show a floating version badge over the canvas, HUD, or touch controls. `window.GAME_VERSION` remains available and returns `"v0.6.10"`.
 
 After a GitHub Pages deployment:
 
 - Hard refresh the page.
-- Confirm the main menu shows `v0.6.9`.
-- Open the browser console and confirm `window.GAME_VERSION` returns `"v0.6.9"`.
+- Confirm the main menu shows `v0.6.10`.
+- Open the browser console and confirm `window.GAME_VERSION` returns `"v0.6.10"`.
 - Confirm no gameplay version badge appears.
 - Confirm no external image or audio assets are requested.
 
 ## Current Features
 
 - Two Player Local and Single Player vs CPU modes.
+- Two Player Local turn handoff overlay between human turns with input lock until the next player presses Start Turn.
+- Per-tank/per-turn movement allowance so each player gets their own movement on their own turn.
+- Per-player identity labels and consistent player colors across HUD, turn label, mobile HUD pill, handoff overlay, and round summary; CPU is visually distinguished from Player 2.
 - Single-button `Play` entry on phone-sized screens that starts Single Player vs CPU.
 - Desktop keyboard controls and mobile/tablet touch controls.
 - Destructible heightmap terrain with craters, Dirt Bomb mounds, tank settling, fall damage, and automatic parachute protection.
@@ -54,7 +59,7 @@ After a GitHub Pages deployment:
 - Economy, improved round summaries, pre-round shop before Round 1, between-round shop, score tracking, and inventory HUD.
 - Shield charge, First Aid Kit full-heal behavior, parachutes, and ammo refill-to-max purchases.
 - Floating feedback for damage, shield absorption, healing, parachutes, fall damage, and Napalm burn ticks.
-- Layered generated Web Audio firing, impact, ambience, movement, tank destruction, shield, heal, parachute, shop, blocked-purchase, weapon-cycle, round start, victory, defeat, neutral round-end, and match result sounds.
+- Layered generated Web Audio firing, impact, ambience, audible-but-subtle tank movement loop, tank destruction, shield, heal, parachute, shop, blocked-purchase, weapon-cycle, round start, distinct round win/loss, distinct match win/loss, and neutral round-end stingers.
 - Help / How to Play overlay and grouped settings.
 - Debug/smoke hooks: `window.render_game_to_text()`, `window.advanceTime(ms)`, and `window.GAME_VERSION`.
 
@@ -174,6 +179,24 @@ Fall damage is tuned so small drops do nothing, medium/large drops can matter, a
 
 Napalm Canister now applies its initial flame-area damage, then up to two small burn ticks of `-1` to affected living tanks. Burn ticks show subtle `Burn -1` feedback, do not deform terrain, do not stack indefinitely, and resolve through the existing damage/death pipeline so scoring and round resolution stay consistent.
 
+## Two Player Local Handoff and Per-Player State
+
+In Two Player Local mode, the game now shows a clear handoff overlay between human turns:
+
+- After a player ends their turn (by firing or having their shot resolve), Two Player Local pauses the game in a `handoff` phase.
+- The overlay displays the upcoming player label (`Player 1 Turn` or `Player 2 Turn`), a `Pass the keyboard or device to <Player>` line, and a `Start Turn` button.
+- All movement, aiming, and fire input is locked while the overlay is visible. `Enter` (desktop) and `Start Turn` (desktop and mobile) start the next turn. `Space` is intentionally not mapped to acknowledge handoff so the inactive player cannot accidentally fire.
+- Single Player vs CPU does not show the handoff overlay, and CPU turns never pause for handoff.
+- The very first turn of every round skips the overlay; the overlay appears starting with the second turn.
+- Mute, audio lifecycle, and mobile rotate behavior are unchanged.
+
+State ownership for v0.6.10:
+
+- Movement allowance (`Tank.movementFuel`) is per-tank and is reset only for the active tank when its turn begins. Player 1 spending all movement no longer affects Player 2's allowance, and vice versa.
+- Per-tank state — health, ammo, shield charge, repair kits, parachutes, money, selected weapon, angle, and power — was already per-tank and stays per-tank in v0.6.10.
+- Game-level turn state (active player ID, turn number, input lock, and handoff pending) lives in a single `turnState` object on the `Game` so future room-code or share-code multiplayer can serialize/transfer it without untangling per-tank/per-key state.
+- v0.6.10 does not add networking, accounts, room codes, or any online multiplayer UI beyond the existing local-only modes.
+
 ## Round and Match Flow
 
 - Starting a new match opens the Pre-Round Shop before Round 1.
@@ -191,12 +214,11 @@ All sounds are generated locally with Web Audio. No audio files, remote audio, o
 
 - Standard Shell, Heavy Shell, Dirt Bomb, Roller Shell, Napalm Canister, Cluster Bomb, and Mega Bomb have distinct generated fire and impact sounds.
 - Tank destruction, shield activation/absorption, First Aid, parachute, purchase, invalid purchase, weapon cycle, and round start sounds remain generated.
-- Single Player round wins play a short victory stinger.
-- Single Player round losses play a short defeat stinger.
-- Match wins and match losses use slightly longer generated result stingers.
-- Two Player Local uses neutral round-end audio for normal round results and celebratory match audio for match completion.
-- Holding `A` / `D` or the mobile movement buttons plays a subtle generated tread loop only while the tank is actually moving.
-- Movement audio respects mute, stops when movement stops or fuel runs out, and does not play during CPU turns, projectile flight, resolving, menu, shop, summary, or match over.
+- Single Player round wins play a short ascending bell-like victory stinger; round losses play a clearly different descending darker defeat stinger.
+- Match wins use a longer celebratory ascending arpeggio plus held bright chord; match losses use a longer descending minor walk with a low rumble tail. Match win and match loss are clearly different from their round-only counterparts.
+- Two Player Local uses neutral round-end audio for normal round results and the celebratory match-win stinger when the match concludes; it never plays inappropriate CPU-style defeat audio.
+- Holding `A` / `D` or the mobile movement buttons plays a subtle but audible generated tread loop only while the active tank is actually moving. v0.6.10 boosted the movement bus and the tread/tick layers so the loop is reliably audible on laptop and phone speakers without becoming loud.
+- Movement audio respects mute, stops when movement stops or fuel runs out, and does not play during CPU turns, projectile flight, resolving, menu, shop, summary, handoff, or match over.
 - Ambience is generated per battlefield theme.
 
 Mute suppresses all generated sounds and persists through localStorage.
@@ -227,6 +249,9 @@ Normal play does not expose extra debug helpers. Add `?debug=1` to enable:
 - `window.testParachuteDrop()`
 - `window.forceRoundWin(0)`
 - `window.forceRoundWin(1)`
+- `window.debugTurnState()` — current mode, phase, round/turn number, active player ID and label, input lock, and handoff state.
+- `window.debugMovementState()` — per-tank movement allowance, active player movement remaining, movement input/audio status.
+- `window.exportDebugGameState()` — JSON-serializable snapshot (players, tanks, turn state, score, round, settings, wind) suitable for future multiplayer serialization tests. Functions, DOM nodes, and audio nodes are excluded.
 
 `window.render_game_to_text()`, `window.advanceTime(ms)`, and `window.GAME_VERSION` are always available for smoke testing.
 
@@ -262,7 +287,7 @@ Generated screenshots, traces, reports, coverage, and debug output are ignored b
 - If the port is busy, use another port such as `python -m http.server 8010`.
 - If sound does not play, click or tap once in the page first. Browsers require user interaction before starting audio.
 - If the sound button starts muted, localStorage has a saved mute preference. Press `M` or tap the sound button.
-- If GitHub Pages shows an older version, hard refresh and confirm the main menu says `v0.6.9`.
+- If GitHub Pages shows an older version, hard refresh and confirm the main menu says `v0.6.10`.
 - If match settings look wrong, clear `localStorage` for the site or change settings on the menu before starting a new match.
 
 ## Known Limitations

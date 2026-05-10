@@ -8,7 +8,9 @@ const MIX = {
     impacts: 0.46,
     ui: 0.42,
     utilities: 0.50,
-    movement: 0.34,
+    // v0.6.10: movement bus boosted from 0.34 so the tread loop is audible on
+    // typical laptop and phone speakers while still sitting below weapons.
+    movement: 0.60,
     ambience: 0.22,
 };
 
@@ -75,37 +77,73 @@ export class AudioManager {
         this._oscLayer({ category: 'ui', type: 'sine', frequency: 620, endFrequency: 720, duration: 0.11, volume: 0.026, delay: 0.07 });
     }
 
+    // v0.6.10: Result stingers redesigned so victory and defeat have clearly
+    // different character. Round and match variants use distinct phrases, not
+    // shared sequences with parameter tweaks.
     playRoundWin() {
-        this._oscLayer({ category: 'ui', type: 'triangle', frequency: 392, endFrequency: 523, duration: 0.16, volume: 0.038 });
-        this._oscLayer({ category: 'ui', type: 'triangle', frequency: 523, endFrequency: 659, duration: 0.18, volume: 0.036, delay: 0.11 });
-        this._oscLayer({ category: 'ui', type: 'sine', frequency: 784, endFrequency: 988, duration: 0.22, volume: 0.032, delay: 0.24 });
-        this._noiseLayer({ category: 'ui', duration: 0.16, volume: 0.018, filterType: 'highpass', frequency: 1500, delay: 0.06, color: 'soft' });
+        // Bright ascending major-arpeggio bell, ~1.0 s.
+        this._oscLayer({ category: 'ui', type: 'triangle', frequency: 523, duration: 0.16, volume: 0.046, attack: 0.004 });
+        this._oscLayer({ category: 'ui', type: 'sine', frequency: 1047, duration: 0.18, volume: 0.026, delay: 0.005, attack: 0.004 });
+        this._oscLayer({ category: 'ui', type: 'triangle', frequency: 659, duration: 0.18, volume: 0.046, delay: 0.18, attack: 0.004 });
+        this._oscLayer({ category: 'ui', type: 'sine', frequency: 1319, duration: 0.20, volume: 0.024, delay: 0.185, attack: 0.004 });
+        this._oscLayer({ category: 'ui', type: 'triangle', frequency: 784, duration: 0.22, volume: 0.046, delay: 0.38, attack: 0.004 });
+        this._oscLayer({ category: 'ui', type: 'sine', frequency: 1568, duration: 0.26, volume: 0.024, delay: 0.385, attack: 0.004 });
+        this._oscLayer({ category: 'ui', type: 'triangle', frequency: 1047, endFrequency: 1175, duration: 0.36, volume: 0.044, delay: 0.62, attack: 0.006 });
+        this._noiseLayer({ category: 'ui', duration: 0.30, volume: 0.018, filterType: 'highpass', frequency: 2200, delay: 0.18, color: 'soft' });
     }
 
     playRoundLoss() {
-        this._oscLayer({ category: 'ui', type: 'triangle', frequency: 330, endFrequency: 262, duration: 0.20, volume: 0.034 });
-        this._oscLayer({ category: 'ui', type: 'sine', frequency: 220, endFrequency: 196, duration: 0.24, volume: 0.030, delay: 0.15 });
-        this._noiseLayer({ category: 'ui', duration: 0.18, volume: 0.014, filterType: 'lowpass', frequency: 520, delay: 0.08, color: 'soft' });
+        // Sad descending minor figure plus low rumble swell, ~1.2 s. Clearly
+        // darker and slower than the round-win bell.
+        this._oscLayer({ category: 'ui', type: 'sawtooth', frequency: 311, endFrequency: 277, duration: 0.30, volume: 0.038, attack: 0.018 });
+        this._oscLayer({ category: 'ui', type: 'sine', frequency: 156, duration: 0.34, volume: 0.034, delay: 0.012, attack: 0.020 });
+        this._oscLayer({ category: 'ui', type: 'sawtooth', frequency: 247, endFrequency: 220, duration: 0.34, volume: 0.034, delay: 0.32, attack: 0.020 });
+        this._oscLayer({ category: 'ui', type: 'sine', frequency: 124, duration: 0.40, volume: 0.030, delay: 0.32, attack: 0.024 });
+        this._oscLayer({ category: 'ui', type: 'sawtooth', frequency: 196, endFrequency: 174, duration: 0.46, volume: 0.030, delay: 0.66, attack: 0.024 });
+        this._noiseLayer({ category: 'ui', duration: 0.55, volume: 0.022, filterType: 'lowpass', frequency: 360, endFrequency: 140, delay: 0.10, color: 'brown' });
     }
 
     playNeutralRoundEnd() {
-        this._oscLayer({ category: 'ui', type: 'triangle', frequency: 330, endFrequency: 392, duration: 0.14, volume: 0.030 });
-        this._oscLayer({ category: 'ui', type: 'sine', frequency: 392, endFrequency: 330, duration: 0.16, volume: 0.026, delay: 0.12 });
-        this._noiseLayer({ category: 'ui', duration: 0.09, volume: 0.012, filterType: 'highpass', frequency: 1150, delay: 0.06 });
+        // Two-note neutral chime — clearly not a "loss" cue, used in 2P Local
+        // round results so neither player hears CPU-style defeat audio.
+        this._oscLayer({ category: 'ui', type: 'triangle', frequency: 440, duration: 0.16, volume: 0.034, attack: 0.005 });
+        this._oscLayer({ category: 'ui', type: 'sine', frequency: 880, duration: 0.18, volume: 0.020, delay: 0.005, attack: 0.005 });
+        this._oscLayer({ category: 'ui', type: 'triangle', frequency: 587, duration: 0.20, volume: 0.030, delay: 0.18, attack: 0.005 });
+        this._noiseLayer({ category: 'ui', duration: 0.18, volume: 0.014, filterType: 'highpass', frequency: 1600, delay: 0.10, color: 'soft' });
     }
 
     playMatchWin() {
-        this.playRoundWin();
-        this._oscLayer({ category: 'ui', type: 'triangle', frequency: 659, endFrequency: 880, duration: 0.24, volume: 0.034, delay: 0.42 });
-        this._oscLayer({ category: 'ui', type: 'sine', frequency: 988, endFrequency: 1319, duration: 0.34, volume: 0.032, delay: 0.62 });
-        this._noiseLayer({ category: 'ui', duration: 0.24, volume: 0.024, filterType: 'highpass', frequency: 1700, delay: 0.36, color: 'soft' });
+        // ~3.0 s celebratory phrase: ascending arpeggio + held bright chord +
+        // shimmer tail. Bigger and longer than the round-win bell.
+        const root = 523;
+        const arp = [root, 659, 784, 1047, 1319];
+        for (let i = 0; i < arp.length; i++) {
+            const delay = 0.10 + i * 0.16;
+            this._oscLayer({ category: 'ui', type: 'triangle', frequency: arp[i], duration: 0.22, volume: 0.046, delay, attack: 0.004 });
+            this._oscLayer({ category: 'ui', type: 'sine', frequency: arp[i] * 2, duration: 0.22, volume: 0.022, delay: delay + 0.005, attack: 0.004 });
+        }
+        // Held bright chord (root, 5th, octave) for the celebratory tail.
+        this._oscLayer({ category: 'ui', type: 'triangle', frequency: root, duration: 1.30, volume: 0.040, delay: 1.05, attack: 0.012 });
+        this._oscLayer({ category: 'ui', type: 'triangle', frequency: 784, duration: 1.30, volume: 0.034, delay: 1.05, attack: 0.012 });
+        this._oscLayer({ category: 'ui', type: 'sine', frequency: 1047, duration: 1.40, volume: 0.030, delay: 1.05, attack: 0.012 });
+        // Sparkly high shimmer.
+        this._noiseLayer({ category: 'ui', duration: 1.40, volume: 0.020, filterType: 'highpass', frequency: 2200, delay: 1.10, color: 'soft' });
+        this._oscLayer({ category: 'ui', type: 'sine', frequency: 1568, endFrequency: 2093, duration: 1.20, volume: 0.020, delay: 1.30, attack: 0.018 });
     }
 
     playMatchLoss() {
-        this.playRoundLoss();
-        this._oscLayer({ category: 'ui', type: 'triangle', frequency: 196, endFrequency: 147, duration: 0.34, volume: 0.034, delay: 0.34 });
-        this._oscLayer({ category: 'ui', type: 'sine', frequency: 147, endFrequency: 123, duration: 0.42, volume: 0.024, delay: 0.58 });
-        this._noiseLayer({ category: 'ui', duration: 0.34, volume: 0.017, filterType: 'lowpass', frequency: 430, delay: 0.36, color: 'soft' });
+        // ~3.0 s sombre phrase: long descending minor walk + low piano-like
+        // pulse + soft low rumble tail. Final and dark, but not harsh.
+        const walk = [392, 349, 311, 277, 247];
+        for (let i = 0; i < walk.length; i++) {
+            const delay = 0.05 + i * 0.20;
+            this._oscLayer({ category: 'ui', type: 'sawtooth', frequency: walk[i], endFrequency: walk[i] * 0.96, duration: 0.30, volume: 0.038, delay, attack: 0.020 });
+            this._oscLayer({ category: 'ui', type: 'sine', frequency: walk[i] * 0.5, duration: 0.32, volume: 0.030, delay: delay + 0.005, attack: 0.022 });
+        }
+        // Long low pulse and rumble tail for finality.
+        this._oscLayer({ category: 'ui', type: 'sine', frequency: 110, endFrequency: 92, duration: 1.40, volume: 0.040, delay: 1.10, attack: 0.030 });
+        this._oscLayer({ category: 'ui', type: 'sawtooth', frequency: 165, endFrequency: 138, duration: 1.20, volume: 0.030, delay: 1.20, attack: 0.030 });
+        this._noiseLayer({ category: 'ui', duration: 1.50, volume: 0.024, filterType: 'lowpass', frequency: 380, endFrequency: 110, delay: 1.10, color: 'brown' });
     }
 
     playWeaponCycle() {
@@ -248,41 +286,67 @@ export class AudioManager {
         if (!ctx) return;
 
         const start = ctx.currentTime + 0.01;
+
+        // Filtered noise tread: subtle low-mid rattle that is actually audible
+        // on phone speakers. v0.6.10 raised gain and shifted the bandpass up
+        // so the loop survives the small-speaker low-end roll-off.
         const tread = ctx.createBufferSource();
         tread.buffer = this._createTreadBuffer(0.36);
         tread.loop = true;
 
         const treadFilter = ctx.createBiquadFilter();
         treadFilter.type = 'bandpass';
-        treadFilter.frequency.setValueAtTime(260, start);
-        treadFilter.Q.setValueAtTime(0.85, start);
+        treadFilter.frequency.setValueAtTime(420, start);
+        treadFilter.Q.setValueAtTime(1.0, start);
 
         const treadGain = ctx.createGain();
         treadGain.gain.setValueAtTime(0.0001, start);
-        treadGain.gain.linearRampToValueAtTime(0.030, start + 0.055);
+        treadGain.gain.linearRampToValueAtTime(0.080, start + 0.060);
 
         tread.connect(treadFilter);
         treadFilter.connect(treadGain);
         const treadCleanup = this._connectToCategory(treadGain, 'movement', spatial);
 
+        // Mechanical thump for body/weight; raised slightly so it's perceptible
+        // without overwhelming weapon SFX or ambience.
         const thump = ctx.createOscillator();
         thump.type = 'triangle';
-        thump.frequency.setValueAtTime(36 + Math.random() * 4, start);
+        thump.frequency.setValueAtTime(48 + Math.random() * 4, start);
 
         const thumpGain = ctx.createGain();
         thumpGain.gain.setValueAtTime(0.0001, start);
-        thumpGain.gain.linearRampToValueAtTime(0.0065, start + 0.055);
+        thumpGain.gain.linearRampToValueAtTime(0.018, start + 0.060);
 
         thump.connect(thumpGain);
         const thumpCleanup = this._connectToCategory(thumpGain, 'movement', spatial);
 
+        // High-mid tick layer rhythm so movement is audible on small speakers
+        // even when low frequencies are rolled off.
+        const tick = ctx.createBufferSource();
+        tick.buffer = this._createTreadBuffer(0.42);
+        tick.loop = true;
+
+        const tickFilter = ctx.createBiquadFilter();
+        tickFilter.type = 'bandpass';
+        tickFilter.frequency.setValueAtTime(1450, start);
+        tickFilter.Q.setValueAtTime(1.6, start);
+
+        const tickGain = ctx.createGain();
+        tickGain.gain.setValueAtTime(0.0001, start);
+        tickGain.gain.linearRampToValueAtTime(0.030, start + 0.080);
+
+        tick.connect(tickFilter);
+        tickFilter.connect(tickGain);
+        const tickCleanup = this._connectToCategory(tickGain, 'movement', spatial);
+
         const loop = {
-            sources: [tread, thump],
-            gains: [treadGain, thumpGain],
+            sources: [tread, thump, tick],
+            gains: [treadGain, thumpGain, tickGain],
             stopped: false,
             cleanup: () => {
                 treadCleanup([tread, treadFilter, treadGain]);
                 thumpCleanup([thump, thumpGain]);
+                tickCleanup([tick, tickFilter, tickGain]);
             },
         };
 
@@ -295,9 +359,11 @@ export class AudioManager {
 
         tread.onended = finish;
         thump.onended = finish;
+        tick.onended = finish;
         this.tankMoveLoop = loop;
         tread.start(start);
         thump.start(start);
+        tick.start(start);
     }
 
     stopTankMoveLoop({ fade = 0.07, force = false } = {}) {

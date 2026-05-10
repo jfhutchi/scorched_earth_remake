@@ -16,6 +16,13 @@ export class UI {
         this.helpBtn = document.getElementById('helpBtn');
         this.helpCloseBtn = document.getElementById('helpCloseBtn');
 
+        this.handoffOverlay = document.getElementById('handoffOverlay');
+        this.handoffTitle = document.getElementById('handoffTitle');
+        this.handoffSubtitle = document.getElementById('handoffSubtitle');
+        this.handoffTag = document.getElementById('handoffTag');
+        this.handoffStartBtn = document.getElementById('handoffStartBtn');
+        this.handoffCard = this.handoffOverlay ? this.handoffOverlay.querySelector('.handoff-card') : null;
+
         this.twoPlayerBtn = document.getElementById('twoPlayerBtn');
         this.cpuBtn = document.getElementById('cpuBtn');
         this.menuMuteBtn = document.getElementById('menuMuteBtn');
@@ -98,7 +105,9 @@ export class UI {
         const p2 = tanks[1];
         const cpuMode = (state && state.gameMode === 'cpu') || (game && game.gameMode === 'cpu');
         this.mhudTurn.textContent = currentPlayer === 0 ? 'P1' : (cpuMode ? 'CPU' : 'P2');
-        this.mhudTurn.style.background = currentPlayer === 0 ? 'rgba(199, 82, 47, 0.86)' : 'rgba(45, 117, 199, 0.78)';
+        this.mhudTurn.style.background = currentPlayer === 0
+            ? 'rgba(199, 82, 47, 0.86)'
+            : (cpuMode ? 'rgba(145, 89, 193, 0.86)' : 'rgba(45, 117, 199, 0.78)');
         this.mhudP1Hp.textContent = String(Math.max(0, Math.round(p1.health)));
         this.mhudP2Hp.textContent = String(Math.max(0, Math.round(p2.health)));
         if (this.mhudP1Shield) this.mhudP1Shield.textContent = formatShieldCompact(p1);
@@ -176,6 +185,32 @@ export class UI {
         this.summaryOverlay.classList.add('hidden');
         this.shopOverlay.classList.add('hidden');
         if (this.helpOverlay) this.helpOverlay.classList.add('hidden');
+        if (this.handoffOverlay) this.handoffOverlay.classList.add('hidden');
+    }
+
+    showHandoff(state, activeTank) {
+        if (!this.handoffOverlay) return;
+        const tank = activeTank || (state && state.active);
+        const isP1 = tank ? tank.playerIndex === 0 : (state && state.currentPlayer === 0);
+        const label = tank ? (tank.label || tank.name) : (isP1 ? 'Player 1' : 'Player 2');
+        const tagText = isP1 ? 'P1' : 'P2';
+
+        if (this.handoffTitle) this.handoffTitle.textContent = `${label} Turn`;
+        if (this.handoffSubtitle) this.handoffSubtitle.textContent = `Pass the keyboard or device to ${label}.`;
+        if (this.handoffTag) this.handoffTag.textContent = tagText;
+        if (this.handoffCard) {
+            this.handoffCard.classList.toggle('is-p1', isP1);
+            this.handoffCard.classList.toggle('is-p2', !isP1);
+        }
+        this.handoffOverlay.classList.remove('hidden');
+        if (this.handoffStartBtn) {
+            try { this.handoffStartBtn.focus({ preventScroll: true }); } catch (_err) { /* ignore */ }
+        }
+    }
+
+    hideHandoff() {
+        if (!this.handoffOverlay) return;
+        this.handoffOverlay.classList.add('hidden');
     }
 
     showHelp() {
@@ -193,7 +228,7 @@ export class UI {
         const roundWinner = summary.winnerIndex === null ? 'Draw' : `${state.tanks[summary.winnerIndex].name} wins the round`;
 
         this.summaryTitle.textContent = matchWinner ? `${matchWinner} Wins Match!` : 'Round Summary';
-        this.summaryScore.textContent = `${roundWinner} | Score: Player 1 ${summary.score[0]} - ${state.tanks[1].name} ${summary.score[1]}`;
+        this.summaryScore.textContent = `${roundWinner} | Score: ${state.tanks[0].name} ${summary.score[0]} - ${state.tanks[1].name} ${summary.score[1]}`;
         this.summaryStats.innerHTML = summary.stats.map((stat) => {
             const ammo = inventoryAmmoText(stat.inventory);
             const utility = inventoryUtilityText(stat.inventory);
@@ -316,7 +351,7 @@ export class UI {
         this.p2Panel.classList.toggle('disabled', !p2.alive);
 
         this.turnLabel.textContent = this._turnText(state);
-        this.turnLabel.style.color = currentPlayer === 0 ? '#f06b45' : '#2d75c7';
+        this.turnLabel.style.color = turnLabelColor(currentPlayer, state);
         this.statusVal.textContent = state.statusMessage;
         this.roundVal.textContent = `${state.roundNumber}/${state.roundsToWin}`;
         this.modeVal.textContent = state.gameMode === 'cpu'
@@ -375,6 +410,7 @@ export class UI {
     _turnText(state) {
         if (state.phase === 'roundSummary') return 'Round Summary';
         if (state.phase === 'shop') return 'Shop';
+        if (state.phase === 'handoff') return `${state.active ? state.active.name : 'Next Player'} - Pass Device`;
         if (state.gameOver) return 'Round Over';
         if (state.phase === 'projectile') return 'Shot In Flight';
         if (state.phase === 'resolving') return 'Resolving Impact';
@@ -383,6 +419,7 @@ export class UI {
     }
 
     _controlsText(state) {
+        if (state.phase === 'handoff') return 'Press Enter or tap Start Turn to begin the next local turn. Inputs are locked.';
         if (state.phase === 'roundSummary') return 'Keys: N continue, Esc menu, M mute. Touch: N or menu.';
         if (state.phase === 'shop') return 'Buy items, then Start Next Round. Keys: N next round. Touch: N.';
         if (state.gameOver) return 'Keys: N continue, Esc menu, M mute. Touch: N or menu.';
@@ -629,6 +666,13 @@ function healthColor(hp) {
     if (hp > 60) return 'linear-gradient(90deg, #2f9e44, #69db7c)';
     if (hp > 30) return 'linear-gradient(90deg, #f08c00, #ffd43b)';
     return 'linear-gradient(90deg, #c92a2a, #ff6b6b)';
+}
+
+function turnLabelColor(currentPlayer, state) {
+    if (currentPlayer === 0) return '#f06b45';
+    // Visually distinguish CPU from Player 2 for player identity clarity.
+    if (state && state.gameMode === 'cpu') return '#9159c1';
+    return '#2d75c7';
 }
 
 export function weaponListText(tank) {

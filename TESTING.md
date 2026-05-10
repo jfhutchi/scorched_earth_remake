@@ -6,9 +6,13 @@ For mobile testing, visit the LAN IP from a phone (`http://<your-laptop-ip>:8000
 
 ## Required Pre-Merge Smoke Test
 
-- [ ] Main menu shows `v0.6.9`.
+- [ ] Main menu shows `v0.6.10`.
 - [ ] Gameplay screen does not show a floating version badge.
-- [ ] `window.GAME_VERSION` returns `"v0.6.9"`.
+- [ ] `window.GAME_VERSION` returns `"v0.6.10"`.
+- [ ] Two Player Local: Player 1 spends all movement, fires/ends turn, handoff overlay appears, then Player 2 can move with full movement allowance.
+- [ ] Single Player vs CPU still does not show the handoff overlay between turns.
+- [ ] Holding `A` or `D` produces an audible (but subtle) tank movement sound.
+- [ ] Single Player round win and round loss audio sound clearly different from each other.
 - [ ] Start Single Player vs CPU.
 - [ ] Fresh/default starting money is `None ($0)`.
 - [ ] Pre-round shop opens with `$0` under default settings.
@@ -28,15 +32,89 @@ For mobile testing, visit the LAN IP from a phone (`http://<your-laptop-ip>:8000
 - [ ] Desktop keyboard controls still work.
 - [ ] No console errors.
 
-## v0.6.9 Focus Checks
+## v0.6.10 Focus Checks
 
 ### Version and Deployment
 
-- [ ] Main menu visibly shows `v0.6.9`.
-- [ ] `window.GAME_VERSION` returns `"v0.6.9"` in the browser console.
+- [ ] Main menu visibly shows `v0.6.10`.
+- [ ] `window.GAME_VERSION` returns `"v0.6.10"` in the browser console.
 - [ ] Gameplay screen does not show a floating version badge over the battlefield, HUD, or controls.
-- [ ] GitHub Pages deployment shows `v0.6.9` after a hard refresh.
+- [ ] GitHub Pages deployment shows `v0.6.10` after a hard refresh.
 - [ ] No external image or audio assets are requested in the Network panel.
+
+### Two Player Local Movement State
+
+- [ ] Start a Two Player Local match.
+- [ ] On Player 1's turn, hold `A` and `D` until movement fuel reaches `0`.
+- [ ] HUD `Move` value reads `0 px` for Player 1.
+- [ ] Player 1 fires.
+- [ ] After projectile resolves, the handoff overlay appears with `Player 2 Turn`.
+- [ ] Press Start Turn (mouse/touch) or Enter (desktop) and confirm Player 2's turn begins.
+- [ ] Player 2's HUD `Move` value reads the full movement allowance (the `movementFuelPerTurn` value).
+- [ ] Player 2 can move with `A` / `D` normally.
+- [ ] Player 2 movement does not change Player 1's already-used movement state during Player 2's turn.
+- [ ] Player 1 movement on the next P1 turn does not change Player 2's already-used movement.
+- [ ] Mobile movement buttons in Two Player Local control only the active player/tank.
+- [ ] Single Player vs CPU movement still works normally.
+- [ ] CPU turn does not consume the human's movement fuel.
+
+### Two Player Local Handoff Overlay
+
+- [ ] Handoff overlay appears between every human turn after the first turn of a round.
+- [ ] Handoff overlay shows the next player's label (`Player 1 Turn` / `Player 2 Turn`) and a `Pass the keyboard or device` line.
+- [ ] Overlay shows a `Start Turn` button.
+- [ ] All movement, aiming, weapon-cycle, and fire input is locked while the overlay is visible.
+- [ ] `Enter` starts the next turn from the overlay.
+- [ ] `Space` does NOT start the next turn (so the inactive player cannot accidentally fire).
+- [ ] Touch tap on `Start Turn` works on mobile-sized layout.
+- [ ] Single Player vs CPU does not show the handoff overlay between turns.
+- [ ] CPU turns never show the handoff overlay.
+- [ ] Round summary, shop, match end, mute, and rotate overlays still work; the handoff overlay does not interfere with those flows.
+
+### Player Identity Clarity
+
+- [ ] HUD player panels show `Player 1` and `Player 2` (or `CPU` in Single Player vs CPU).
+- [ ] Mobile HUD turn pill reads `P1`, `P2`, or `CPU` correctly and uses a distinct color for CPU vs Player 2.
+- [ ] Center turn label color matches the active player (Player 1 orange, Player 2 blue, CPU purple).
+- [ ] Round summary score line shows both player names consistently.
+- [ ] Handoff overlay tag and title show the correct player label.
+
+### Tank Movement Audio Audibility
+
+- [ ] Holding desktop `A` or `D` produces an audible (but subtle) tread movement sound.
+- [ ] Holding mobile movement buttons produces the same movement sound.
+- [ ] Releasing the movement key/button stops or fades the movement sound within ~0.1 s.
+- [ ] Movement sound stops when movement fuel reaches `0`.
+- [ ] Movement sound does not play when movement is blocked (e.g. against the enemy tank or steep terrain).
+- [ ] Movement sound does not play during projectile flight, resolving, shop, summary, menu, handoff overlay, CPU turn, or match over.
+- [ ] Movement sound respects mute (`M`) and the on-screen mute buttons.
+- [ ] Movement sound stops when the page/tab is hidden or the mobile app is backgrounded.
+- [ ] Returning to the tab/app does not leave movement audio stuck on.
+- [ ] Movement sound is below weapon/explosion volume.
+- [ ] No console errors from movement audio.
+
+### Result Audio Identity
+
+- [ ] Single Player round win plays an ascending bell-like victory stinger.
+- [ ] Single Player round loss plays a clearly different descending darker defeat stinger.
+- [ ] Round win and round loss are clearly NOT the same sequence with parameter tweaks.
+- [ ] Match win plays a longer celebratory ascending phrase + held bright chord.
+- [ ] Match loss plays a longer descending minor walk with a low rumble tail.
+- [ ] Round win is shorter/smaller than match win.
+- [ ] Round loss is shorter/smaller than match loss.
+- [ ] Two Player Local does not play the CPU-style defeat stinger for round results.
+- [ ] Result stingers respect mute.
+- [ ] Result stingers stop when the tab/app is hidden.
+- [ ] Returning to the tab/app does not restart or duplicate result stingers.
+- [ ] Result stingers do not play more than once per result screen.
+
+### Debug Helpers (with `?debug=1`)
+
+- [ ] `window.debugTurnState()` returns mode, phase, round number, turn number, active player ID, active player label, input lock, and handoff state.
+- [ ] `window.debugMovementState()` returns per-tank movement allowance, active player movement remaining, movement input active flag, and movement audio active flag.
+- [ ] `window.exportDebugGameState()` returns a JSON-serializable snapshot of players, tanks, score, round/turn, phase, wind, settings, and turn state.
+- [ ] `window.exportDebugGameState()` does not contain functions, DOM nodes, audio nodes, or circular references (a `JSON.stringify(window.exportDebugGameState())` round-trip succeeds).
+- [ ] These helpers are unavailable in normal mode and produce no console spam during normal gameplay.
 
 ### Starting Economy
 
@@ -367,7 +445,7 @@ For mobile testing, visit the LAN IP from a phone (`http://<your-laptop-ip>:8000
 
 Open the local URL with `?debug=1` for optional helpers.
 
-- [ ] `window.GAME_VERSION` returns `"v0.6.9"`.
+- [ ] `window.GAME_VERSION` returns `"v0.6.10"`.
 - [ ] `window.render_game_to_text()` returns concise current game state.
 - [ ] `window.debugGameState()` returns parsed game state with `?debug=1`.
 - [ ] `window.testWeaponImpact("standard")` creates a Standard Shell impact during a live aiming turn.
@@ -393,7 +471,7 @@ Open the local URL with `?debug=1` for optional helpers.
 
 ### Final Regression Pass
 
-- [ ] Main menu loads and shows `v0.6.9`.
+- [ ] Main menu loads and shows `v0.6.10`.
 - [ ] Phone viewport shows `Play`; desktop shows `Two Player Local` and `Single Player vs CPU`.
 - [ ] Help overlay opens and closes.
 - [ ] Pre-round shop opens with `$0`.

@@ -240,6 +240,13 @@ if (mhudInfoBtn && mhudExtra) {
     });
 }
 
+if (ui.handoffStartBtn) {
+    ui.handoffStartBtn.addEventListener('click', (e) => {
+        e.currentTarget.blur();
+        game.acknowledgeHandoff();
+    });
+}
+
 ui.continueShopBtn.addEventListener('click', (e) => {
     e.currentTarget.blur();
     game.audio.playContinue();
@@ -341,6 +348,10 @@ if (debugEnabled) {
     };
     window.forceRoundWin = (playerIndex) => game.forceRoundWin(playerIndex);
     window.testParachuteDrop = () => game.testParachuteDrop();
+    // v0.6.10 turn/movement/state helpers for future multiplayer testing.
+    window.debugTurnState = () => game.getDebugTurnState();
+    window.debugMovementState = () => game.getDebugMovementState();
+    window.exportDebugGameState = () => game.exportDebugGameState();
 }
 
 window.GAME_VERSION = GAME_VERSION;

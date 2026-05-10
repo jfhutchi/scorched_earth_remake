@@ -1,33 +1,48 @@
 # Project Progress
 
-Current Version: v0.6.9
+Current Version: v0.6.10
 
-Current Branch: Claude
+Current Branch: version/v0.6.9
 
 Release History Source: RELEASE_NOTES.md
 
 ## Latest Completed Work
 
-- Implemented v0.6.9 in the working tree: default starting money is now none/$0, Heavy Shell uses a heavier-but-practical arc, Mega Bomb late-match gating is preserved, shop cards were redesigned, shared generated weapon/item icons were added, mobile shop cards were compacted, weapon descriptions were clarified, selected weapon HUD/info was improved, floating combat feedback was added, round summaries were improved, generated victory/defeat/round-result stingers were added, parachute usefulness/fall damage was tuned, Napalm now has initial damage plus small burn ticks, Help / How to Play was added, settings/UI polish was applied, and docs were updated.
-- Updated the central version constant so the main menu and `window.GAME_VERSION` report `v0.6.9`; gameplay remains free of a floating version badge.
-- Kept the existing architecture, current weapon list, desktop keyboard controls, mobile touch controls, mobile Play behavior, shop flow, pre-round shop, CPU shopping, generated Web Audio system, mute persistence, destructible terrain, wind physics, shields, First Aid, and parachutes.
+- Implemented v0.6.10 in the working tree: focused local multiplayer state, audio bugfix, and future-multiplayer foundation pass. Two Player Local movement-state is now strictly per-tank/per-turn, a local turn handoff overlay was added between human turns with input lock until Start Turn, player identity clarity was improved across HUD/turn label/mobile HUD pill/handoff/summary, tank movement audio was made reliably audible while staying subtle, victory and defeat audio now have clearly different generated identities (separate round/match phrases), debug-only `window.debugTurnState()`, `window.debugMovementState()`, and `window.exportDebugGameState()` helpers were added behind `?debug=1`, and turn-state ownership was consolidated into a single `turnState` object on the Game so future room-code or share-code multiplayer can serialize it cleanly. v0.6.10 does not add new weapons, online multiplayer, accounts, room codes, networking, a backend, or external assets.
+- Updated the central version constant so the main menu and `window.GAME_VERSION` report `v0.6.10`; gameplay remains free of a floating version badge.
+- Kept the existing architecture, current weapon list, desktop keyboard controls, mobile touch controls, mobile Play behavior, shop flow, pre-round shop, CPU shopping, generated Web Audio system, mute persistence, destructible terrain, wind physics, shields, First Aid, parachutes, and audio lifecycle handling.
 - Documentation continues to treat RELEASE_NOTES.md as the concise release-history source.
-- Local verification for this pass: `node --check` passed for all `src/*.js`; `git diff --check` passed with line-ending warnings only; the web-game Playwright smoke client reported `v0.6.9`, `$0` default settings, and pre-round shop state; targeted Playwright checks covered menu version, `window.GAME_VERSION`, Help overlay, pre-round shop cards, Mega Bomb disabled state, no Standard Shell ammo card, Round 1 start, Heavy/Standard/Mega speed-scale debug values, Heavy Shell reach, parachute debug drop, Napalm initial hit plus visible burn tick feedback, forced summary, mobile Play to shop, compact mobile shop screenshots, high-starting-money purchase/refill behavior, screenshot review, and no console/page errors. Real-phone app switching/phone lock behavior, auditory result-stinger quality, and GitHub Pages deployment still need manual verification before cutting a public release.
+- Local verification for this pass: `node --check` passed for all `src/*.js`; manual code review of turn state, handoff flow, movement state ownership, and audio routing. Real auditory comparison of round-win vs round-loss and match-win vs match-loss stingers, real-phone Two Player Local handoff usability, real-phone movement-audio audibility, and GitHub Pages deployment of v0.6.10 still need manual verification before cutting a public release.
 
 ## Current Known Issues
 
 - CPU aiming is intentionally simple and CPU tanks do not drive with movement fuel.
-- Real-phone app switching, phone locking, auditory movement-sound quality, and GitHub Pages deployment still need manual verification before cutting a public release.
+- Real-phone app switching, phone locking, auditory movement-sound quality, real-phone Two Player Local handoff usability, and GitHub Pages deployment still need manual verification before cutting a public release.
 - Terrain remains heightmap-based, so caves and overhangs are out of scope.
-- Two Player Local is intentionally hidden on phone-sized viewports.
+- Two Player Local is intentionally hidden on phone-sized viewports; the handoff overlay only matters when Two Player Local is reached on desktop or via wider viewports.
 
 ## Next Candidate
 
-- Run longer full-match playtests on Easy, Normal, and Hard CPU after v0.6.9 to tune CPU economy and weapon preferences with more data.
-- Consider optional drag aiming/power controls after mobile layout remains stable.
+- Real-phone playtests of the Two Player Local handoff flow to confirm input lock and Start Turn touch target are comfortable on a real phone.
+- Auditory side-by-side comparison of v0.6.10 round-win vs round-loss and match-win vs match-loss stingers on speakers and headphones.
+- Run longer full-match playtests on Easy, Normal, and Hard CPU to keep tuning CPU economy and weapon preferences.
+- Consider optional drag aiming/power controls after the mobile layout remains stable.
 - Consider CPU driving logic only after current movement and audio behavior is fully verified.
 
 ## Recent Release Notes
+
+### v0.6.10
+
+- Fixed the Two Player Local movement-state bug: Player 1 using all movement no longer prevents Player 2 from moving on Player 2's turn. Movement allowance is now strictly per-tank/per-turn, with the active tank being the only one whose movement is reset at turn start.
+- Added a local turn handoff overlay between human turns (`Player 2 Turn / Pass the keyboard or device / Start Turn`) with all input locked until Start Turn is pressed. Single Player vs CPU and CPU turns never show the overlay.
+- Cleared stuck movement keys at every turn start so a held key from a previous shared-keyboard turn cannot drive the next active tank.
+- Improved player identity clarity: HUD, mobile HUD turn pill (CPU now visually distinguished from Player 2), turn label color, summary score, and handoff overlay all use consistent `Player 1` / `Player 2` / `CPU` labels and colors.
+- Boosted movement bus volume and added a high-mid tick layer so the tank movement loop is reliably audible on laptop and phone speakers without becoming loud.
+- Replaced round-win, round-loss, match-win, and match-loss generated stingers so victory and defeat have clearly different character. Match-level stingers are longer than round-level stingers and use distinct musical phrases.
+- Consolidated turn-state ownership into a single `Game.turnState` object (active player ID, turn number, input lock, handoff pending, last result audio round) so future online/room-code multiplayer can serialize it cleanly without rewriting the game state manager.
+- Added `Tank.playerIndex` and `Tank.label` for clearer per-player identity in code and debug output.
+- Added debug-only `window.debugTurnState()`, `window.debugMovementState()`, and `window.exportDebugGameState()` helpers behind `?debug=1`.
+- Updated README.md, TESTING.md, progress.md, and RELEASE_NOTES.md for v0.6.10.
 
 ### v0.6.9
 
@@ -110,4 +125,4 @@ Original prompt: Upgrade the existing local browser Scorched Earth-style artille
 
 ### Archived Ideas
 
-- Bouncer Shell was previously mentioned as an optional future idea, but it is not a current v0.6.9 plan.
+- Bouncer Shell was previously mentioned as an optional future idea, but it is not a current v0.6.10 plan.
