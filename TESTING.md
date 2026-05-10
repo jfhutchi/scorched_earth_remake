@@ -12,7 +12,7 @@ Use a local static server, open the game in a desktop or mobile browser, and kee
 - [ ] Single Player vs CPU starts from the primary menu action.
 - [ ] Phone-sized layout shows the single `Play` button and it starts Single Player vs CPU.
 - [ ] Two Player Local remains available on desktop/wider layouts.
-- [ ] Rounds to Win, Starting Money, CPU Difficulty, Wind, and Terrain dropdowns are readable when closed and when opened.
+- [ ] Match Length, Starting Money, CPU Difficulty, Wind, and Terrain dropdowns are readable when closed and when opened.
 - [ ] Default starting money is `None ($0)`.
 - [ ] Pre-round shop opens before Round 1 with `$0`.
 - [ ] Standard Shell is unlimited and has no shop ammo card.
@@ -26,6 +26,22 @@ Use a local static server, open the game in a desktop or mobile browser, and kee
 - [ ] GitHub Actions validation passes.
 - [ ] No stale test artifacts are committed.
 - [ ] No startup or normal-play console errors occur.
+
+## Match Length Clinch Checks
+
+- [ ] Set match format to `Best of 3`.
+- [ ] Win 2 rounds with the same player.
+- [ ] Confirm the match ends immediately after the second win.
+- [ ] Confirm no third round begins.
+- [ ] Confirm the match result screen appears with the correct winner and final score.
+- [ ] Confirm New Match works from the result screen.
+- [ ] Confirm Main Menu works from the result screen.
+- [ ] Set match format to `Best of 5`.
+- [ ] Win 3 rounds with the same player.
+- [ ] Confirm the match ends immediately after the third win.
+- [ ] Confirm rounds 4 and 5 are not played.
+- [ ] Confirm the final score is correct.
+- [ ] Confirm no console errors occur.
 
 ## v0.7.0 Weapon Catalog Checks
 

@@ -235,7 +235,7 @@ button {
 }
 
 .settings-group:first-child {
-    grid-template-columns: 0.82fr 1.28fr 1fr;
+    grid-template-columns: 1.16fr 1.2fr 1fr;
 }
 
 .settings-group:nth-child(2) {
@@ -1210,6 +1210,7 @@ button {
     }
 
     .settings-group,
+    .settings-group:first-child,
     .settings-group:nth-child(2) {
         grid-template-columns: 1fr 1fr;
         padding: 10px;

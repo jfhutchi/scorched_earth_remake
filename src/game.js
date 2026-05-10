@@ -8,6 +8,11 @@ import { drawTankWreck } from './tankRenderer.js';
 import { pickBattleTheme } from './themes.js';
 import { CONFIG, CPU_DIFFICULTY, GAME_VERSION, WEAPONS, clamp, getWeaponById, limitedWeapons, maxAmmoFor } from './config.js';
 
+export function getWinsNeededToClinch(matchLength) {
+    const length = [1, 3, 5].includes(Number(matchLength)) ? Number(matchLength) : CONFIG.settings.defaults.roundsToWin;
+    return Math.floor(length / 2) + 1;
+}
+
 export class Game {
     constructor(canvas, ui) {
         this.canvas = canvas;
@@ -182,7 +187,7 @@ export class Game {
     }
 
     startNextRoundFromShop() {
-        if (this.phase !== 'shop') return;
+        if (this.phase !== 'shop' || this.matchWinnerIndex !== null) return;
         // Works for both pre-round (roundNumber 0 → 1) and between-round flows.
         this._setupRound({ incrementRound: true });
     }
@@ -385,6 +390,7 @@ export class Game {
             settings: { ...this.settings },
             roundNumber: this.roundNumber,
             roundsToWin: this.settings.roundsToWin,
+            winsNeededToClinch: getWinsNeededToClinch(this.settings.roundsToWin),
             matchWinnerIndex: this.matchWinnerIndex,
             score: [...this.score],
             wind: this.wind,
@@ -459,6 +465,7 @@ export class Game {
             settings: this.settings,
             round: this.roundNumber,
             roundsToWin: this.settings.roundsToWin,
+            winsNeededToClinch: getWinsNeededToClinch(this.settings.roundsToWin),
             score: {
                 player1: this.score[0],
                 player2: this.score[1],
@@ -1076,6 +1083,7 @@ export class Game {
             settings: this.settings,
             roundNumber: this.roundNumber,
             roundsToWin: this.settings.roundsToWin,
+            winsNeededToClinch: getWinsNeededToClinch(this.settings.roundsToWin),
             score: this.score,
             phase: this.phase,
             wind: this.wind,
@@ -2148,7 +2156,8 @@ export class Game {
 
         const winnerIndex = alive.length === 1 ? alive[0].index : null;
         if (winnerIndex !== null) this.score[winnerIndex] += 1;
-        this.matchWinnerIndex = winnerIndex !== null && this.score[winnerIndex] >= this.settings.roundsToWin
+        const winsNeeded = getWinsNeededToClinch(this.settings.roundsToWin);
+        this.matchWinnerIndex = winnerIndex !== null && this.score[winnerIndex] >= winsNeeded
             ? winnerIndex
             : null;
         this._finalizeRoundEconomy(winnerIndex, alive.map((entry) => entry.index));

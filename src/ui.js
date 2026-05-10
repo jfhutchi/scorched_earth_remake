@@ -10,6 +10,7 @@ export class UI {
         this.summaryTitle = document.getElementById('summaryTitle');
         this.summaryScore = document.getElementById('summaryScore');
         this.summaryStats = document.getElementById('summaryStats');
+        this.summaryNote = document.getElementById('summaryNote');
         this.shopContent = document.getElementById('shopContent');
         this.menuVersion = document.getElementById('menuVersion');
         this.helpOverlay = document.getElementById('helpOverlay');
@@ -254,6 +255,11 @@ export class UI {
         }).join('');
 
         this.continueShopBtn.classList.toggle('hidden', summary.matchWinnerIndex !== null);
+        if (this.summaryNote) {
+            this.summaryNote.textContent = summary.matchWinnerIndex !== null
+                ? 'Match complete. Use New Match or Main Menu.'
+                : 'Keyboard: N continues when a shop is available, Escape returns to menu. On touch, use the on-screen N or menu buttons.';
+        }
         this.summaryOverlay.classList.remove('hidden');
     }
 
@@ -408,7 +414,7 @@ export class UI {
     }
 
     _turnText(state) {
-        if (state.phase === 'roundSummary') return 'Round Summary';
+        if (state.phase === 'roundSummary') return state.matchWinnerIndex !== null ? 'Match Complete' : 'Round Summary';
         if (state.phase === 'shop') return 'Shop';
         if (state.phase === 'handoff') return `${state.active ? state.active.name : 'Next Player'} - Pass Device`;
         if (state.gameOver) return 'Round Over';
@@ -420,6 +426,7 @@ export class UI {
 
     _controlsText(state) {
         if (state.phase === 'handoff') return 'Press Enter or tap Start Turn to begin the next local turn. Inputs are locked.';
+        if (state.phase === 'roundSummary' && state.matchWinnerIndex !== null) return 'Match complete. Use New Match or Main Menu.';
         if (state.phase === 'roundSummary') return 'Keys: N continue, Esc menu, M mute. Touch: N or menu.';
         if (state.phase === 'shop') return 'Buy items, then Start Next Round. Keys: N next round. Touch: N.';
         if (state.gameOver) return 'Keys: N continue, Esc menu, M mute. Touch: N or menu.';

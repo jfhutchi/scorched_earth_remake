@@ -48,6 +48,7 @@ After a GitHub Pages deployment from `main`:
 - Two Player Local remains available on desktop and wider layouts.
 - Two Player Local turn handoff overlay with input lock between human turns.
 - Per-tank movement allowance so Player 1 and Player 2 movement state stays separate.
+- Match Length supports `1 Round`, `Best of 3`, and `Best of 5`; best-of matches end as soon as one player clinches the majority.
 - Desktop keyboard controls and mobile/tablet touch controls.
 - Destructible heightmap terrain, craters, mounds, tank settling, fall damage, parachutes, and wind physics.
 - Centralized weapon catalog with categories, tactical roles, prices, ammo caps, starting ammo, labels, icon profiles, visual profiles, sound profiles, CPU-use weights, and shop priorities.
@@ -97,7 +98,7 @@ Standard Shell remains unlimited and does not appear as a shop ammo card. Every 
 
 The default starting money preset is `None ($0)`. Higher starting money presets remain available but intentionally change progression.
 
-Players keep money and inventory across rounds in a match. A new match resets both and opens the pre-round shop before Round 1.
+Players keep money and inventory across rounds in a match. Match Length is a best-of setting: `1 Round` ends after one win, `Best of 3` ends at two wins, and `Best of 5` ends at three wins. A new match resets both players and opens the pre-round shop before Round 1.
 
 Money earned after each round:
 

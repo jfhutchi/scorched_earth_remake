@@ -23,7 +23,12 @@ v0.7.0 is the first weapon-system foundation pass. It expands the weapon catalog
 - CPU firing choices now read weapon roles and consider ammo, distance, target health, shields, terrain obstruction, slope relation, exposed targets, miss streak, and difficulty.
 - CPU shopping now uses catalog shop priorities and CPU-use weights while preserving full-ammo, affordability, First Aid, Shield, and Mega Bomb gating rules.
 - Existing generated projectile sprites, impact visuals, and Web Audio branches now cover the expanded weapon pack.
+- Renamed the match setting UI from `Rounds to Win` to `Match Length` with `1 Round`, `Best of 3`, and `Best of 5` options.
 - README.md, TESTING.md, progress.md, and release notes now document v0.7.0.
+
+### Fixed
+
+- Fixed match clinch logic so Best of 3 and Best of 5 matches end as soon as a player has already won the match.
 
 ### Preserved
 

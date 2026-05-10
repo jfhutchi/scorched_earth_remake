@@ -103,6 +103,10 @@ export function updateTouchControlsState(game, container) {
         if (interactiveActions.includes(action)) {
             btn.disabled = !canControl;
             btn.classList.toggle('locked', !canControl);
+        } else if (action === 'next') {
+            const matchComplete = phase === 'roundSummary' && game.matchWinnerIndex !== null;
+            btn.disabled = matchComplete;
+            btn.classList.toggle('locked', matchComplete);
         } else {
             btn.disabled = false;
             btn.classList.remove('locked');

@@ -15,6 +15,7 @@ Release History Source: RELEASE_NOTES.md
 - Added debug-only v0.7.0 weapon helpers: `window.debugWeapons()`, `window.testWeaponCatalog()`, and `window.setupWeaponTest()`.
 - Added BALANCE.md as the weapon/economy/CPU tuning reference and updated README.md, TESTING.md, progress.md, and RELEASE_NOTES.md for v0.7.0.
 - Added GitHub Actions validation and local scripts for version consistency, release notes, artifact pollution, GitHub Pages-safe paths, and JavaScript syntax checks.
+- Fixed match clinch logic so Best of 3 and Best of 5 matches end as soon as a player has already won the match, and renamed the menu setting to Match Length.
 - Preserved desktop keyboard controls, mobile touch controls, mobile Play behavior, Play vs CPU, Two Player Local, local handoff behavior, player identity clarity, default `$0` starting money, Standard Shell unlimited ammo, Mega Bomb late-match gating, generated audio, movement audio, result audio identity, and GitHub Pages compatibility.
 
 ## Current Known Issues
@@ -47,6 +48,7 @@ Release History Source: RELEASE_NOTES.md
 - Added debug-only weapon helpers and catalog validation.
 - Added BALANCE.md as the tuning reference.
 - Added GitHub Actions validation and local scripts for version consistency, release notes, artifacts, Pages-safe paths, and syntax checks.
+- Fixed match clinch logic so Best of 3 and Best of 5 matches end immediately when a player reaches the majority, and clarified the menu setting as Match Length.
 - Updated README.md, TESTING.md, progress.md, and RELEASE_NOTES.md for v0.7.0.
 
 ### v0.6.10

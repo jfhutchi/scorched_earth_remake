@@ -28,11 +28,11 @@
                 <section class="settings-grid grouped-settings" aria-label="Match settings">
                     <fieldset class="settings-group">
                         <legend>Match</legend>
-                        <label>Rounds to Win
+                        <label>Match Length
                             <select id="roundsToWinSelect">
-                                <option value="1">1</option>
-                                <option value="3">3</option>
-                                <option value="5">5</option>
+                                <option value="1">1 Round</option>
+                                <option value="3">Best of 3</option>
+                                <option value="5">Best of 5</option>
                             </select>
                         </label>
                         <label>Starting Money
@@ -112,6 +112,7 @@
                         <section>
                             <h2>Win the Duel</h2>
                             <p>Set angle and power, account for wind, choose a weapon, and fire until the enemy tank is destroyed.</p>
+                            <p>Match Length can be one round, Best of 3, or Best of 5. Best-of matches end when one player reaches the majority.</p>
                             <p>Damage and round wins earn money. The default match starts with $0, so the Round 1 shop is for planning.</p>
                         </section>
                         <section>
@@ -279,7 +280,7 @@
                         <button id="summaryNewMatchBtn" class="btn">New Match</button>
                         <button id="summaryMenuBtn" class="btn">Main Menu</button>
                     </div>
-                    <p class="note">Keyboard: N continues when a shop is available, Escape returns to menu. On touch, use the on-screen N or ≡ buttons.</p>
+                    <p id="summaryNote" class="note">Keyboard: N continues when a shop is available, Escape returns to menu. On touch, use the on-screen N or ≡ buttons.</p>
                 </div>
             </div>
 
