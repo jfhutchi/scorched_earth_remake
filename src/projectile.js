@@ -10,7 +10,8 @@ export class Projectile {
         this.radius = weapon.projectileRadius;
         this.age = 0;
         this.trail = [];
-        this.maxTrail = weapon.id === 'heavy' || weapon.id === 'mega' ? 26 : (weapon.id === 'clusterBomblet' ? 10 : 18);
+        this.maxTrail = weapon.visualProfile?.trailLength
+            ?? (weapon.id === 'heavy' || weapon.id === 'mega' ? 26 : (weapon.id === 'clusterBomblet' ? 10 : 18));
         this.rolling = false;
         this.done = false;
         this.spin = Math.random() * Math.PI * 2;
@@ -51,27 +52,30 @@ export class Explosion {
         this.seed = Math.random() * 1000;
         this.t = 0;
         const visual = weapon.impactVisual;
+        const isFireVisual = visual === 'napalmFlame' || visual === 'firestormFlame';
         this.duration = visual === 'tankDeath' ? 1.32
             : (visual === 'megaBlast' ? 0.95
-                : (visual === 'heavyBlast' ? 0.78
-                    : (visual === 'napalmFlame' ? (weapon.flameDuration || 2.2)
-                        : (visual === 'dirtPuff' ? 0.72 : 0.56))));
+                : (visual === 'heavyBlast' || visual === 'heavyRollerBlast' || visual === 'excavatorBlast' ? 0.78
+                    : (isFireVisual ? (weapon.flameDuration || 2.2)
+                        : (visual === 'dirtPuff' ? 0.72
+                            : (visual === 'airburstPulse' ? 0.66 : 0.56)))));
         this.alive = true;
         const fragmentCount = visual === 'tankDeath' ? 30
             : (visual === 'megaBlast' ? 34
-                : (visual === 'heavyBlast' ? 22
+                : (visual === 'heavyBlast' || visual === 'heavyRollerBlast' || visual === 'excavatorBlast' ? 22
                     : (visual === 'dirtPuff' ? 28
-                        : (visual === 'napalmFlame' ? 20
-                            : (visual === 'clusterMiniBlast' ? 8 : 13)))));
+                        : (isFireVisual ? 20
+                            : (visual === 'clusterMiniBlast' || visual === 'splitterSpark' || visual === 'precisionSpark' ? 8
+                                : (visual === 'airburstPulse' ? 16 : 13))))));
         this.fragments = Array.from({ length: fragmentCount }, () => {
-            const upwardBias = visual === 'dirtPuff' || visual === 'napalmFlame' || visual === 'tankDeath'
+            const upwardBias = visual === 'dirtPuff' || isFireVisual || visual === 'tankDeath'
                 ? -Math.PI / 2 + (Math.random() - 0.5) * Math.PI * 0.95
                 : Math.random() * Math.PI * 2;
             return {
                 angle: upwardBias,
                 speed: 18 + Math.random() * maxRadius * (visual === 'tankDeath' ? 1.45 : (visual === 'megaBlast' ? 1.55 : (visual === 'heavyBlast' ? 1.35 : 1.1))),
-                size: 1.5 + Math.random() * (visual === 'dirtPuff' || visual === 'napalmFlame' ? 4.5 : (visual === 'tankDeath' ? 5.2 : 3)),
-                drift: visual === 'dirtPuff' || visual === 'napalmFlame' || visual === 'tankDeath' ? (Math.random() - 0.5) * 18 : 0,
+                size: 1.5 + Math.random() * (visual === 'dirtPuff' || isFireVisual ? 4.5 : (visual === 'tankDeath' ? 5.2 : 3)),
+                drift: visual === 'dirtPuff' || isFireVisual || visual === 'tankDeath' ? (Math.random() - 0.5) * 18 : 0,
                 soilTint: Math.random(),
                 spin: Math.random() * Math.PI,
             };
@@ -89,8 +93,12 @@ export class Explosion {
             this._drawDirtPuff(ctx, k);
             return;
         }
-        if (this.weapon.impactVisual === 'napalmFlame') {
+        if (this.weapon.impactVisual === 'napalmFlame' || this.weapon.impactVisual === 'firestormFlame') {
             this._drawNapalm(ctx, k);
+            return;
+        }
+        if (this.weapon.impactVisual === 'airburstPulse') {
+            this._drawAirburst(ctx, k);
             return;
         }
         if (this.weapon.impactVisual === 'tankDeath') {
@@ -100,9 +108,13 @@ export class Explosion {
 
         const shockRadius = this.maxRadius * (0.25 + k * 1.05);
         const coreRadius = this.maxRadius * (0.95 - k * 0.45);
-        const isHeavy = this.weapon.impactVisual === 'heavyBlast';
+        const isHeavy = this.weapon.impactVisual === 'heavyBlast'
+            || this.weapon.impactVisual === 'heavyRollerBlast'
+            || this.weapon.impactVisual === 'excavatorBlast';
         const isMega = this.weapon.impactVisual === 'megaBlast';
-        const isCluster = this.weapon.impactVisual === 'clusterMiniBlast';
+        const isCluster = this.weapon.impactVisual === 'clusterMiniBlast'
+            || this.weapon.impactVisual === 'splitterSpark'
+            || this.weapon.impactVisual === 'precisionSpark';
 
         ctx.save();
 
@@ -220,6 +232,12 @@ export class Explosion {
         const visibleHalf = halfWidth * spread;
         const fade = k < 0.74 ? 1 : Math.max(0, (1 - k) / 0.26);
         const alpha = 0.9 * fade;
+        const firestorm = this.weapon.impactVisual === 'firestormFlame';
+        const outerColor = firestorm ? '168, 20, 22' : '125, 24, 12';
+        const midColor = firestorm ? '255, 70, 22' : '255, 92, 24';
+        const hotColor = firestorm ? '255, 226, 88' : '255, 208, 72';
+        const flameOuter = firestorm ? '228, 38, 24' : '204, 42, 20';
+        const flameInner = firestorm ? '255, 214, 76' : '255, 185, 56';
 
         ctx.save();
         ctx.lineCap = 'round';
@@ -233,7 +251,7 @@ export class Explosion {
                 if (index === 0) ctx.moveTo(point.x, y);
                 else ctx.lineTo(point.x, y);
             });
-            ctx.strokeStyle = `rgba(125, 24, 12, ${alpha * 0.46})`;
+            ctx.strokeStyle = `rgba(${outerColor}, ${alpha * 0.46})`;
             ctx.lineWidth = 18;
             ctx.stroke();
 
@@ -243,7 +261,7 @@ export class Explosion {
                 if (index === 0) ctx.moveTo(point.x, y);
                 else ctx.lineTo(point.x, y);
             });
-            ctx.strokeStyle = `rgba(255, 92, 24, ${alpha * 0.58})`;
+            ctx.strokeStyle = `rgba(${midColor}, ${alpha * 0.58})`;
             ctx.lineWidth = 10;
             ctx.stroke();
 
@@ -253,7 +271,7 @@ export class Explosion {
                 if (index === 0) ctx.moveTo(point.x, y);
                 else ctx.lineTo(point.x, y);
             });
-            ctx.strokeStyle = `rgba(255, 208, 72, ${alpha * 0.42})`;
+            ctx.strokeStyle = `rgba(${hotColor}, ${alpha * 0.42})`;
             ctx.lineWidth = 4;
             ctx.stroke();
         }
@@ -268,7 +286,7 @@ export class Explosion {
             const outerAlpha = alpha * (0.32 + distanceFactor * 0.54);
             if (outerAlpha <= 0.01) continue;
 
-            ctx.fillStyle = `rgba(204, 42, 20, ${outerAlpha})`;
+            ctx.fillStyle = `rgba(${flameOuter}, ${outerAlpha})`;
             ctx.beginPath();
             ctx.moveTo(point.x - baseWidth, point.y + 1);
             ctx.quadraticCurveTo(point.x - baseWidth * 0.55 + lean, point.y - flameHeight * 0.42, point.x + lean, point.y - flameHeight);
@@ -276,7 +294,7 @@ export class Explosion {
             ctx.closePath();
             ctx.fill();
 
-            ctx.fillStyle = `rgba(255, 185, 56, ${outerAlpha * 0.78})`;
+            ctx.fillStyle = `rgba(${flameInner}, ${outerAlpha * 0.78})`;
             ctx.beginPath();
             ctx.moveTo(point.x - baseWidth * 0.45, point.y);
             ctx.quadraticCurveTo(point.x + lean * 0.26, point.y - flameHeight * 0.42, point.x + lean * 0.55, point.y - flameHeight * 0.72);
@@ -298,6 +316,48 @@ export class Explosion {
             ctx.ellipse(point.x + drift, point.y - rise, radius * 1.25, radius, 0, 0, Math.PI * 2);
             ctx.fill();
         }
+
+        ctx.restore();
+    }
+
+    _drawAirburst(ctx, k) {
+        const fade = Math.max(0, 1 - k);
+        const pulse = this.maxRadius * (0.32 + k * 1.1);
+        const inner = this.maxRadius * (0.16 + k * 0.42);
+
+        ctx.save();
+        ctx.globalCompositeOperation = 'lighter';
+
+        ctx.strokeStyle = `rgba(185, 240, 255, ${0.86 * fade})`;
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, pulse, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.strokeStyle = `rgba(90, 190, 255, ${0.46 * fade})`;
+        ctx.lineWidth = 2;
+        for (let i = 0; i < 8; i++) {
+            const angle = i * Math.PI / 4 + this.seed;
+            ctx.beginPath();
+            ctx.moveTo(
+                this.x + Math.cos(angle) * inner,
+                this.y + Math.sin(angle) * inner
+            );
+            ctx.lineTo(
+                this.x + Math.cos(angle) * pulse * 0.92,
+                this.y + Math.sin(angle) * pulse * 0.92
+            );
+            ctx.stroke();
+        }
+
+        const gradient = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.maxRadius * (0.75 + k * 0.35));
+        gradient.addColorStop(0, `rgba(255, 255, 235, ${0.7 * fade})`);
+        gradient.addColorStop(0.42, `rgba(98, 204, 255, ${0.34 * fade})`);
+        gradient.addColorStop(1, 'rgba(55, 120, 180, 0)');
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.maxRadius * (0.78 + k * 0.42), 0, Math.PI * 2);
+        ctx.fill();
 
         ctx.restore();
     }

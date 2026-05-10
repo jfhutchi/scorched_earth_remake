@@ -1,5 +1,52 @@
 # Release Notes
 
+## v0.7.0 - Pending
+
+### Summary
+
+v0.7.0 is the first weapon-system foundation pass. It expands the weapon catalog into a data-driven balance/reference source, adds weapon categories and tactical roles, introduces seven original classic-inspired weapons, improves CPU weapon selection and shopping, adds debug weapon helpers, creates BALANCE.md, updates documentation, and hardens GitHub Actions validation for version branches. It does not add online multiplayer, networking, accounts, room codes, a backend, external assets, or external audio files.
+
+### Added
+
+- Centralized weapon catalog metadata for id, name, category, role, descriptions, price, max ammo, starting ammo, unlimited ammo, speed scale, damage/radius values, terrain effects, special behavior profiles, icon profiles, visual profiles, sound profiles, CPU-use weights, shop priority, labels, and arc difficulty.
+- Weapon categories: Basic Shells, Precision Weapons, Heavy Explosives, Terrain Builders, Terrain Destroyers, Rolling Weapons, Fire Weapons, Split / Cluster Weapons, and Utility / Defense.
+- Seven new original weapons: Precision Shell, Airburst Shell, Splitter Shell, Heavy Roller, Excavator Bomb, Mound Maker, and Firestorm Canister.
+- Debug-only weapon helpers behind `?debug=1`: `window.debugWeapons()`, `window.testWeaponCatalog()`, and `window.setupWeaponTest()`.
+- BALANCE.md as the human-readable weapon, economy, utility, and CPU tuning reference.
+- GitHub Actions validation for version branches and pull requests into `main`.
+- Local validation scripts for version consistency, release notes, artifact pollution, Pages-safe paths, and JavaScript syntax checks.
+
+### Changed
+
+- Updated version target to `v0.7.0`; the main menu shows `v0.7.0`, and `window.GAME_VERSION` returns `"v0.7.0"`.
+- Shop ammo cards are generated from the weapon catalog and now show compact category labels.
+- CPU firing choices now read weapon roles and consider ammo, distance, target health, shields, terrain obstruction, slope relation, exposed targets, miss streak, and difficulty.
+- CPU shopping now uses catalog shop priorities and CPU-use weights while preserving full-ammo, affordability, First Aid, Shield, and Mega Bomb gating rules.
+- Existing generated projectile sprites, impact visuals, and Web Audio branches now cover the expanded weapon pack.
+- README.md, TESTING.md, progress.md, and release notes now document v0.7.0.
+
+### Preserved
+
+- Standard Shell remains unlimited.
+- Default starting money remains `None ($0)`.
+- Mega Bomb remains a `$375`, max-ammo-1 late-match premium weapon.
+- Heavy Shell keeps its heavier arc behavior.
+- Napalm keeps its initial hit plus bounded burn ticks.
+- Parachutes remain useful for meaningful fall protection.
+- Two Player Local, Play vs CPU, mobile Play behavior, desktop keyboard controls, mobile touch controls, local handoff behavior, player identity clarity, generated audio, movement audio, result audio identity, and GitHub Pages compatibility are preserved.
+
+### Testing
+
+- Local checks performed during implementation should include JavaScript syntax validation, version/release/artifact/path validation, local static-server browser smoke testing, debug weapon catalog validation, and manual weapon/CPU smoke checks.
+- Real-device mobile audio/app-switch behavior and GitHub Pages deployment still require release verification after merge to `main`.
+
+### Known Limitations
+
+- CPU tanks still do not drive with movement fuel.
+- CPU aim and weapon choice remain intentionally imperfect.
+- Terrain remains heightmap-based and cannot represent caves or overhangs.
+- v0.7.0 does not add online multiplayer or any backend.
+
 ## v0.6.10 - Pending
 
 ### Summary

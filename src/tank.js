@@ -1,4 +1,4 @@
-import { CONFIG, WEAPONS, clamp, getWeaponById } from './config.js';
+import { CONFIG, WEAPONS, clamp, getWeaponById, maxAmmoFor } from './config.js';
 import { drawTank } from './tankRenderer.js';
 
 export class Tank {
@@ -68,7 +68,7 @@ export class Tank {
         this.ammo = {};
 
         for (const weapon of WEAPONS) {
-            this.ammo[weapon.id] = weapon.ammo;
+            this.ammo[weapon.id] = maxAmmoFor(weapon.id);
         }
     }
 

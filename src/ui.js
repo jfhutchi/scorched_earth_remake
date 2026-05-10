@@ -1,4 +1,4 @@
-import { CONFIG, GAME_VERSION, WEAPONS } from './config.js';
+import { CONFIG, GAME_VERSION, WEAPONS, maxAmmoFor } from './config.js';
 import { drawUtilityIcon, drawWeaponIcon } from './visualAssets.js';
 
 export class UI {
@@ -440,12 +440,20 @@ function inventoryText(entity, { includeMoney = true, context = 'hud' } = {}) {
     const parachutes = entity.parachutes || 0;
     const parts = [];
     if (includeMoney) parts.push(context === 'hud' ? `$${money}` : `Money: $${money}`);
-    for (const weapon of WEAPONS.filter((candidate) => Number.isFinite(candidate.ammo))) {
+    const limited = WEAPONS.filter((candidate) => Number.isFinite(maxAmmoFor(candidate.id)));
+    const hudWeapons = context === 'hud'
+        ? limited.filter((weapon) => ammoForEntity(entity, weapon.id) > 0)
+        : limited;
+    const shownWeapons = context === 'hud' ? hudWeapons.slice(0, 5) : hudWeapons;
+    for (const weapon of shownWeapons) {
         const have = ammoForEntity(entity, weapon.id);
         const label = context === 'hud' ? weapon.compactName : weapon.inventoryName;
         parts.push(context === 'hud'
             ? `${label} ${have}`
-            : `${weapon.inventoryName}: ${have}/${weapon.ammo}`);
+            : `${weapon.inventoryName}: ${have}/${maxAmmoFor(weapon.id)}`);
+    }
+    if (context === 'hud' && hudWeapons.length > shownWeapons.length) {
+        parts.push(`+${hudWeapons.length - shownWeapons.length} wpn`);
     }
     parts.push(context === 'hud' ? `Shield ${shield}` : `Shield: ${shield}`);
     parts.push(context === 'hud' ? `Aid ${repairs}` : `First Aid: ${repairs}`);
@@ -456,8 +464,8 @@ function inventoryText(entity, { includeMoney = true, context = 'hud' } = {}) {
 
 function inventoryLines(entity) {
     const lines = [];
-    for (const weapon of WEAPONS.filter((candidate) => Number.isFinite(candidate.ammo))) {
-        lines.push(`${weapon.inventoryName}: ${ammoForEntity(entity, weapon.id)}/${weapon.ammo}`);
+    for (const weapon of WEAPONS.filter((candidate) => Number.isFinite(maxAmmoFor(candidate.id)))) {
+        lines.push(`${weapon.inventoryName}: ${ammoForEntity(entity, weapon.id)}/${maxAmmoFor(weapon.id)}`);
     }
     lines.push(`Shield: ${Math.round(entity.shieldCharge || 0)}`);
     lines.push(`First Aid: ${entity.repairKits || 0}`);
@@ -525,6 +533,13 @@ function createShopItemCard(player, playerIndex, item) {
     name.textContent = item.label;
     body.appendChild(name);
 
+    if (weapon && weapon.category) {
+        const category = document.createElement('p');
+        category.className = 'shop-item-category';
+        category.textContent = weapon.category;
+        body.appendChild(category);
+    }
+
     const description = document.createElement('p');
     description.className = 'shop-item-description';
     description.textContent = item.shortDescription || item.description || weapon?.shortDescription || weapon?.description || '';
@@ -567,7 +582,7 @@ function createShopItemCard(player, playerIndex, item) {
 function shopStatLine(player, item, weapon) {
     if (weapon) {
         const have = ammoForEntity(player, weapon.id);
-        const ammo = `Ammo: ${have}/${weapon.ammo}`;
+        const ammo = `Ammo: ${have}/${maxAmmoFor(weapon.id)}`;
         const tags = weapon.statTags || [];
         const filtered = tags.filter((tag) => !tag.startsWith('Ammo:'));
         return [...filtered.slice(0, 3), ammo].join(' | ');
@@ -625,8 +640,8 @@ function drawHudWeaponIcon(canvas, weapon, size) {
 function inventoryAmmoText(inventory) {
     if (!inventory || !inventory.ammo) return 'No limited ammo data.';
     return WEAPONS
-        .filter((weapon) => Number.isFinite(weapon.ammo))
-        .map((weapon) => `${weapon.compactName} ${inventory.ammo[weapon.id] ?? 0}/${weapon.ammo}`)
+        .filter((weapon) => Number.isFinite(maxAmmoFor(weapon.id)))
+        .map((weapon) => `${weapon.compactName} ${inventory.ammo[weapon.id] ?? 0}/${maxAmmoFor(weapon.id)}`)
         .join(' | ');
 }
 
@@ -649,9 +664,13 @@ function shortInv(tank) {
     if (!tank) return '';
     const money = Math.round(tank.money || 0);
     const parts = [`$${money}`];
-    for (const weapon of WEAPONS.filter((candidate) => Number.isFinite(candidate.ammo))) {
+    const ownedWeapons = WEAPONS
+        .filter((candidate) => Number.isFinite(maxAmmoFor(candidate.id)))
+        .filter((weapon) => ammoForEntity(tank, weapon.id) > 0);
+    for (const weapon of ownedWeapons.slice(0, 4)) {
         parts.push(`${weapon.compactName} ${ammoForEntity(tank, weapon.id)}`);
     }
+    if (ownedWeapons.length > 4) parts.push(`+${ownedWeapons.length - 4} wpn`);
     parts.push(`Shield ${Math.round(tank.shieldCharge || 0)}`);
     parts.push(`Aid ${tank.repairKits || 0}`);
     parts.push(`Chute ${tank.parachutes || 0}`);

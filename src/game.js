@@ -228,16 +228,20 @@ export class Game {
             .map((item) => item.weaponId));
         const generatedAmmoItems = limitedWeapons()
             .filter((weapon) => !configuredWeaponIds.has(weapon.id))
+            .sort((a, b) => (a.shopPriority ?? 50) - (b.shopPriority ?? 50))
             .map((weapon) => ({
                 id: `${weapon.id}Ammo`,
                 label: `${weapon.name} Ammo`,
                 refillLabel: `${weapon.name} Ammo`,
                 fullLabel: `${weapon.name} Ammo Full`,
-                price: weapon.shopRefillPrice,
+                price: weapon.price ?? weapon.shopRefillPrice,
                 weaponId: weapon.id,
-                refillToMax: weapon.ammo,
-                description: weapon.description,
-                shortDescription: weapon.shortDescription || weapon.description,
+                refillToMax: maxAmmoFor(weapon.id),
+                category: weapon.category,
+                role: weapon.role,
+                shopPriority: weapon.shopPriority ?? 50,
+                description: weapon.shopDescription || weapon.description,
+                shortDescription: weapon.shortDescription || weapon.shopDescription || weapon.description,
             }));
         const configuredAmmoItems = configuredItems.filter((item) => item.weaponId);
         const utilityItems = configuredItems.filter((item) => !item.weaponId);
@@ -507,6 +511,89 @@ export class Game {
         return JSON.parse(this.renderTextState());
     }
 
+    debugWeapons() {
+        return WEAPONS.map((weapon) => ({
+            id: weapon.id,
+            name: weapon.name,
+            category: weapon.category,
+            role: weapon.role,
+            price: weapon.price ?? weapon.shopRefillPrice,
+            maxAmmo: Number.isFinite(maxAmmoFor(weapon.id)) ? maxAmmoFor(weapon.id) : 'unlimited',
+            startingAmmo: Number.isFinite(weapon.startingAmmo) ? weapon.startingAmmo : 'unlimited',
+            unlimitedAmmo: Boolean(weapon.unlimitedAmmo),
+            speedScale: weapon.speedScale,
+            damage: weapon.maxDamage,
+            damageRadius: weapon.damageRadius,
+            terrainRadius: weapon.terrainEffectRadius,
+            terrainEffect: weapon.terrainEffect || weapon.terrainEffectType,
+            cpuUseWeight: weapon.cpuUseWeight,
+            shopPriority: weapon.shopPriority,
+            arcDifficulty: weapon.arcDifficulty,
+            hasIconProfile: Boolean(weapon.iconProfile),
+            hasVisualProfile: Boolean(weapon.visualProfile),
+            hasSoundProfile: Boolean(weapon.soundProfile),
+        }));
+    }
+
+    testWeaponCatalog() {
+        const ids = new Set();
+        const errors = [];
+        const warnings = [];
+
+        for (const weapon of WEAPONS) {
+            if (!weapon.id) errors.push('Weapon missing id.');
+            if (ids.has(weapon.id)) errors.push(`Duplicate weapon id: ${weapon.id}`);
+            ids.add(weapon.id);
+            if (!weapon.name) errors.push(`${weapon.id} missing name.`);
+            if (!weapon.category) errors.push(`${weapon.id} missing category.`);
+            if (!weapon.role) errors.push(`${weapon.id} missing role.`);
+            if (!weapon.description) errors.push(`${weapon.id} missing description.`);
+            if (!weapon.shortDescription) warnings.push(`${weapon.id} missing shortDescription.`);
+            if (!weapon.iconProfile) errors.push(`${weapon.id} missing iconProfile.`);
+            if (!weapon.visualProfile) errors.push(`${weapon.id} missing visualProfile.`);
+            if (!weapon.soundProfile) errors.push(`${weapon.id} missing soundProfile.`);
+            const maxAmmo = maxAmmoFor(weapon.id);
+            if (!weapon.unlimitedAmmo && !Number.isFinite(maxAmmo)) errors.push(`${weapon.id} limited weapon missing finite maxAmmo.`);
+            if (!weapon.unlimitedAmmo && maxAmmo > 0 && !Number.isFinite(weapon.price ?? weapon.shopRefillPrice)) {
+                errors.push(`${weapon.id} purchasable limited weapon missing price.`);
+            }
+            if ((weapon.cpuUseWeight ?? 0) > 0 && (!weapon.role || !Number.isFinite(weapon.cpuUseWeight))) {
+                errors.push(`${weapon.id} CPU-usable weapon missing CPU metadata.`);
+            }
+            if (weapon.behavior === 'roller' && !weapon.rollerBehavior) errors.push(`${weapon.id} rolling weapon missing rollerBehavior.`);
+            if (weapon.behavior === 'airburst' && !weapon.airburstBehavior) errors.push(`${weapon.id} airburst weapon missing airburstBehavior.`);
+            if (isSplitWeapon(weapon) && !weapon.splitBehavior) errors.push(`${weapon.id} split weapon missing splitBehavior.`);
+        }
+
+        return {
+            ok: errors.length === 0,
+            version: GAME_VERSION,
+            count: WEAPONS.length,
+            categories: [...new Set(WEAPONS.map((weapon) => weapon.category))],
+            errors,
+            warnings,
+        };
+    }
+
+    setupWeaponTest(weaponId = 'standard') {
+        const result = this.setupAimTest();
+        const weapon = getWeaponById(weaponId);
+        const player = this.tanks[0];
+        if (player) player.selectWeaponById(weapon.id);
+        this.wind = 0;
+        this.lastResult = `Weapon test ready: all ammo full, wind 0, ${weapon.name} selected.`;
+        this.statusMessage = 'Debug weapon test ready.';
+        this._draw();
+        this.ui.update(this._state());
+
+        return {
+            ...result,
+            message: this.lastResult,
+            selectedWeapon: weapon.name,
+            catalog: this.testWeaponCatalog(),
+        };
+    }
+
     testWeaponImpact(weaponId = 'standard') {
         if (!this.terrain || !this.tanks.length || this.phase !== 'aiming' || this.projectile) {
             return { ok: false, message: 'Start a live aiming turn before testing weapon impacts.' };
@@ -601,8 +688,11 @@ export class Game {
                 return {
                     id: weapon.id,
                     name: weapon.name,
+                    category: weapon.category,
+                    role: weapon.role,
                     speedScale: weapon.speedScale,
-                    shopRefillPrice: weapon.shopRefillPrice,
+                    price: weapon.price ?? weapon.shopRefillPrice,
+                    maxAmmo: maxAmmoFor(weapon.id),
                     maxDamage: weapon.maxDamage,
                     damageRadius: weapon.damageRadius,
                     damageFalloff: weapon.damageFalloff,
@@ -668,7 +758,8 @@ export class Game {
             player.repairKits = 0;
             player.parachutes = 1;
             for (const weapon of WEAPONS) {
-                player.ammo[weapon.id] = Number.isFinite(weapon.ammo) ? weapon.ammo : Infinity;
+                const maxAmmo = maxAmmoFor(weapon.id);
+                player.ammo[weapon.id] = Number.isFinite(maxAmmo) ? maxAmmo : Infinity;
             }
         }
 
@@ -1489,8 +1580,9 @@ export class Game {
             }
             this.projectiles = this.projectiles.filter((projectile) => !projectile.done);
             if (!this.projectile && this.projectiles.length === 0 && this.phase === 'projectile') {
-                if (this.shotInfo && this.shotInfo.weaponId === 'cluster') {
-                    this._completeClusterShot();
+                const parentWeapon = this.shotInfo ? getWeaponById(this.shotInfo.weaponId) : null;
+                if (parentWeapon && isSplitWeapon(parentWeapon)) {
+                    this._completeSplitShot(parentWeapon);
                 } else {
                     this._resolveMiss(this.shotInfo?.impactX || 0, this.shotInfo?.impactY || 0);
                 }
@@ -1510,8 +1602,8 @@ export class Game {
         projectile.update(dt, CONFIG.physics.gravity, windAccel);
         this._trackProjectileDistance(projectile);
 
-        if (projectile.weapon.behavior === 'cluster' && !projectile.isBomblet && this._shouldSplitCluster(projectile)) {
-            this._splitClusterProjectile(projectile);
+        if (isSplitWeapon(projectile.weapon) && !projectile.isBomblet && this._shouldSplitProjectile(projectile)) {
+            this._splitProjectile(projectile);
             return;
         }
 
@@ -1543,6 +1635,14 @@ export class Game {
             return;
         }
 
+        if (p.weapon.behavior === 'airburst') {
+            const burst = this._airburstPoint(p);
+            if (burst) {
+                this._resolveProjectileImpact(p, burst.x, burst.y, 'airburst', { final: !p.isBomblet });
+                return;
+            }
+        }
+
         for (let i = 0; i < this.tanks.length; i++) {
             const tank = this.tanks[i];
             if (!tank.alive) continue;
@@ -1570,13 +1670,43 @@ export class Game {
         }
     }
 
-    _shouldSplitCluster(projectile) {
-        return projectile.age >= (projectile.weapon.clusterSplitMinAge || 0.4) && projectile.vy >= -20;
+    _airburstPoint(projectile) {
+        if (!this.terrain || !projectile || projectile.age < (projectile.weapon.airburstBehavior?.minAge ?? 0.35)) return null;
+        if (projectile.x < 0 || projectile.x >= this.width) return null;
+
+        const behavior = projectile.weapon.airburstBehavior || {};
+        const triggerRadius = behavior.triggerRadius ?? projectile.weapon.damageRadius;
+        const burstHeight = behavior.height ?? 36;
+        const groundY = this.terrain.heightAt(projectile.x);
+        const target = this.shotInfo ? this.tanks[this.shotInfo.targetIndex] : null;
+        if (target && target.alive) {
+            const circle = target.boundingCircle();
+            const dx = projectile.x - circle.x;
+            const dy = projectile.y - circle.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            if (distance <= triggerRadius && projectile.y <= circle.y + circle.r * 0.4) {
+                return { x: projectile.x, y: Math.min(projectile.y, groundY - burstHeight * 0.35) };
+            }
+        }
+
+        if (projectile.vy >= -15 && projectile.y >= groundY - burstHeight && projectile.y < groundY + 4) {
+            return { x: projectile.x, y: groundY - burstHeight };
+        }
+
+        return null;
     }
 
-    _splitClusterProjectile(projectile) {
+    _shouldSplitProjectile(projectile) {
+        const split = projectile.weapon.splitBehavior || {};
+        const minAge = split.minAge ?? projectile.weapon.clusterSplitMinAge ?? 0.4;
+        const triggerVy = split.triggerVy ?? -20;
+        return projectile.age >= minAge && projectile.vy >= triggerVy;
+    }
+
+    _splitProjectile(projectile) {
         const weapon = projectile.weapon;
-        const count = weapon.bomblets || 5;
+        const split = weapon.splitBehavior || {};
+        const count = split.count || weapon.bomblets || 5;
         const baseSpeed = Math.max(85, Math.abs(projectile.vx) * 0.35);
         this.projectile = null;
         for (let i = 0; i < count; i++) {
@@ -1584,23 +1714,28 @@ export class Game {
             const bomblet = new Projectile(
                 projectile.x + spread * 3,
                 projectile.y,
-                projectile.vx * 0.38 + spread * baseSpeed * 0.34,
-                Math.max(20, projectile.vy * 0.35) + Math.abs(spread) * 8,
+                projectile.vx * (split.childVxScale ?? 0.38) + spread * baseSpeed * (split.spreadScale ?? 0.34),
+                Math.max(20, projectile.vy * (split.childVyScale ?? 0.35)) + Math.abs(spread) * 8,
                 createBombletWeapon(weapon)
             );
             bomblet.isBomblet = true;
             bomblet.parentWeapon = weapon;
             this.projectiles.push(bomblet);
         }
-        this.statusMessage = `${weapon.name} split into bomblets.`;
-        this.audio.playClusterSplit({ x: projectile.x, width: this.width });
+        this.statusMessage = `${weapon.name} split into submunitions.`;
+        this.audio.playClusterSplit({ x: projectile.x, width: this.width }, weapon);
     }
 
     _startRollingProjectile(projectile, groundY) {
+        const behavior = projectile.weapon.rollerBehavior || {};
         projectile.rolling = true;
         projectile.rollAge = 0;
         projectile.rollDirection = Math.sign(projectile.vx) || this.tanks[this.shotInfo.shooterIndex].facing || 1;
-        projectile.rollSpeed = clamp(Math.abs(projectile.vx) * 0.26, 58, 128);
+        projectile.rollSpeed = clamp(
+            Math.abs(projectile.vx) * 0.26,
+            behavior.minSpeed ?? 58,
+            behavior.maxSpeed ?? 128
+        );
         projectile.x = clamp(projectile.x, 1, this.width - 2);
         projectile.y = groundY - projectile.radius;
         projectile.trail = [];
@@ -1623,10 +1758,15 @@ export class Game {
             return;
         }
 
+        const behavior = projectile.weapon.rollerBehavior || {};
         const nextGround = this.terrain.heightAt(nextX);
         const slopeDelta = nextGround - previousGround;
-        const obstruction = Math.abs(slopeDelta) > 18;
-        projectile.rollSpeed = clamp(projectile.rollSpeed + slopeDelta * projectile.rollDirection * 0.35 - 18 * dt, 18, 142);
+        const obstruction = Math.abs(slopeDelta) > (behavior.obstructionDelta ?? 18);
+        projectile.rollSpeed = clamp(
+            projectile.rollSpeed + slopeDelta * projectile.rollDirection * (behavior.slopeAccel ?? 0.35) - (behavior.friction ?? 18) * dt,
+            18,
+            (behavior.maxSpeed ?? 128) + 14
+        );
         projectile.x = nextX;
         projectile.y = nextGround - projectile.radius;
         this._trackProjectileDistance(projectile);
@@ -1645,7 +1785,7 @@ export class Game {
             }
         }
 
-        if (obstruction || projectile.rollAge > 2.8 || projectile.rollSpeed <= 20) {
+        if (obstruction || projectile.rollAge > (behavior.maxAge ?? 2.8) || projectile.rollSpeed <= 20) {
             this._resolveProjectileImpact(projectile, projectile.x, this.terrain.heightAt(projectile.x), 'terrain');
         }
     }
@@ -1709,8 +1849,9 @@ export class Game {
         this.phaseTimer = Math.max(CONFIG.turn.impactDelaySeconds, this._remainingExplosionTime() + 0.15);
     }
 
-    _completeClusterShot() {
+    _completeSplitShot(parentWeapon = null) {
         if (!this.shotInfo) return;
+        const weapon = parentWeapon || getWeaponById(this.shotInfo.weaponId);
         const target = this.tanks[this.shotInfo.targetIndex];
         const shooter = this.tanks[this.shotInfo.shooterIndex];
         const details = [];
@@ -1719,9 +1860,9 @@ export class Game {
         if (this.shotInfo.shieldAbsorbed > 0) details.push(`Shields absorbed ${this.shotInfo.shieldAbsorbed}.`);
         if (!details.length) details.push('No damage.');
         const impacts = this.shotInfo.clusterImpactCount || 0;
-        const prefix = this.shotInfo.enemyDamage > 0 ? 'Cluster hit!' : 'Cluster spread.';
-        this.lastResult = `${prefix} ${impacts} bomblets impacted. ${details.join(' ')} Cluster Bomb peppered the terrain with small craters.`;
-        this.statusMessage = 'Cluster impacts resolving.';
+        const prefix = this.shotInfo.enemyDamage > 0 ? `${weapon.name} hit!` : `${weapon.name} spread.`;
+        this.lastResult = `${prefix} ${impacts} submunitions impacted. ${details.join(' ')} ${weapon.terrainMessage}`;
+        this.statusMessage = `${weapon.name} impacts resolving.`;
         this.phase = 'resolving';
         this.phaseTimer = Math.max(CONFIG.turn.impactDelaySeconds, this._remainingExplosionTime() + 0.18);
     }
@@ -1732,7 +1873,13 @@ export class Game {
             return weapon.terrainMessage;
         }
         if (weapon.behavior === 'napalm') {
-            this.terrain.scorch(x, y, (weapon.flameWidth || weapon.damageRadius * 2) / 2, 'napalm');
+            this.terrain.scorch(x, y, (weapon.flameWidth || weapon.damageRadius * 2) / 2, weapon.id === 'firestorm' ? 'firestorm' : 'napalm');
+            return weapon.terrainMessage;
+        }
+        if (weapon.behavior === 'airburst') {
+            const groundY = this.terrain.heightAt(x);
+            const offset = weapon.airburstBehavior?.terrainOffset ?? 8;
+            this.terrain.explode(x, groundY - offset, weapon.terrainEffectRadius, weapon.terrainEffectStrength);
             return weapon.terrainMessage;
         }
 
@@ -1784,7 +1931,7 @@ export class Game {
         }
         if (this.pendingBurns.length) {
             this.phaseTimer = Math.max(this.phaseTimer, interval * ticks + 0.18);
-            this.statusMessage = 'Napalm burn is ticking.';
+            this.statusMessage = `${weapon.name} burn is ticking.`;
         }
     }
 
@@ -2115,9 +2262,11 @@ export class Game {
 
         if (cpu.health < 85) tryBuy('repair', cpu.health < 55 ? Math.min(1, profile.repairBuyChance + 0.25) : profile.repairBuyChance);
         if (cpu.shieldCharge < CONFIG.utilities.shieldPurchaseCharge) tryBuy('shield', profile.shieldBuyChance);
-        for (const weapon of limitedWeapons()) {
+        const shopWeapons = limitedWeapons().sort((a, b) => (a.shopPriority ?? 50) - (b.shopPriority ?? 50));
+        for (const weapon of shopWeapons) {
             if ((cpu.ammo[weapon.id] || 0) >= maxAmmoFor(weapon.id)) continue;
-            if (weapon.id === 'mega' && (cpu.health < 70 || cpu.shieldCharge < CONFIG.utilities.shieldPurchaseCharge)) continue;
+            if (weapon.role === 'premium' && (cpu.health < 70 || cpu.shieldCharge < CONFIG.utilities.shieldPurchaseCharge || cpu.money < (weapon.price ?? 0) + 80)) continue;
+            if (weapon.role === 'terrainBuild' && cpu.health < 60) continue;
             tryBuy(`${weapon.id}Ammo`, cpuAmmoBuyChance(weapon.id, profile, cpu.money));
         }
         if (cpu.parachutes < 1) tryBuy('parachute', profile.shieldBuyChance * 0.45);
@@ -2193,10 +2342,10 @@ export class Game {
     }
 
     _addScreenShake(weapon) {
-        const intensity = weapon.id === 'mega' ? 6
+        const intensity = weapon.visualProfile?.screenShake ?? (weapon.id === 'mega' ? 6
             : (weapon.id === 'heavy' ? 4.2
                 : (weapon.id === 'dirt' ? 2.6
-                    : (weapon.id === 'clusterBomblet' ? 1.4 : 2.2)));
+                    : (weapon.id === 'clusterBomblet' ? 1.4 : 2.2))));
         this.screenShakeIntensity = Math.max(this.screenShakeIntensity, intensity);
         this.screenShakeTime = Math.max(this.screenShakeTime, weapon.id === 'mega' ? 0.28 : 0.18);
     }
@@ -2305,8 +2454,9 @@ function normalizeSettings(settings = {}) {
 function createStartingAmmo() {
     const ammo = {};
     for (const weapon of WEAPONS) {
-        ammo[weapon.id] = Number.isFinite(weapon.ammo)
-            ? Math.min(weapon.ammo, Math.max(0, weapon.startingAmmo || 0))
+        const maxAmmo = maxAmmoFor(weapon.id);
+        ammo[weapon.id] = Number.isFinite(maxAmmo)
+            ? Math.min(maxAmmo, Math.max(0, weapon.startingAmmo || 0))
             : Infinity;
     }
     return ammo;
@@ -2333,23 +2483,36 @@ function ammoSnapshotFromTank(tank) {
 }
 
 function createBombletWeapon(parent) {
+    const split = parent.splitBehavior || {};
+    const childId = split.childId || 'clusterBomblet';
     return {
         ...parent,
-        id: 'clusterBomblet',
-        name: 'Cluster Bomblet',
-        compactName: 'Bomblet',
+        id: childId,
+        name: split.childName || 'Cluster Bomblet',
+        compactName: split.childCompactName || 'Bomblet',
         behavior: 'crater',
-        maxDamage: parent.bombletMaxDamage || 18,
-        damageRadius: parent.bombletDamageRadius || 24,
+        maxDamage: split.childDamage || parent.bombletMaxDamage || 18,
+        damage: split.childDamage || parent.bombletMaxDamage || 18,
+        damageRadius: split.childDamageRadius || parent.bombletDamageRadius || 24,
         damageFalloff: 1.1,
-        explosionRadius: 26,
-        terrainEffectRadius: parent.bombletTerrainRadius || 20,
-        terrainEffectStrength: 0.46,
-        projectileRadius: 3.5,
-        color: '#ffe28a',
-        trailColor: '255, 224, 138',
-        impactVisual: 'clusterMiniBlast',
-        terrainMessage: 'Cluster bomblet made a small crater.',
+        explosionRadius: split.childExplosionRadius || 26,
+        terrainEffectRadius: split.childTerrainRadius || parent.bombletTerrainRadius || 20,
+        terrainRadius: split.childTerrainRadius || parent.bombletTerrainRadius || 20,
+        terrainEffectStrength: split.childTerrainStrength || 0.46,
+        projectileRadius: split.childProjectileRadius || 3.5,
+        color: split.childColor || '#ffe28a',
+        trailColor: split.childTrailColor || '255, 224, 138',
+        impactVisual: split.childImpactVisual || 'clusterMiniBlast',
+        visualProfile: {
+            ...(parent.visualProfile || {}),
+            projectile: childId,
+            impact: split.childImpactVisual || 'clusterMiniBlast',
+            trailLength: 10,
+            screenShake: childId === 'splitterShard' ? 1.2 : 1.4,
+        },
+        iconProfile: { ...(parent.iconProfile || {}), shape: childId },
+        soundProfile: { fire: parent.soundProfile?.fire || parent.fireSoundType, impact: parent.soundProfile?.impact || parent.impactSoundType },
+        terrainMessage: split.childTerrainMessage || 'Cluster bomblet made a small crater.',
     };
 }
 
@@ -2363,13 +2526,21 @@ function createTankDeathVisual(tank) {
 }
 
 function cpuAmmoBuyChance(weaponId, profile, money) {
+    const weapon = getWeaponById(weaponId);
     const base = profile.ammoBuyChance || 0.4;
-    if (weaponId === 'dirt') return base * 0.42;
-    if (weaponId === 'roller') return base * 0.62;
-    if (weaponId === 'napalm') return base * 0.58;
-    if (weaponId === 'cluster') return base * 0.44;
-    if (weaponId === 'mega') return money >= 425 ? base * 0.16 : 0;
-    return base;
+    const price = weapon.price ?? weapon.shopRefillPrice ?? 0;
+    if (weapon.role === 'terrainBuild') return base * 0.26;
+    if (weapon.role === 'terrainDestroy') return base * 0.42;
+    if (weapon.role === 'rolling') return base * 0.58;
+    if (weapon.role === 'rollingHeavy') return base * 0.34;
+    if (weapon.role === 'fire') return base * 0.54;
+    if (weapon.role === 'fireHeavy') return money >= price + 90 ? base * 0.24 : 0;
+    if (weapon.role === 'split') return base * 0.36;
+    if (weapon.role === 'cluster') return base * 0.40;
+    if (weapon.role === 'airburst') return base * 0.36;
+    if (weapon.role === 'precision') return base * 0.52;
+    if (weapon.role === 'premium') return money >= price + 80 ? base * 0.12 : 0;
+    return base * Math.max(0.2, weapon.cpuUseWeight ?? 0.6);
 }
 
 function estimateLevelReach(weapon, power, angle) {
@@ -2404,10 +2575,18 @@ function simulateTerrainReach({ shooter, terrain, weapon, angle, power, wind }) 
     };
 }
 
+function isSplitWeapon(weapon) {
+    return weapon && (weapon.behavior === 'cluster' || weapon.behavior === 'splitter');
+}
+
 function reachNotes(weapon) {
-    if (weapon.id === 'roller') return 'Impacts terrain first, then rolls along the heightmap.';
-    if (weapon.id === 'napalm') return 'Area threat depends on flame width after impact.';
-    if (weapon.id === 'cluster') return 'Carrier reach is shown; bomblets spread after split.';
+    if (weapon.role === 'rolling' || weapon.role === 'rollingHeavy') return 'Impacts terrain first, then rolls along the heightmap.';
+    if (weapon.role === 'fire' || weapon.role === 'fireHeavy') return 'Area threat depends on flame width after impact.';
+    if (weapon.role === 'airburst') return 'Detonates above terrain or near exposed tanks after the minimum fuse age.';
+    if (isSplitWeapon(weapon)) return 'Carrier reach is shown; submunitions spread after split.';
+    if (weapon.role === 'precision') return 'Small radius and fast arc reward accurate direct shots.';
+    if (weapon.role === 'terrainDestroy') return 'Low damage but a large terrain-removal radius.';
+    if (weapon.role === 'terrainBuild') return 'Low damage utility mound; reach uses normal arcing ballistics.';
     if (weapon.id === 'dirt') return 'Low damage utility mound, reach uses normal arcing ballistics.';
     if (weapon.id === 'heavy') return 'v0.6.9 heavier arc than Standard Shell while keeping practical reach.';
     if (weapon.id === 'mega') return 'v0.6.9 late-match premium price, heavy arc, steep falloff, and largest crater.';

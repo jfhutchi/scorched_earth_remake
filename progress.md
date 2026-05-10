@@ -1,35 +1,53 @@
 # Project Progress
 
-Current Version: v0.6.10
+Current Version: v0.7.0
 
-Current Branch: version/v0.6.9
+Current Branch: version/v0.7.0
 
 Release History Source: RELEASE_NOTES.md
 
 ## Latest Completed Work
 
-- Implemented v0.6.10 in the working tree: focused local multiplayer state, audio bugfix, and future-multiplayer foundation pass. Two Player Local movement-state is now strictly per-tank/per-turn, a local turn handoff overlay was added between human turns with input lock until Start Turn, player identity clarity was improved across HUD/turn label/mobile HUD pill/handoff/summary, tank movement audio was made reliably audible while staying subtle, victory and defeat audio now have clearly different generated identities (separate round/match phrases), debug-only `window.debugTurnState()`, `window.debugMovementState()`, and `window.exportDebugGameState()` helpers were added behind `?debug=1`, and turn-state ownership was consolidated into a single `turnState` object on the Game so future room-code or share-code multiplayer can serialize it cleanly. v0.6.10 does not add new weapons, online multiplayer, accounts, room codes, networking, a backend, or external assets.
-- Updated the central version constant so the main menu and `window.GAME_VERSION` report `v0.6.10`; gameplay remains free of a floating version badge.
-- Kept the existing architecture, current weapon list, desktop keyboard controls, mobile touch controls, mobile Play behavior, shop flow, pre-round shop, CPU shopping, generated Web Audio system, mute persistence, destructible terrain, wind physics, shields, First Aid, parachutes, and audio lifecycle handling.
-- Documentation continues to treat RELEASE_NOTES.md as the concise release-history source.
-- Local verification for this pass: `node --check` passed for all `src/*.js`; manual code review of turn state, handoff flow, movement state ownership, and audio routing. Real auditory comparison of round-win vs round-loss and match-win vs match-loss stingers, real-phone Two Player Local handoff usability, real-phone movement-audio audibility, and GitHub Pages deployment of v0.6.10 still need manual verification before cutting a public release.
+- Implemented the v0.7.0 weapon-system foundation in the working tree: the weapon catalog now carries categories, tactical roles, prices, ammo caps, starting ammo, unlimited-ammo flags, damage/terrain labels, arc difficulty, icon profiles, visual profiles, sound profiles, CPU-use weights, shop priority, and special behavior metadata.
+- Added the first expanded original weapon pack: Precision Shell, Airburst Shell, Splitter Shell, Heavy Roller, Excavator Bomb, Mound Maker, and Firestorm Canister. Existing Standard Shell, Heavy Shell, Dirt Bomb, Roller Shell, Napalm Canister, Cluster Bomb, and Mega Bomb remain represented in the same catalog.
+- Updated shop generation so limited ammo cards are driven from weapon metadata and show compact category labels while utilities remain separate.
+- Improved CPU weapon selection and shopping to use weapon roles, ammo, distance, target health, shields, terrain obstruction, downhill/uphill relation, exposed targets, miss streak, difficulty, shop priorities, and CPU-use weights.
+- Added debug-only v0.7.0 weapon helpers: `window.debugWeapons()`, `window.testWeaponCatalog()`, and `window.setupWeaponTest()`.
+- Added BALANCE.md as the weapon/economy/CPU tuning reference and updated README.md, TESTING.md, progress.md, and RELEASE_NOTES.md for v0.7.0.
+- Added GitHub Actions validation and local scripts for version consistency, release notes, artifact pollution, GitHub Pages-safe paths, and JavaScript syntax checks.
+- Preserved desktop keyboard controls, mobile touch controls, mobile Play behavior, Play vs CPU, Two Player Local, local handoff behavior, player identity clarity, default `$0` starting money, Standard Shell unlimited ammo, Mega Bomb late-match gating, generated audio, movement audio, result audio identity, and GitHub Pages compatibility.
 
 ## Current Known Issues
 
 - CPU aiming is intentionally simple and CPU tanks do not drive with movement fuel.
-- Real-phone app switching, phone locking, auditory movement-sound quality, real-phone Two Player Local handoff usability, and GitHub Pages deployment still need manual verification before cutting a public release.
+- Expanded v0.7.0 weapon balance needs longer full-match tuning after this foundation pass.
+- Real-phone app switching, phone locking, auditory weapon-sound quality, real-phone Two Player Local handoff usability, and GitHub Pages deployment still need manual verification before cutting a public release.
 - Terrain remains heightmap-based, so caves and overhangs are out of scope.
 - Two Player Local is intentionally hidden on phone-sized viewports; the handoff overlay only matters when Two Player Local is reached on desktop or via wider viewports.
 
 ## Next Candidate
 
+- Longer full-match playtests on Easy, Normal, and Hard CPU after the expanded weapon pack.
+- Tune Airburst Shell trigger height/radius if it becomes too reliable.
+- Tune Mound Maker and Excavator Bomb after repeated terrain-shaping tests.
 - Real-phone playtests of the Two Player Local handoff flow to confirm input lock and Start Turn touch target are comfortable on a real phone.
-- Auditory side-by-side comparison of v0.6.10 round-win vs round-loss and match-win vs match-loss stingers on speakers and headphones.
-- Run longer full-match playtests on Easy, Normal, and Hard CPU to keep tuning CPU economy and weapon preferences.
+- Auditory side-by-side comparison of new weapon sounds on speakers and headphones.
 - Consider optional drag aiming/power controls after the mobile layout remains stable.
 - Consider CPU driving logic only after current movement and audio behavior is fully verified.
 
 ## Recent Release Notes
+
+### v0.7.0
+
+- Added a cleaner data-driven weapon catalog with category, role, economy, ammo, behavior, icon, visual, sound, CPU, and balance metadata.
+- Added weapon categories for shop clarity, CPU reasoning, documentation, and future balance work.
+- Added seven original weapons: Precision Shell, Airburst Shell, Splitter Shell, Heavy Roller, Excavator Bomb, Mound Maker, and Firestorm Canister.
+- Preserved all existing weapons and key balance rules: Standard Shell unlimited, Heavy Shell heavier arc, Napalm burn ticks, Mega Bomb late-match max-ammo-1 gating, and default `$0` starting money.
+- Improved CPU firing and shopping decisions using weapon roles and tactical context.
+- Added debug-only weapon helpers and catalog validation.
+- Added BALANCE.md as the tuning reference.
+- Added GitHub Actions validation and local scripts for version consistency, release notes, artifacts, Pages-safe paths, and syntax checks.
+- Updated README.md, TESTING.md, progress.md, and RELEASE_NOTES.md for v0.7.0.
 
 ### v0.6.10
 

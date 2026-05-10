@@ -844,6 +844,15 @@ button {
     color: #e4dcc8 !important;
 }
 
+.shop-item-category {
+    margin-top: 2px;
+    color: #c8e7ec !important;
+    font-size: 10px !important;
+    font-weight: 900;
+    letter-spacing: 0;
+    text-transform: uppercase;
+}
+
 .shop-item-stats {
     margin-top: 4px;
     color: #9edbe6 !important;
@@ -1296,6 +1305,14 @@ button {
         white-space: nowrap;
     }
 
+    .shop-item-category {
+        overflow: hidden;
+        font-size: 9px !important;
+        line-height: 1.1 !important;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
     .shop-item-stats {
         overflow: hidden;
         font-size: 10px !important;
@@ -1456,6 +1473,7 @@ body.is-mobile-game .shop-item-body h4 {
 }
 
 body.is-mobile-game .shop-item-description,
+body.is-mobile-game .shop-item-category,
 body.is-mobile-game .shop-item-stats {
     overflow: hidden;
     text-overflow: ellipsis;
@@ -1465,6 +1483,11 @@ body.is-mobile-game .shop-item-stats {
 body.is-mobile-game .shop-item-description {
     font-size: 11px !important;
     line-height: 1.18 !important;
+}
+
+body.is-mobile-game .shop-item-category {
+    font-size: 9px !important;
+    line-height: 1.1 !important;
 }
 
 body.is-mobile-game .shop-item-stats {

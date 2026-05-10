@@ -1,0 +1,41 @@
+name: Validate
+
+on:
+  push:
+    branches:
+      - 'version/**'
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  static-validation:
+    name: Static validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: JavaScript syntax
+        run: node scripts/static-check.mjs
+
+      - name: Version consistency
+        run: node scripts/validate-version.mjs v0.7.0
+
+      - name: Release notes entry
+        run: node scripts/check-release-notes.mjs v0.7.0
+
+      - name: Artifact pollution
+        run: node scripts/check-artifacts.mjs
+
+      - name: GitHub Pages-safe paths
+        run: node scripts/check-pages-paths.mjs

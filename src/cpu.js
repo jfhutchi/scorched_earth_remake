@@ -50,28 +50,85 @@ export class CPUController {
 
     _chooseWeapon(shooter, target, terrain, profile, difficulty) {
         const available = WEAPONS.filter((weapon) => shooter.ammoFor(weapon.id) > 0);
-        const heavy = available.find((weapon) => weapon.id === 'heavy');
-        const dirt = available.find((weapon) => weapon.id === 'dirt');
-        const roller = available.find((weapon) => weapon.id === 'roller');
-        const napalm = available.find((weapon) => weapon.id === 'napalm');
-        const cluster = available.find((weapon) => weapon.id === 'cluster');
-        const mega = available.find((weapon) => weapon.id === 'mega');
         const standard = available.find((weapon) => weapon.id === 'standard') || available[0];
-        const distance = Math.abs(target.x - shooter.x);
-        const targetLower = terrain ? terrain.heightAt(target.x) - terrain.heightAt(shooter.x) > 18 : false;
-        const targetSlope = terrain ? terrain.slopeAt(target.x, 26) : 0;
+        if (!standard || available.length <= 1) return standard;
 
-        if (mega && difficulty === 'hard' && distance < 720 && Math.random() < profile.megaUseChance) return mega;
-        if (mega && target.health <= 55 && Math.random() < profile.megaUseChance * 1.8) return mega;
-        if (cluster && (this.missStreak >= 2 || distance > 560) && Math.random() < profile.clusterUseChance + 0.08) return cluster;
-        if (napalm && (targetSlope > 0.45 || this.missStreak >= 1) && Math.random() < profile.napalmUseChance + 0.08) return napalm;
-        if (roller && targetLower && Math.random() < profile.rollerUseChance + 0.12) return roller;
-        if (roller && this.missStreak >= 2 && Math.random() < profile.rollerUseChance * 0.6) return roller;
-        if (heavy && target.health <= 68 && Math.random() < profile.heavyShellUseChance + 0.2) return heavy;
-        if (heavy && this.missStreak <= 1 && Math.random() < profile.heavyShellUseChance) return heavy;
-        if (dirt && this.missStreak >= 3 && Math.random() < profile.dirtBombUseChance) return dirt;
-        if (dirt && Math.random() < profile.dirtBombUseChance * 0.4) return dirt;
-        return standard;
+        const distance = Math.abs(target.x - shooter.x);
+        const verticalDelta = terrain ? terrain.heightAt(target.x) - terrain.heightAt(shooter.x) : 0;
+        const targetLower = verticalDelta > 18;
+        const targetUphill = verticalDelta < -18;
+        const targetSlope = terrain ? terrain.slopeAt(target.x, 26) : 0;
+        const obstruction = terrain ? hasTerrainObstruction(shooter, target, terrain) : false;
+        const exposed = targetSlope < 0.32 && !obstruction;
+        const shielded = (target.shieldCharge || 0) > 25;
+        const difficultyScale = difficulty === 'hard' ? 1.25 : (difficulty === 'easy' ? 0.58 : 1);
+
+        if (difficulty === 'easy' && Math.random() < 0.56) return standard;
+
+        const scored = available.map((weapon) => {
+            let score = Math.max(0.02, weapon.cpuUseWeight ?? 0.15);
+            const role = weapon.role || 'baseline';
+
+            if (role === 'baseline') score += difficulty === 'easy' ? 0.9 : 0.32;
+            if (role === 'precision') {
+                score *= distance < 640 && exposed ? 1.45 : 0.72;
+                if (target.health <= weapon.maxDamage + 8) score *= 1.65;
+                if (this.missStreak >= 2) score *= 0.68;
+            }
+            if (role === 'heavyDamage') {
+                score *= target.health <= 74 || shielded ? 1.55 : 1.05;
+                if (distance > 760) score *= 0.72;
+            }
+            if (role === 'premium') {
+                score *= difficulty === 'hard' ? 1.18 : 0.55;
+                if (target.health <= 55) score *= 0.18;
+                if (!shielded && target.health < 74) score *= 0.42;
+                if (distance > 720 || this.missStreak >= 2) score *= 0.62;
+            }
+            if (role === 'rolling' || role === 'rollingHeavy') {
+                score *= targetLower ? 1.8 : 0.34;
+                if (targetUphill) score *= 0.35;
+                if (this.missStreak >= 2 && targetLower) score *= 1.22;
+            }
+            if (role === 'fire' || role === 'fireHeavy') {
+                score *= targetSlope > 0.42 || this.missStreak >= 1 ? 1.28 : 0.78;
+                if (role === 'fireHeavy' && (target.health <= 38 || difficulty === 'easy')) score *= 0.48;
+            }
+            if (role === 'cluster' || role === 'split') {
+                score *= distance > 520 || this.missStreak >= 2 || obstruction ? 1.38 : 0.78;
+                if (role === 'cluster' && difficulty === 'easy') score *= 0.45;
+            }
+            if (role === 'airburst') {
+                score *= obstruction || exposed ? 1.4 : 0.74;
+                if (distance > 760) score *= 0.7;
+            }
+            if (role === 'terrainDestroy') {
+                score *= obstruction ? 1.55 : 0.42;
+                if (target.health <= 35) score *= 0.7;
+            }
+            if (role === 'terrainBuild') {
+                score *= this.missStreak >= 3 && !targetLower ? 0.72 : 0.18;
+                if (difficulty === 'hard') score *= 0.72;
+            }
+
+            if (difficulty === 'easy' && role !== 'baseline' && role !== 'heavyDamage' && Math.random() > 0.28) {
+                score *= 0.35;
+            }
+
+            return {
+                weapon,
+                score: Math.max(0, score * difficultyScale * randomRange(0.82, 1.18)),
+            };
+        });
+
+        const total = scored.reduce((sum, item) => sum + item.score, 0);
+        if (total <= 0) return standard;
+        let pick = Math.random() * total;
+        for (const item of scored.sort((a, b) => b.score - a.score)) {
+            pick -= item.score;
+            if (pick <= 0) return item.weapon;
+        }
+        return scored[0].weapon || standard;
     }
 
     _findAimSolution(shooter, target, terrain, wind, weapon, profile) {
@@ -129,6 +186,15 @@ function simulateShot({ shooter, target, terrain, wind, weapon, angle, power }) 
             break;
         }
 
+        if (weapon.behavior === 'airburst' && x >= 0 && x < terrain.width) {
+            const groundY = terrain.heightAt(x);
+            const burstHeight = weapon.airburstBehavior?.height ?? 36;
+            if (t >= (weapon.airburstBehavior?.minAge ?? 0.35) && vy >= -20 && y >= groundY - burstHeight) {
+                impactX = x;
+                break;
+            }
+        }
+
         if (x >= 0 && x < terrain.width && y >= terrain.heightAt(x)) {
             impactX = x;
             break;
@@ -138,10 +204,27 @@ function simulateShot({ shooter, target, terrain, wind, weapon, angle, power }) 
     const landingDistance = Math.abs(impactX - target.x);
     const landingPenalty = landingDistance * 0.22;
     const damageBonus = Math.max(0, weapon.damageRadius - landingDistance) * (weapon.maxDamage / 100);
-    const terrainBonus = weapon.behavior === 'crater'
-        ? Math.max(0, weapon.terrainEffectRadius - landingDistance) * 0.28
-        : -18;
+    const terrainBonus = weapon.role === 'terrainDestroy'
+        ? Math.max(0, weapon.terrainEffectRadius - landingDistance) * 0.34
+        : (weapon.behavior === 'crater' || weapon.behavior === 'airburst'
+            ? Math.max(0, weapon.terrainEffectRadius - landingDistance) * 0.28
+            : -18);
     return minDistance + landingPenalty - damageBonus - terrainBonus;
+}
+
+function hasTerrainObstruction(shooter, target, terrain) {
+    if (!terrain || !shooter || !target) return false;
+    const start = shooter.muzzlePosition ? shooter.muzzlePosition() : { x: shooter.x, y: shooter.y - shooter.height };
+    const end = target.boundingCircle ? target.boundingCircle() : { x: target.x, y: target.y - target.height / 2 };
+    const steps = 14;
+    for (let i = 3; i < steps; i++) {
+        const t = i / steps;
+        const x = start.x + (end.x - start.x) * t;
+        if (x < 0 || x >= terrain.width) continue;
+        const lineY = start.y + (end.y - start.y) * t;
+        if (terrain.heightAt(x) < lineY - 10) return true;
+    }
+    return false;
 }
 
 function randomRange(min, max) {

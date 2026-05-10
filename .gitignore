@@ -9,5 +9,6 @@ temp/
 .nyc_output/
 debug-output/
 *.trace.zip
+*.log
 *.har
 .claude/

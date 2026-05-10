@@ -88,7 +88,8 @@ function drawCraterAndScorchMarks(ctx, terrain) {
     for (const mark of terrain.scorchMarks) {
         const start = Math.max(0, Math.floor(mark.x - mark.radius));
         const end = Math.min(terrain.width - 1, Math.ceil(mark.x + mark.radius));
-        const lineWidth = mark.type === 'napalm' ? 14 : Math.max(7, mark.radius * 0.22);
+        const isFire = mark.type === 'napalm' || mark.type === 'firestorm';
+        const lineWidth = isFire ? (mark.type === 'firestorm' ? 18 : 14) : Math.max(7, mark.radius * 0.22);
         ctx.beginPath();
         for (let x = start; x <= end; x += 3) {
             const d = Math.abs(x - mark.x) / Math.max(1, mark.radius);
@@ -96,8 +97,8 @@ function drawCraterAndScorchMarks(ctx, terrain) {
             if (x === start) ctx.moveTo(x, y);
             else ctx.lineTo(x, y);
         }
-        ctx.strokeStyle = mark.type === 'napalm'
-            ? `rgba(64, 24, 14, ${0.44 * mark.alpha})`
+        ctx.strokeStyle = isFire
+            ? `rgba(${mark.type === 'firestorm' ? '82, 18, 12' : '64, 24, 14'}, ${0.44 * mark.alpha})`
             : `rgba(30, 24, 20, ${0.34 * mark.alpha})`;
         ctx.lineWidth = lineWidth;
         ctx.stroke();
@@ -108,8 +109,8 @@ function drawCraterAndScorchMarks(ctx, terrain) {
             if (x === start) ctx.moveTo(x, y);
             else ctx.lineTo(x, y);
         }
-        ctx.strokeStyle = mark.type === 'napalm'
-            ? `rgba(214, 80, 24, ${0.13 * mark.alpha})`
+        ctx.strokeStyle = isFire
+            ? `rgba(${mark.type === 'firestorm' ? '255, 72, 20' : '214, 80, 24'}, ${0.13 * mark.alpha})`
             : theme.terrain.scorch;
         ctx.lineWidth = Math.max(2, lineWidth * 0.28);
         ctx.stroke();

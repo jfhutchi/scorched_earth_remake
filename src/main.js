@@ -339,8 +339,15 @@ window.advanceTime = (ms) => game.advanceTime(ms);
 const debugEnabled = CONFIG.debug || new URLSearchParams(window.location.search).has('debug');
 if (debugEnabled) {
     window.debugGameState = () => game.debugState();
+    window.debugWeapons = () => game.debugWeapons();
+    window.testWeaponCatalog = () => game.testWeaponCatalog();
     window.testWeaponImpact = (weaponId) => game.testWeaponImpact(weaponId);
     window.testWeaponReach = () => game.testWeaponReach();
+    window.setupWeaponTest = (weaponId) => {
+        const result = game.setupWeaponTest(weaponId);
+        refreshLayout();
+        return result;
+    };
     window.setupAimTest = () => {
         const result = game.setupAimTest();
         refreshLayout();
