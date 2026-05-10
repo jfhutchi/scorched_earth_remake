@@ -12,6 +12,7 @@ Use a local static server, open the game in a desktop or mobile browser, and kee
 - [ ] Single Player vs CPU starts from the primary menu action.
 - [ ] Phone-sized layout shows the single `Play` button and it starts Single Player vs CPU.
 - [ ] Two Player Local remains available on desktop/wider layouts.
+- [ ] Rounds to Win, Starting Money, CPU Difficulty, Wind, and Terrain dropdowns are readable when closed and when opened.
 - [ ] Default starting money is `None ($0)`.
 - [ ] Pre-round shop opens before Round 1 with `$0`.
 - [ ] Standard Shell is unlimited and has no shop ammo card.
