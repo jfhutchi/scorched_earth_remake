@@ -1,4 +1,5 @@
 import { CONFIG, GAME_VERSION, WEAPONS } from './config.js';
+import { drawUtilityIcon, drawWeaponIcon } from './visualAssets.js';
 
 export class UI {
     constructor() {
@@ -11,6 +12,9 @@ export class UI {
         this.summaryStats = document.getElementById('summaryStats');
         this.shopContent = document.getElementById('shopContent');
         this.menuVersion = document.getElementById('menuVersion');
+        this.helpOverlay = document.getElementById('helpOverlay');
+        this.helpBtn = document.getElementById('helpBtn');
+        this.helpCloseBtn = document.getElementById('helpCloseBtn');
 
         this.twoPlayerBtn = document.getElementById('twoPlayerBtn');
         this.cpuBtn = document.getElementById('cpuBtn');
@@ -55,6 +59,7 @@ export class UI {
         this.angleVal = document.getElementById('angleVal');
         this.powerVal = document.getElementById('powerVal');
         this.weaponVal = document.getElementById('weaponVal');
+        this.weaponIcon = document.getElementById('weaponIcon');
         this.ammoVal = document.getElementById('ammoVal');
         this.moveVal = document.getElementById('moveVal');
         this.resultVal = document.getElementById('resultVal');
@@ -66,6 +71,7 @@ export class UI {
         this.mhudP1Shield = document.getElementById('mhudP1Shield');
         this.mhudP2Shield = document.getElementById('mhudP2Shield');
         this.mhudWeapon = document.getElementById('mhudWeapon');
+        this.mhudWeaponIcon = document.getElementById('mhudWeaponIcon');
         this.mhudAngle = document.getElementById('mhudAngle');
         this.mhudPower = document.getElementById('mhudPower');
         this.mhudAmmo = document.getElementById('mhudAmmo');
@@ -73,6 +79,7 @@ export class UI {
         this.mhudP2Inv = document.getElementById('mhudP2Inv');
         this.mhudRound = document.getElementById('mhudRound');
         this.mhudResult = document.getElementById('mhudResult');
+        this.weaponToast = document.getElementById('weaponToast');
 
         this.loadSettings();
         this.setVersion(GAME_VERSION);
@@ -96,7 +103,10 @@ export class UI {
         this.mhudP2Hp.textContent = String(Math.max(0, Math.round(p2.health)));
         if (this.mhudP1Shield) this.mhudP1Shield.textContent = formatShieldCompact(p1);
         if (this.mhudP2Shield) this.mhudP2Shield.textContent = formatShieldCompact(p2);
-        if (selectedWeapon) this.mhudWeapon.textContent = shortWeaponName(selectedWeapon);
+        if (selectedWeapon) {
+            this.mhudWeapon.textContent = shortWeaponName(selectedWeapon);
+            drawHudWeaponIcon(this.mhudWeaponIcon, selectedWeapon, 28);
+        }
         this.mhudAngle.textContent = String(Math.round(active.angle));
         this.mhudPower.textContent = String(Math.round(active.power));
         if (selectedWeapon) {
@@ -165,6 +175,15 @@ export class UI {
     hideAllOverlays() {
         this.summaryOverlay.classList.add('hidden');
         this.shopOverlay.classList.add('hidden');
+        if (this.helpOverlay) this.helpOverlay.classList.add('hidden');
+    }
+
+    showHelp() {
+        if (this.helpOverlay) this.helpOverlay.classList.remove('hidden');
+    }
+
+    hideHelp() {
+        if (this.helpOverlay) this.helpOverlay.classList.add('hidden');
     }
 
     showSummary(state) {
@@ -175,17 +194,29 @@ export class UI {
 
         this.summaryTitle.textContent = matchWinner ? `${matchWinner} Wins Match!` : 'Round Summary';
         this.summaryScore.textContent = `${roundWinner} | Score: Player 1 ${summary.score[0]} - ${state.tanks[1].name} ${summary.score[1]}`;
-        this.summaryStats.innerHTML = summary.stats.map((stat) => `
-            <section class="summary-card">
-                <h3>${stat.name}</h3>
-                <p>Damage dealt: <b>${stat.damageDealt}</b></p>
-                <p>Shots fired: <b>${stat.shotsFired}</b></p>
-                <p>Direct / near hits: <b>${stat.directHits} / ${stat.nearHits}</b></p>
-                <p>Money earned: <b>$${stat.moneyEarned}</b></p>
-                <p>Money now: <b>$${stat.money}</b></p>
-                <p>${inventoryText(stat.inventory, { includeMoney: false, context: 'summary' })}</p>
-            </section>
-        `).join('');
+        this.summaryStats.innerHTML = summary.stats.map((stat) => {
+            const ammo = inventoryAmmoText(stat.inventory);
+            const utility = inventoryUtilityText(stat.inventory);
+            return `
+                <section class="summary-card summary-player-card">
+                    <div class="summary-card-head">
+                        <h3>${stat.name}</h3>
+                        <span class="summary-money">$${stat.money}</span>
+                    </div>
+                    <div class="summary-stat-list">
+                        <p><span>Damage dealt</span><b>${stat.damageDealt}</b></p>
+                        <p><span>Shots fired</span><b>${stat.shotsFired}</b></p>
+                        <p><span>Direct / near</span><b>${stat.directHits} / ${stat.nearHits}</b></p>
+                        <p><span>Burn damage</span><b>${stat.burnDamageDealt || 0}</b></p>
+                        <p><span>Fall damage</span><b>${stat.fallDamageTaken || 0}</b></p>
+                        <p><span>Parachutes used</span><b>${stat.parachutesUsed || 0}</b></p>
+                        <p><span>Money earned</span><b>$${stat.moneyEarned}</b></p>
+                    </div>
+                    <p class="summary-inventory"><b>Ammo</b> ${ammo}</p>
+                    <p class="summary-inventory"><b>Items</b> ${utility}</p>
+                </section>
+            `;
+        }).join('');
 
         this.continueShopBtn.classList.toggle('hidden', summary.matchWinnerIndex !== null);
         this.summaryOverlay.classList.remove('hidden');
@@ -206,7 +237,7 @@ export class UI {
         const shopSubtitle = this.shopOverlay && this.shopOverlay.querySelector('.subtitle');
         if (shopSubtitle) {
             shopSubtitle.textContent = isPreRound
-                ? 'Spend your starting money before Round 1. Limited weapon ammo purchases refill that weapon to max.'
+                ? 'Default starts with $0. Earn money through combat; limited ammo purchases refill that weapon to max.'
                 : 'First Aid Kits fully heal between rounds. Ammo purchases refill that weapon to its carried max.';
         }
         // Player names and shop labels are static config values, not user
@@ -219,7 +250,7 @@ export class UI {
         players.forEach((player, playerIndex) => {
             const isCpu = state.gameMode === 'cpu' && playerIndex === 1;
             const card = document.createElement('section');
-            card.className = `shop-card ${isCpu ? 'cpu-shop-card' : 'human-shop-card'}`;
+            card.className = `shop-card shop-player-card ${isCpu ? 'cpu-shop-card' : 'human-shop-card'}`;
 
             const h3 = document.createElement('h3');
             h3.textContent = isCpu ? player.name : `${player.name} Purchases`;
@@ -236,37 +267,18 @@ export class UI {
                 return;
             }
 
-            const inv = document.createElement('div');
-            inv.className = 'inventory-list';
-            for (const line of inventoryLines(player)) {
-                const row = document.createElement('p');
-                row.textContent = line;
-                inv.appendChild(row);
-            }
-            card.appendChild(inv);
+            const hint = document.createElement('p');
+            hint.className = 'shop-player-hint';
+            hint.textContent = player.money <= 0
+                ? 'No starting cash. Standard Shell is unlimited; start the round to earn money.'
+                : 'Buy ammo and utilities. Weapon ammo refills to its carried max.';
+            card.appendChild(hint);
 
             const actions = document.createElement('div');
             actions.className = 'shop-actions';
 
             for (const item of items) {
-                const btn = document.createElement('button');
-                btn.className = 'btn shop-buy';
-                btn.dataset.player = String(playerIndex);
-                btn.dataset.item = item.id;
-
-                const full = isShopItemFull(player, item);
-                const cantAfford = player.money < item.price;
-                if (isCpu || cantAfford || full) btn.disabled = true;
-                if (full) btn.classList.add('full');
-
-                if (full) {
-                    btn.textContent = item.fullLabel || `${item.label} Full`;
-                } else if (item.weaponId && item.refillToMax) {
-                    btn.textContent = `${item.refillLabel || item.label} (to ${item.refillToMax}) - $${item.price}`;
-                } else {
-                    btn.textContent = `${item.label} - $${item.price}`;
-                }
-                actions.appendChild(btn);
+                actions.appendChild(createShopItemCard(player, playerIndex, item));
             }
             card.appendChild(actions);
             root.appendChild(card);
@@ -314,12 +326,39 @@ export class UI {
         this.angleVal.textContent = `${Math.round(active.angle)} deg`;
         this.powerVal.textContent = String(Math.round(active.power));
         this.weaponVal.textContent = selectedWeapon.name;
+        drawHudWeaponIcon(this.weaponIcon, selectedWeapon, 32);
         this.ammoVal.textContent = formatAmmo(active.ammoFor(selectedWeapon.id));
         this.moveVal.textContent = `${Math.round(active.movementFuel)} px`;
         this.moveVal.parentElement.classList.toggle('empty', active.movementFuel <= 0);
         this.moveVal.parentElement.classList.toggle('available', state.phase === 'aiming' && !active.isCpu && active.movementFuel > 0);
         this.resultVal.textContent = state.lastResult;
         this.controlsHint.textContent = this._controlsText(state);
+    }
+
+    showWeaponToast(weapon, tank) {
+        if (!this.weaponToast || !weapon || !tank) return;
+        this.weaponToast.innerHTML = '';
+        const icon = document.createElement('canvas');
+        icon.width = 36;
+        icon.height = 36;
+        icon.className = 'weapon-toast-icon';
+        drawHudWeaponIcon(icon, weapon, 36);
+
+        const text = document.createElement('div');
+        const title = document.createElement('strong');
+        title.textContent = weapon.name;
+        const detail = document.createElement('span');
+        detail.textContent = `${weapon.shortDescription || weapon.description} · Ammo ${formatAmmo(tank.ammoFor(weapon.id))}`;
+        text.appendChild(title);
+        text.appendChild(detail);
+
+        this.weaponToast.appendChild(icon);
+        this.weaponToast.appendChild(text);
+        this.weaponToast.classList.remove('hidden');
+        window.clearTimeout(this.weaponToastTimer);
+        this.weaponToastTimer = window.setTimeout(() => {
+            this.weaponToast.classList.add('hidden');
+        }, 1450);
     }
 
     _updateHealth(tank, bar, text, shieldRow, shieldFill, shieldText) {
@@ -422,6 +461,92 @@ function createCpuShopSummary(player, purchases) {
     return fragment;
 }
 
+function createShopItemCard(player, playerIndex, item) {
+    const weapon = item.weaponId ? WEAPONS.find((candidate) => candidate.id === item.weaponId) : null;
+    const full = isShopItemFull(player, item);
+    const cantAfford = player.money < item.price;
+    const disabled = full || cantAfford;
+    const card = document.createElement('article');
+    card.className = 'shop-item-card';
+    if (full) card.classList.add('is-full');
+    if (cantAfford && !full) card.classList.add('is-too-expensive');
+
+    const iconWrap = document.createElement('div');
+    iconWrap.className = 'shop-item-icon';
+    const icon = document.createElement('canvas');
+    icon.width = 48;
+    icon.height = 48;
+    const iconCtx = icon.getContext('2d');
+    if (iconCtx && weapon) drawWeaponIcon(iconCtx, weapon, 24, 24, 42);
+    else if (iconCtx) drawUtilityIcon(iconCtx, item.id, 24, 24, 42);
+    iconWrap.appendChild(icon);
+    card.appendChild(iconWrap);
+
+    const body = document.createElement('div');
+    body.className = 'shop-item-body';
+    const name = document.createElement('h4');
+    name.textContent = item.label;
+    body.appendChild(name);
+
+    const description = document.createElement('p');
+    description.className = 'shop-item-description';
+    description.textContent = item.shortDescription || item.description || weapon?.shortDescription || weapon?.description || '';
+    body.appendChild(description);
+
+    const stats = document.createElement('p');
+    stats.className = 'shop-item-stats';
+    stats.textContent = shopStatLine(player, item, weapon);
+    body.appendChild(stats);
+    card.appendChild(body);
+
+    const action = document.createElement('div');
+    action.className = 'shop-item-action';
+    const price = document.createElement('span');
+    price.className = 'shop-item-price';
+    price.textContent = `$${item.price}`;
+    action.appendChild(price);
+
+    const btn = document.createElement('button');
+    btn.className = 'btn shop-buy';
+    btn.dataset.player = String(playerIndex);
+    btn.dataset.item = item.id;
+    btn.disabled = disabled;
+    if (full) btn.classList.add('full');
+    if (full) {
+        btn.textContent = 'Full';
+    } else if (cantAfford) {
+        btn.textContent = 'Too Expensive';
+    } else if (item.weaponId) {
+        btn.textContent = ammoForEntity(player, item.weaponId) > 0 ? 'Refill' : 'Buy';
+    } else {
+        btn.textContent = 'Buy';
+    }
+    action.appendChild(btn);
+    card.appendChild(action);
+
+    return card;
+}
+
+function shopStatLine(player, item, weapon) {
+    if (weapon) {
+        const have = ammoForEntity(player, weapon.id);
+        const ammo = `Ammo: ${have}/${weapon.ammo}`;
+        const tags = weapon.statTags || [];
+        const filtered = tags.filter((tag) => !tag.startsWith('Ammo:'));
+        return [...filtered.slice(0, 3), ammo].join(' | ');
+    }
+    if (item.id === 'shield') {
+        return `Owned shield: ${Math.round(player.shieldCharge || 0)} | Price: $${item.price}`;
+    }
+    if (item.id === 'repair') {
+        return `Owned: ${player.repairKits || 0} | Heal: Full | Price: $${item.price}`;
+    }
+    if (item.id === 'parachute') {
+        return `Owned: ${player.parachutes || 0} | Fall protection | Price: $${item.price}`;
+    }
+    return `Price: $${item.price}`;
+}
+
 function isCompactShopViewport() {
     return typeof window !== 'undefined'
         && window.matchMedia
@@ -448,6 +573,29 @@ function isShopItemFull(player, item) {
         return (player.shieldCharge || 0) >= 180;
     }
     return false;
+}
+
+function drawHudWeaponIcon(canvas, weapon, size) {
+    if (!canvas || !weapon) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    const width = canvas.width || size;
+    const height = canvas.height || size;
+    ctx.clearRect(0, 0, width, height);
+    drawWeaponIcon(ctx, weapon, width / 2, height / 2, size);
+}
+
+function inventoryAmmoText(inventory) {
+    if (!inventory || !inventory.ammo) return 'No limited ammo data.';
+    return WEAPONS
+        .filter((weapon) => Number.isFinite(weapon.ammo))
+        .map((weapon) => `${weapon.compactName} ${inventory.ammo[weapon.id] ?? 0}/${weapon.ammo}`)
+        .join(' | ');
+}
+
+function inventoryUtilityText(inventory) {
+    if (!inventory) return 'No item data.';
+    return `Shield ${Math.round(inventory.shieldCharge || 0)} | First Aid ${inventory.repairKits || 0} | Parachutes ${inventory.parachutes || 0} | HP ${Math.round(inventory.health || 0)}/100`;
 }
 
 function formatShieldCompact(tank) {

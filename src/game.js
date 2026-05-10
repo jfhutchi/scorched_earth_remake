@@ -51,6 +51,9 @@ export class Game {
         this.shopCpuPurchased = false;
         this.lastCpuShopPurchases = [];
         this.roundStartMessages = [];
+        this.roundStartHealEvents = [];
+        this.feedbackTexts = [];
+        this.pendingBurns = [];
 
         this._setupInput();
         this._setupPageLifecycle();
@@ -79,9 +82,11 @@ export class Game {
         this.roundStats = this._createRoundStats();
         this.wind = 0;
         this.lastCpuShopPurchases = [];
+        this.feedbackTexts = [];
+        this.pendingBurns = [];
         this.audio.stopTankMoveLoop({ fade: 0, force: true });
         this.audio.stopAmbience();
-        this.statusMessage = 'Pre-round shop. Spend your starting money, then Start Round.';
+        this.statusMessage = 'Pre-round shop. Default starts with no money; Start Round when ready.';
         this.lastResult = `Pre-round shop. Each player starts with $${this.playerData[0].money}.`;
         this.ui.hideAllOverlays();
         this._clearCanvas();
@@ -108,6 +113,8 @@ export class Game {
         this.projectile = null;
         this.projectiles = [];
         this.explosions = [];
+        this.feedbackTexts = [];
+        this.pendingBurns = [];
         this.cpuTimer = 0;
         this.keys.clear();
         this.audio.stopTankMoveLoop({ fade: 0, force: true });
@@ -186,11 +193,16 @@ export class Game {
     }
 
     getShopItems() {
-        const configuredItems = Object.entries(CONFIG.shop).map(([id, item]) => ({
-            id,
-            ...item,
-            refillToMax: item.weaponId ? maxAmmoFor(item.weaponId) : null,
-        }));
+        const configuredItems = Object.entries(CONFIG.shop).map(([id, item]) => {
+            const weapon = item.weaponId ? getWeaponById(item.weaponId) : null;
+            return {
+                id,
+                ...item,
+                description: item.description || weapon?.description || '',
+                shortDescription: item.shortDescription || weapon?.shortDescription || weapon?.description || '',
+                refillToMax: item.weaponId ? maxAmmoFor(item.weaponId) : null,
+            };
+        });
         const configuredWeaponIds = new Set(configuredItems
             .filter((item) => item.weaponId)
             .map((item) => item.weaponId));
@@ -205,6 +217,7 @@ export class Game {
                 weaponId: weapon.id,
                 refillToMax: weapon.ammo,
                 description: weapon.description,
+                shortDescription: weapon.shortDescription || weapon.description,
             }));
         const configuredAmmoItems = configuredItems.filter((item) => item.weaponId);
         const utilityItems = configuredItems.filter((item) => !item.weaponId);
@@ -405,6 +418,7 @@ export class Game {
         };
 
         const result = this._applyExplosionDamage(x, y, weapon, 'terrain');
+        if (weapon.behavior === 'napalm') this._queueNapalmBurns(result.affectedTankIndices, weapon);
         const terrainMessage = this._applyTerrainEffect(x, y, weapon);
         this._settleDestroyedTanks();
         const fallMessages = this._settleTanksWithFallDamage();
@@ -603,8 +617,59 @@ export class Game {
         };
     }
 
+    testParachuteDrop() {
+        if (!this.terrain || !this.tanks.length || this.phase === 'menu' || this.phase === 'roundSummary' || this.phase === 'shop') {
+            this.setupAimTest();
+        }
+
+        const tank = this.tanks[0];
+        if (!tank || !this.terrain) {
+            return { ok: false, message: 'Could not prepare a parachute test.' };
+        }
+
+        this.phase = 'aiming';
+        this.currentPlayer = 0;
+        tank.health = CONFIG.tank.maxHealth;
+        tank.alive = true;
+        tank.parachutes = 1;
+        this.roundStats = this._createRoundStats();
+        this._syncPlayerDataFromTank(0);
+
+        const before = {
+            y: Math.round(tank.y),
+            health: tank.health,
+            parachutes: tank.parachutes,
+        };
+        const left = Math.max(0, Math.floor(tank.x - 38));
+        const right = Math.min(this.terrain.width - 1, Math.ceil(tank.x + 38));
+        for (let x = left; x <= right; x++) {
+            this.terrain.heights[x] = clamp(this.terrain.heights[x] + 92, 70, this.terrain.height - 2);
+        }
+        if (typeof this.terrain._generateVisualDetails === 'function') this.terrain._generateVisualDetails();
+
+        const messages = this._settleTanksWithFallDamage();
+        this.lastResult = messages.length ? messages.join(' ') : 'Parachute drop test did not create fall damage.';
+        this.statusMessage = 'Debug parachute drop resolved.';
+        this._draw();
+        this.ui.update(this._state());
+
+        return {
+            ok: true,
+            before,
+            after: {
+                y: Math.round(tank.y),
+                health: tank.health,
+                parachutes: tank.parachutes,
+                parachutesUsed: this.roundStats[0].parachutesUsed,
+                fallDamageTaken: this.roundStats[0].fallDamageTaken,
+                fallDamagePrevented: this.roundStats[0].fallDamagePrevented,
+            },
+            result: this.lastResult,
+        };
+    }
+
     _createPlayerData() {
-        const startingMoney = CONFIG.economy.startingMoney[this.settings.startingMoney] ?? CONFIG.economy.startingMoney.normal;
+        const startingMoney = CONFIG.economy.startingMoney[this.settings.startingMoney] ?? CONFIG.economy.startingMoney.none;
         return [0, 1].map((index) => ({
             name: index === 0 ? 'Player 1' : (this.gameMode === 'cpu' ? 'CPU' : 'Player 2'),
             money: startingMoney,
@@ -625,6 +690,10 @@ export class Game {
             nearHits: 0,
             moneyEarned: 0,
             fallDamageTaken: 0,
+            burnDamageDealt: 0,
+            burnDamageTaken: 0,
+            parachutesUsed: 0,
+            fallDamagePrevented: 0,
         }));
     }
 
@@ -666,6 +735,8 @@ export class Game {
         this.projectile = null;
         this.projectiles = [];
         this.explosions = [];
+        this.feedbackTexts = [];
+        this.pendingBurns = [];
         this.phaseTimer = 0;
         this.cpuTimer = 0;
         this.gameOver = false;
@@ -685,6 +756,10 @@ export class Game {
         this.statusMessage = 'Player 1 is aiming.';
         this.ui.hideAllOverlays();
         this._startTurn(false);
+        for (const event of this.roundStartHealEvents) {
+            const tank = this.tanks[event.index];
+            if (tank) this._addFloatingText(tank.x, tank.y - tank.height - 34, `+${event.healed} HP`, '#6ee88d', { size: 18 });
+        }
         this._draw();
         this.ui.update(this._state());
         this.audio.playRoundStart();
@@ -693,7 +768,9 @@ export class Game {
     _applyRepairKitsForNewRound() {
         const messages = [];
         let anyHealed = false;
-        for (const player of this.playerData) {
+        this.roundStartHealEvents = [];
+        for (let index = 0; index < this.playerData.length; index++) {
+            const player = this.playerData[index];
             // v0.6: First Aid Kit fully restores health between rounds and is
             // only consumed when the tank is below max health.
             if (player.repairKits > 0 && player.health < CONFIG.tank.maxHealth) {
@@ -701,6 +778,7 @@ export class Game {
                 const healed = CONFIG.tank.maxHealth - player.health;
                 player.health = CONFIG.tank.maxHealth;
                 messages.push(`${player.name} used a First Aid Kit (+${healed} HP, fully healed).`);
+                this.roundStartHealEvents.push({ index, healed });
                 anyHealed = true;
             }
         }
@@ -877,6 +955,7 @@ export class Game {
         const weapon = tank.cycleWeapon();
         this.statusMessage = `${tank.name} selected ${weapon.name}.`;
         this.audio.playWeaponCycle();
+        if (typeof this.ui.showWeaponToast === 'function') this.ui.showWeaponToast(weapon, tank);
         this.ui.update(this._state());
     }
 
@@ -951,6 +1030,8 @@ export class Game {
         }
 
         this.tanks.forEach((tank) => tank.update(dt));
+        this._updateFeedback(dt);
+        this._updateBurns(dt);
 
         if ((this.projectile || this.projectiles.length > 0) && this.phase === 'projectile') {
             this._updateProjectile(dt);
@@ -961,10 +1042,93 @@ export class Game {
 
         if (this.phase === 'resolving') {
             this.phaseTimer -= dt;
-            if (this.phaseTimer <= 0) this._finishShotResolution();
+            if (this.phaseTimer <= 0 && this.pendingBurns.length === 0) this._finishShotResolution();
         }
 
         this.ui.update(this._state());
+    }
+
+    _updateFeedback(dt) {
+        for (const feedback of this.feedbackTexts) {
+            feedback.age += dt;
+        }
+        this.feedbackTexts = this.feedbackTexts.filter((feedback) => feedback.age < feedback.duration);
+    }
+
+    _updateBurns(dt) {
+        if (!this.pendingBurns.length) return;
+        if (!this.shotInfo) {
+            this.pendingBurns = [];
+            return;
+        }
+        if (this.phase !== 'resolving' || this.gameOver) {
+            this.pendingBurns = [];
+            return;
+        }
+
+        const completed = [];
+        for (const burn of this.pendingBurns) {
+            burn.timer -= dt;
+            if (burn.timer > 0) continue;
+
+            const tank = this.tanks[burn.tankIndex];
+            if (!tank || !tank.alive || burn.ticksRemaining <= 0) {
+                completed.push(burn);
+                continue;
+            }
+
+            const wasAlive = tank.alive;
+            const actual = tank.applyDamage(burn.damage, { useShield: true });
+            const absorbed = tank.lastShieldAbsorbed || 0;
+            if (absorbed > 0) {
+                this._addFloatingText(tank.x, tank.y - tank.height - 42, `Shield -${absorbed}`, '#9edbe6', { size: 14 });
+                this.audio.playShieldAbsorb({ x: tank.x, width: this.width });
+            }
+            if (actual > 0) {
+                this.roundStats[burn.tankIndex].damageTaken += actual;
+                this.roundStats[burn.tankIndex].burnDamageTaken += actual;
+                if (burn.tankIndex === this.shotInfo?.targetIndex) {
+                    this.shotInfo.enemyDamage += actual;
+                    this.roundStats[burn.shooterIndex].damageDealt += actual;
+                    this.roundStats[burn.shooterIndex].burnDamageDealt += actual;
+                } else if (burn.tankIndex === this.shotInfo?.shooterIndex) {
+                    this.shotInfo.selfDamage += actual;
+                }
+                this.shotInfo.totalDamage += actual;
+                this._addFloatingText(tank.x, tank.y - tank.height - 28, `Burn -${actual}`, '#ff9a3d', { size: 14 });
+                this.audio.playHit({ x: tank.x, width: this.width });
+            }
+            if (wasAlive && !tank.alive) {
+                const deathTime = this._triggerTankDeathEffects([burn.tankIndex]);
+                this.phaseTimer = Math.max(this.phaseTimer, deathTime + 0.18);
+            }
+            this._syncPlayerDataFromTank(burn.tankIndex);
+
+            burn.ticksRemaining -= 1;
+            if (burn.ticksRemaining <= 0) {
+                completed.push(burn);
+            } else {
+                burn.timer = burn.interval;
+            }
+        }
+
+        if (completed.length) {
+            this.pendingBurns = this.pendingBurns.filter((burn) => !completed.includes(burn));
+        }
+    }
+
+    _addFloatingText(x, y, text, color, { size = 18, duration = 1.15 } = {}) {
+        if (!Number.isFinite(x) || !Number.isFinite(y) || !text) return;
+        const offset = (this.feedbackTexts.length % 4) * 12;
+        this.feedbackTexts.push({
+            x,
+            y: y - offset,
+            text,
+            color,
+            size,
+            duration,
+            age: 0,
+        });
     }
 
     _updateHumanAim(dt) {
@@ -1311,6 +1475,7 @@ export class Game {
         else projectile.done = true;
 
         const result = this._applyExplosionDamage(x, y, weapon, collision, { accumulate: projectile.isBomblet });
+        if (weapon.behavior === 'napalm') this._queueNapalmBurns(result.affectedTankIndices, weapon);
         const terrainMessage = this._applyTerrainEffect(x, y, weapon);
         this._settleDestroyedTanks();
         const fallMessages = this._settleTanksWithFallDamage();
@@ -1393,6 +1558,33 @@ export class Game {
         return points;
     }
 
+    _queueNapalmBurns(tankIndices, weapon) {
+        if (!this.shotInfo || !Array.isArray(tankIndices) || tankIndices.length === 0) return;
+        const ticks = Math.max(0, Math.round(weapon.burnTicks || 0));
+        const damage = Math.max(0, Math.round(weapon.burnDamage || 0));
+        if (ticks <= 0 || damage <= 0) return;
+
+        const interval = Math.max(0.15, weapon.burnTickInterval || 0.45);
+        for (const tankIndex of tankIndices) {
+            const tank = this.tanks[tankIndex];
+            if (!tank || !tank.alive) continue;
+            const exists = this.pendingBurns.some((burn) => burn.tankIndex === tankIndex && burn.shooterIndex === this.shotInfo.shooterIndex);
+            if (exists) continue;
+            this.pendingBurns.push({
+                tankIndex,
+                shooterIndex: this.shotInfo.shooterIndex,
+                ticksRemaining: ticks,
+                damage,
+                interval,
+                timer: interval,
+            });
+        }
+        if (this.pendingBurns.length) {
+            this.phaseTimer = Math.max(this.phaseTimer, interval * ticks + 0.18);
+            this.statusMessage = 'Napalm burn is ticking.';
+        }
+    }
+
     _remainingExplosionTime() {
         return this.explosions.reduce((max, explosion) => {
             return Math.max(max, Math.max(0, explosion.duration - explosion.t));
@@ -1429,6 +1621,7 @@ export class Game {
         let selfDamage = 0;
         let shieldAbsorbed = 0;
         const newlyDestroyed = [];
+        const affectedTankIndices = [];
         const shooter = this.tanks[this.shotInfo.shooterIndex];
         const target = this.tanks[this.shotInfo.targetIndex];
 
@@ -1462,11 +1655,15 @@ export class Game {
             const rawDamage = Math.min(weapon.maxDamage, weapon.maxDamage * falloff * directBonus);
             const wasAlive = tank.alive;
             const damage = tank.applyDamage(rawDamage, { useShield: true });
-            shieldAbsorbed += tank.lastShieldAbsorbed;
+            const absorbed = tank.lastShieldAbsorbed || 0;
+            if (damage > 0 || absorbed > 0) affectedTankIndices.push(i);
+            shieldAbsorbed += absorbed;
             totalDamage += damage;
             this.roundStats[i].damageTaken += damage;
             if (i === this.shotInfo.targetIndex) enemyDamage += damage;
             if (i === this.shotInfo.shooterIndex) selfDamage += damage;
+            if (absorbed > 0) this._addFloatingText(tank.x, tank.y - tank.height - 42, `Shield -${absorbed}`, '#9edbe6', { size: 15 });
+            if (damage > 0) this._addFloatingText(tank.x, tank.y - tank.height - 24, `-${damage}`, '#ff594f', { size: 20 });
             if (wasAlive && !tank.alive) newlyDestroyed.push(i);
             this._syncPlayerDataFromTank(i);
         }
@@ -1504,6 +1701,7 @@ export class Game {
             totalDamage,
             shieldAbsorbed,
             deathEffectDuration,
+            affectedTankIndices,
             message: `${prefix} ${details.join(' ')}`,
         };
     }
@@ -1530,10 +1728,19 @@ export class Game {
             if (fallDamage <= 0) continue;
 
             if (tank.parachutes > 0) {
-                tank.parachutes -= 1;
-                fallDamage = Math.max(0, Math.round(fallDamage * (1 - CONFIG.utilities.parachuteReduction)));
-                messages.push(`${tank.name}'s parachute reduced fall damage.`);
-                this.audio.playParachute({ x: tank.x, width: this.width });
+                const reducedDamage = Math.max(0, Math.round(fallDamage * (1 - CONFIG.utilities.parachuteReduction)));
+                const prevented = fallDamage - reducedDamage;
+                if (prevented >= CONFIG.utilities.parachuteMinPreventedDamage) {
+                    tank.parachutes -= 1;
+                    fallDamage = reducedDamage;
+                    this.roundStats[i].parachutesUsed += 1;
+                    this.roundStats[i].fallDamagePrevented += prevented;
+                    tank.parachuteTimer = 1.35;
+                    tank.parachuteSeed = Math.random() * 1000;
+                    messages.push(`${tank.name}'s parachute prevented ${prevented} fall damage.`);
+                    this._addFloatingText(tank.x, tank.y - tank.height - 52, 'Parachute!', '#f5eee0', { size: 18, duration: 1.35 });
+                    this.audio.playParachute({ x: tank.x, width: this.width });
+                }
             }
 
             if (fallDamage > 0) {
@@ -1542,6 +1749,7 @@ export class Game {
                 this.roundStats[i].damageTaken += actual;
                 this.roundStats[i].fallDamageTaken += actual;
                 messages.push(`${tank.name} took ${actual} fall damage.`);
+                if (actual > 0) this._addFloatingText(tank.x, tank.y - tank.height - 28, `Fall -${actual}`, '#ffbf69', { size: 16 });
                 if (wasAlive && !tank.alive) newlyDestroyed.push(i);
             }
             this._syncPlayerDataFromTank(i);
@@ -1606,9 +1814,32 @@ export class Game {
             ? `Round ${this.roundNumber} ended in a draw.`
             : `${this.tanks[winnerIndex].name} wins round ${this.roundNumber}.`;
         this.ui.showSummary(this._state());
-        if (this.matchWinnerIndex === null) this.audio.playRoundWin();
-        else this.audio.playMatchWin();
+        this._playResultAudio(winnerIndex);
         return true;
+    }
+
+    _playResultAudio(winnerIndex) {
+        if (winnerIndex === null) {
+            this.audio.playNeutralRoundEnd();
+            return;
+        }
+
+        const isMatch = this.matchWinnerIndex !== null;
+        if (this.gameMode === 'cpu') {
+            const humanWon = winnerIndex === 0;
+            if (isMatch) {
+                if (humanWon) this.audio.playMatchWin();
+                else this.audio.playMatchLoss();
+            } else if (humanWon) {
+                this.audio.playRoundWin();
+            } else {
+                this.audio.playRoundLoss();
+            }
+            return;
+        }
+
+        if (isMatch) this.audio.playMatchWin();
+        else this.audio.playNeutralRoundEnd();
     }
 
     _finalizeRoundEconomy(winnerIndex, aliveIndices) {
@@ -1721,9 +1952,29 @@ export class Game {
         if (this.projectile) this.projectile.draw(ctx);
         for (const projectile of this.projectiles) projectile.draw(ctx);
         for (const explosion of this.explosions) explosion.draw(ctx);
+        this._drawFeedback(ctx);
         ctx.restore();
 
         this._drawWindIndicator(ctx);
+    }
+
+    _drawFeedback(ctx) {
+        if (!this.feedbackTexts.length) return;
+        ctx.save();
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        for (const feedback of this.feedbackTexts) {
+            const t = clamp(feedback.age / feedback.duration, 0, 1);
+            const y = feedback.y - t * 28;
+            const alpha = t < 0.72 ? 1 : Math.max(0, (1 - t) / 0.28);
+            ctx.font = `900 ${feedback.size}px Georgia, serif`;
+            ctx.lineWidth = 4;
+            ctx.strokeStyle = `rgba(20, 24, 24, ${alpha * 0.72})`;
+            ctx.strokeText(feedback.text, feedback.x, y);
+            ctx.fillStyle = colorWithAlphaString(feedback.color, alpha);
+            ctx.fillText(feedback.text, feedback.x, y);
+        }
+        ctx.restore();
     }
 
     _drawWreck(ctx, tank) {
@@ -1833,7 +2084,9 @@ function normalizeSettings(settings = {}) {
         roundsToWin: [1, 3, 5].includes(Number(next.roundsToWin)) ? Number(next.roundsToWin) : defaults.roundsToWin,
         cpuDifficulty: CPU_DIFFICULTY[next.cpuDifficulty] ? next.cpuDifficulty : defaults.cpuDifficulty,
         windMode: CONFIG.windModes[next.windMode] ? next.windMode : defaults.windMode,
-        startingMoney: CONFIG.economy.startingMoney[next.startingMoney] ? next.startingMoney : defaults.startingMoney,
+        startingMoney: Object.prototype.hasOwnProperty.call(CONFIG.economy.startingMoney, next.startingMoney)
+            ? next.startingMoney
+            : defaults.startingMoney,
         terrainRoughness: CONFIG.terrain.roughness[next.terrainRoughness] ? next.terrainRoughness : defaults.terrainRoughness,
     };
 }
@@ -1945,10 +2198,27 @@ function reachNotes(weapon) {
     if (weapon.id === 'napalm') return 'Area threat depends on flame width after impact.';
     if (weapon.id === 'cluster') return 'Carrier reach is shown; bomblets spread after split.';
     if (weapon.id === 'dirt') return 'Low damage utility mound, reach uses normal arcing ballistics.';
-    if (weapon.id === 'mega') return 'v0.6.8 heavier speed scale, premium price, steep falloff, and largest crater.';
+    if (weapon.id === 'heavy') return 'v0.6.9 heavier arc than Standard Shell while keeping practical reach.';
+    if (weapon.id === 'mega') return 'v0.6.9 late-match premium price, heavy arc, steep falloff, and largest crater.';
     return 'Normal arcing projectile.';
 }
 
 function randomRange(min, max) {
     return min + Math.random() * (max - min);
+}
+
+function colorWithAlphaString(color, alpha) {
+    if (typeof color === 'string' && color.startsWith('#') && (color.length === 7 || color.length === 4)) {
+        const full = color.length === 4
+            ? color.slice(1).split('').map((part) => part + part).join('')
+            : color.slice(1);
+        const num = parseInt(full, 16);
+        if (Number.isFinite(num)) {
+            const r = (num >> 16) & 255;
+            const g = (num >> 8) & 255;
+            const b = num & 255;
+            return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+        }
+    }
+    return color;
 }
