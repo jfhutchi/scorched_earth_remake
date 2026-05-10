@@ -14,53 +14,65 @@
         <div id="menu" class="screen">
             <main class="menu-card">
                 <h1 class="title">Tank Artillery Duel</h1>
-                <p id="menuVersion" class="version-line">v0.6.8</p>
+                <p id="menuVersion" class="version-line">v0.6.9</p>
                 <p class="subtitle">Destroy the opposing tank across a shifting battlefield of wind, craters, dirt mounds, rolling shells, flame patches, and limited special ammo.</p>
 
                 <div class="menu-actions">
                     <button id="mobilePlayBtn" class="btn primary mobile-only">Play</button>
                     <button id="twoPlayerBtn" class="btn primary desktop-only">Two Player Local</button>
                     <button id="cpuBtn" class="btn primary alt desktop-only">Single Player vs CPU</button>
+                    <button id="helpBtn" class="btn small">How to Play</button>
                     <button id="menuMuteBtn" class="btn small">Sound: On</button>
                 </div>
 
-                <section class="settings-grid" aria-label="Match settings">
-                    <label>Rounds to Win
-                        <select id="roundsToWinSelect">
-                            <option value="1">1</option>
-                            <option value="3">3</option>
-                            <option value="5">5</option>
-                        </select>
-                    </label>
-                    <label>CPU Difficulty
-                        <select id="cpuDifficultySelect">
-                            <option value="easy">Easy</option>
-                            <option value="normal">Normal</option>
-                            <option value="hard">Hard</option>
-                        </select>
-                    </label>
-                    <label>Wind
-                        <select id="windModeSelect">
-                            <option value="off">Off</option>
-                            <option value="light">Light</option>
-                            <option value="normal">Normal</option>
-                            <option value="wild">Wild</option>
-                        </select>
-                    </label>
-                    <label>Starting Money
-                        <select id="startingMoneySelect">
-                            <option value="low">Low</option>
-                            <option value="normal">Normal</option>
-                            <option value="high">High</option>
-                        </select>
-                    </label>
-                    <label>Terrain
-                        <select id="terrainRoughnessSelect">
-                            <option value="smooth">Smooth</option>
-                            <option value="normal">Normal</option>
-                            <option value="rough">Rough</option>
-                        </select>
-                    </label>
+                <section class="settings-grid grouped-settings" aria-label="Match settings">
+                    <fieldset class="settings-group">
+                        <legend>Match</legend>
+                        <label>Rounds to Win
+                            <select id="roundsToWinSelect">
+                                <option value="1">1</option>
+                                <option value="3">3</option>
+                                <option value="5">5</option>
+                            </select>
+                        </label>
+                        <label>Starting Money
+                            <select id="startingMoneySelect">
+                                <option value="none">None ($0)</option>
+                                <option value="low">Low ($100)</option>
+                                <option value="normal">Normal ($150)</option>
+                                <option value="high">High ($250)</option>
+                            </select>
+                        </label>
+                        <label>CPU Difficulty
+                            <select id="cpuDifficultySelect">
+                                <option value="easy">Easy</option>
+                                <option value="normal">Normal</option>
+                                <option value="hard">Hard</option>
+                            </select>
+                        </label>
+                    </fieldset>
+                    <fieldset class="settings-group">
+                        <legend>Battlefield</legend>
+                        <label>Wind
+                            <select id="windModeSelect">
+                                <option value="off">Off</option>
+                                <option value="light">Light</option>
+                                <option value="normal">Normal</option>
+                                <option value="wild">Wild</option>
+                            </select>
+                        </label>
+                        <label>Terrain
+                            <select id="terrainRoughnessSelect">
+                                <option value="smooth">Smooth</option>
+                                <option value="normal">Normal</option>
+                                <option value="rough">Rough</option>
+                            </select>
+                        </label>
+                    </fieldset>
+                    <fieldset class="settings-group settings-group-note">
+                        <legend>Audio & Help</legend>
+                        <p>Sound uses generated Web Audio and respects mute/background behavior. Default progression starts with no cash.</p>
+                    </fieldset>
                 </section>
 
                 <section class="instructions desktop-instructions" aria-label="Desktop instructions">
@@ -76,7 +88,7 @@
                         <li><b>N</b> next round after a win</li>
                         <li><b>Escape</b> return to this menu</li>
                     </ul>
-                    <p class="note">Weapons: Standard Shell is unlimited; limited ammo includes Heavy Shell, Dirt Bomb, Roller Shell, Napalm Canister, Cluster Bomb, and Mega Bomb.</p>
+                    <p class="note">Weapons: Standard Shell is unlimited. Heavy Shell has a heavier arc; Mega Bomb is a late-match premium weapon.</p>
                 </section>
 
                 <section class="instructions mobile-instructions" aria-label="Touch instructions">
@@ -89,9 +101,39 @@
                         <li><b>WPN</b> cycles weapons; <b>♪</b> mutes</li>
                         <li><b>R</b> restarts; <b>N</b> goes to next round; <b>≡</b> returns to menu</li>
                     </ul>
-                    <p class="note">Landscape is recommended for the clearest aim.</p>
+                    <p class="note">Landscape is recommended. Default starting money is none, so earn cash through combat before shopping.</p>
                 </section>
             </main>
+
+            <div id="helpOverlay" class="overlay hidden help-overlay" role="dialog" aria-modal="true" aria-label="How to play">
+                <div class="menu-card overlay-card help-card">
+                    <h1 class="title">How to Play</h1>
+                    <div class="help-grid">
+                        <section>
+                            <h2>Win the Duel</h2>
+                            <p>Set angle and power, account for wind, choose a weapon, and fire until the enemy tank is destroyed.</p>
+                            <p>Damage and round wins earn money. The default match starts with $0, so the Round 1 shop is for planning.</p>
+                        </section>
+                        <section>
+                            <h2>Weapons</h2>
+                            <p>Standard Shell is unlimited. Heavy Shell hits harder with a heavier arc. Napalm deals an initial flame hit plus two small burn ticks.</p>
+                            <p>Mega Bomb is expensive, huge, and meant for later rounds after you earn enough cash.</p>
+                        </section>
+                        <section>
+                            <h2>Utilities</h2>
+                            <p>Shield absorbs damage. First Aid fully heals at the next round start if damaged. Parachute automatically reduces heavy fall damage after terrain collapses.</p>
+                        </section>
+                        <section>
+                            <h2>Controls</h2>
+                            <p>Desktop: Arrow keys aim and set power, A/D move, Space fires, Tab or W cycles weapons, M mutes, Esc returns to menu.</p>
+                            <p>Mobile: use move, angle, PWR, FIRE, WPN, mute, and menu buttons. Landscape is the intended mobile layout.</p>
+                        </section>
+                    </div>
+                    <div class="menu-actions">
+                        <button id="helpCloseBtn" class="btn primary">Close</button>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div id="game" class="screen hidden">
@@ -106,7 +148,7 @@
                         <button type="button" id="mhudInfoBtn" class="mhud-pill mhud-info" aria-label="Toggle extra info">i</button>
                     </div>
                     <div class="mhud-row mhud-row-bottom">
-                        <span class="mhud-pill mhud-weapon" id="mhudWeapon">Standard</span>
+                        <span class="mhud-pill mhud-weapon-pill"><canvas id="mhudWeaponIcon" class="mhud-weapon-icon" width="28" height="28"></canvas><span id="mhudWeapon">Standard</span></span>
                         <span class="mhud-pill" >A <span id="mhudAngle">45</span>&deg;</span>
                         <span class="mhud-pill" >P <span id="mhudPower">50</span></span>
                         <span class="mhud-pill" >Ammo <span id="mhudAmmo">&infin;</span></span>
@@ -135,7 +177,7 @@
                             <div class="shield-bar"><div class="shield-fill" id="p1ShieldFill"></div></div>
                             <span class="shield-text" id="p1ShieldText">0</span>
                         </div>
-                        <div class="inventory-row" id="p1Inventory">$150 | Heavy 1 | Dirt 1 | Shield 0 | Aid 0 | Chute 0</div>
+                        <div class="inventory-row" id="p1Inventory">$0 | Heavy 1 | Dirt 1 | Shield 0 | Aid 0 | Chute 0</div>
                     </section>
 
                     <section class="hud-panel center" id="turnPanel">
@@ -148,7 +190,7 @@
                         <div class="stat-grid">
                             <span>A <b id="angleVal">45 deg</b></span>
                             <span>P <b id="powerVal">50</b></span>
-                            <span>Wpn <b id="weaponVal">Standard Shell</b></span>
+                            <span class="weapon-stat">Wpn <canvas id="weaponIcon" class="hud-weapon-icon" width="32" height="32"></canvas><b id="weaponVal">Standard Shell</b></span>
                             <span>Ammo <b id="ammoVal">Unlimited</b></span>
                             <span>Move <b id="moveVal">90 px</b></span>
                         </div>
@@ -170,12 +212,13 @@
                             <div class="shield-bar"><div class="shield-fill" id="p2ShieldFill"></div></div>
                             <span class="shield-text" id="p2ShieldText">0</span>
                         </div>
-                        <div class="inventory-row" id="p2Inventory">$150 | Heavy 1 | Dirt 1 | Shield 0 | Aid 0 | Chute 0</div>
+                        <div class="inventory-row" id="p2Inventory">$0 | Heavy 1 | Dirt 1 | Shield 0 | Aid 0 | Chute 0</div>
                     </section>
                 </div>
 
                 <div id="controlsHint">Left/Right: Angle   Up/Down: Power   A/D: Move   Space: Fire   Tab/W: Weapon   R: Restart   M: Mute   Esc: Menu</div>
                 <button id="muteBtn" class="mute-chip">Sound: On</button>
+                <div id="weaponToast" class="weapon-toast hidden" aria-live="polite"></div>
 
                 <div id="touchControls" class="touch-controls hidden" aria-hidden="true">
                     <div class="touch-cluster left-cluster">

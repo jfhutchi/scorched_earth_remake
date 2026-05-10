@@ -286,6 +286,22 @@ ui.menuMuteBtn.addEventListener('click', (e) => {
     game.toggleMute();
 });
 
+if (ui.helpBtn) {
+    ui.helpBtn.addEventListener('click', (e) => {
+        e.currentTarget.blur();
+        game.audio.playUiClick();
+        ui.showHelp();
+    });
+}
+
+if (ui.helpCloseBtn) {
+    ui.helpCloseBtn.addEventListener('click', (e) => {
+        e.currentTarget.blur();
+        game.audio.playUiClick();
+        ui.hideHelp();
+    });
+}
+
 ui.shopContent.addEventListener('click', (e) => {
     const button = e.target.closest('button[data-player][data-item]');
     if (!button) return;
@@ -324,6 +340,7 @@ if (debugEnabled) {
         return result;
     };
     window.forceRoundWin = (playerIndex) => game.forceRoundWin(playerIndex);
+    window.testParachuteDrop = () => game.testParachuteDrop();
 }
 
 window.GAME_VERSION = GAME_VERSION;

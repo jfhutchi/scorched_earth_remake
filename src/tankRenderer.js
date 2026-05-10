@@ -22,12 +22,12 @@ export function drawTank(ctx, tank, { terrain = null, time = 0 } = {}) {
 
     ctx.save();
     drawGroundShadow(ctx, tank, baseX, baseY, tilt);
+    drawParachute(ctx, tank, time);
     drawBodyStack(ctx, tank, baseX, baseY, tilt, healthRatio);
     const turret = turretCenter(tank, baseX, baseY, tilt);
     drawTurretAndCannon(ctx, tank, turret, aim, recoil, healthRatio);
     drawDamageDetails(ctx, tank, turret, time, healthRatio);
     drawShield(ctx, tank, tilt, time);
-    drawDamageNumber(ctx, tank);
     ctx.restore();
 }
 
@@ -318,13 +318,44 @@ function drawShield(ctx, tank, tilt, time) {
     ctx.restore();
 }
 
-function drawDamageNumber(ctx, tank) {
-    if (tank.damageTimer <= 0) return;
-    const alpha = Math.min(1, tank.damageTimer / 1.35);
-    ctx.fillStyle = `rgba(255, 76, 66, ${alpha})`;
-    ctx.font = 'bold 19px Georgia, serif';
-    ctx.textAlign = 'center';
-    ctx.fillText(`-${tank.recentDamage}`, tank.x, tank.y - tank.height - 22 - (1 - alpha) * 18);
+function drawParachute(ctx, tank, time) {
+    if (!tank.parachuteTimer || tank.parachuteTimer <= 0) return;
+    const k = clamp(tank.parachuteTimer / 1.35, 0, 1);
+    const alpha = Math.min(1, k * 1.4);
+    const sway = Math.sin(time * 7 + (tank.parachuteSeed || 0)) * 4;
+    const canopyY = tank.y - tank.height - 54 - (1 - k) * 8;
+    const canopyW = 54;
+    const canopyH = 26;
+
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.strokeStyle = 'rgba(250, 242, 220, 0.78)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(tank.x - canopyW * 0.34 + sway, canopyY + canopyH * 0.40);
+    ctx.lineTo(tank.x - 9, tank.y - tank.height - 5);
+    ctx.moveTo(tank.x + sway, canopyY + canopyH * 0.46);
+    ctx.lineTo(tank.x, tank.y - tank.height - 3);
+    ctx.moveTo(tank.x + canopyW * 0.34 + sway, canopyY + canopyH * 0.40);
+    ctx.lineTo(tank.x + 9, tank.y - tank.height - 5);
+    ctx.stroke();
+
+    const gradient = ctx.createLinearGradient(tank.x, canopyY - canopyH * 0.35, tank.x, canopyY + canopyH);
+    gradient.addColorStop(0, '#fff5d6');
+    gradient.addColorStop(0.55, '#e2b46e');
+    gradient.addColorStop(1, '#9b6637');
+    ctx.fillStyle = gradient;
+    ctx.beginPath();
+    ctx.moveTo(tank.x - canopyW / 2 + sway, canopyY + canopyH * 0.36);
+    ctx.quadraticCurveTo(tank.x - canopyW * 0.26 + sway, canopyY - canopyH * 0.54, tank.x + sway, canopyY - canopyH * 0.48);
+    ctx.quadraticCurveTo(tank.x + canopyW * 0.26 + sway, canopyY - canopyH * 0.54, tank.x + canopyW / 2 + sway, canopyY + canopyH * 0.36);
+    ctx.quadraticCurveTo(tank.x + canopyW * 0.18 + sway, canopyY + canopyH * 0.52, tank.x + sway, canopyY + canopyH * 0.38);
+    ctx.quadraticCurveTo(tank.x - canopyW * 0.18 + sway, canopyY + canopyH * 0.52, tank.x - canopyW / 2 + sway, canopyY + canopyH * 0.36);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(80, 55, 30, 0.36)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.restore();
 }
 
 function drawGroundShadow(ctx, tank, baseX, baseY, tilt, alpha = 0.25) {

@@ -137,10 +137,107 @@ export function getProjectileSprite(weapon) {
         ctx.lineTo(-11, 5);
         ctx.quadraticCurveTo(5, 7, 10, 0);
         ctx.fill();
+
+        if (weapon.id === 'mega') {
+            ctx.strokeStyle = '#ffcf3f';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(-5, -6);
+            ctx.lineTo(2, 6);
+            ctx.stroke();
+            ctx.strokeStyle = '#111318';
+            ctx.lineWidth = 1.4;
+            ctx.beginPath();
+            ctx.moveTo(-1, -6);
+            ctx.lineTo(6, 5);
+            ctx.stroke();
+        }
     }
 
     projectileCache.set(key, canvas);
     return canvas;
+}
+
+export function drawWeaponIcon(ctx, weapon, x, y, size = 44) {
+    const sprite = getProjectileSprite(weapon);
+    ctx.save();
+    ctx.translate(x, y);
+    const bg = ctx.createRadialGradient(0, 0, 2, 0, 0, size * 0.54);
+    bg.addColorStop(0, 'rgba(255, 244, 200, 0.18)');
+    bg.addColorStop(1, 'rgba(10, 15, 16, 0.08)');
+    ctx.fillStyle = bg;
+    ctx.beginPath();
+    ctx.arc(0, 0, size * 0.48, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.rotate(weapon.id === 'roller' ? 0 : -0.22);
+    ctx.drawImage(sprite, -size / 2, -size / 2, size, size);
+    ctx.restore();
+}
+
+export function drawUtilityIcon(ctx, type, x, y, size = 44) {
+    ctx.save();
+    ctx.translate(x, y);
+    const radius = size * 0.46;
+    ctx.fillStyle = 'rgba(10, 15, 16, 0.18)';
+    ctx.beginPath();
+    ctx.arc(0, 0, radius, 0, Math.PI * 2);
+    ctx.fill();
+
+    if (type === 'shield') {
+        ctx.fillStyle = '#2a8fb8';
+        ctx.strokeStyle = '#bcecff';
+        ctx.lineWidth = Math.max(2, size * 0.06);
+        ctx.beginPath();
+        ctx.moveTo(0, -size * 0.34);
+        ctx.lineTo(size * 0.25, -size * 0.22);
+        ctx.lineTo(size * 0.20, size * 0.16);
+        ctx.quadraticCurveTo(0, size * 0.34, -size * 0.20, size * 0.16);
+        ctx.lineTo(-size * 0.25, -size * 0.22);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.22)';
+        ctx.beginPath();
+        ctx.moveTo(0, -size * 0.26);
+        ctx.lineTo(size * 0.13, -size * 0.18);
+        ctx.lineTo(0, size * 0.22);
+        ctx.closePath();
+        ctx.fill();
+    } else if (type === 'repair') {
+        roundRect(ctx, -size * 0.30, -size * 0.23, size * 0.60, size * 0.48, size * 0.08);
+        ctx.fillStyle = '#f4f0df';
+        ctx.fill();
+        ctx.strokeStyle = '#8b2e25';
+        ctx.lineWidth = Math.max(2, size * 0.05);
+        ctx.stroke();
+        ctx.fillStyle = '#d94232';
+        ctx.fillRect(-size * 0.06, -size * 0.17, size * 0.12, size * 0.34);
+        ctx.fillRect(-size * 0.18, -size * 0.05, size * 0.36, size * 0.12);
+        ctx.strokeStyle = '#d6caa8';
+        ctx.lineWidth = Math.max(1, size * 0.035);
+        ctx.beginPath();
+        ctx.moveTo(-size * 0.12, -size * 0.23);
+        ctx.quadraticCurveTo(0, -size * 0.37, size * 0.12, -size * 0.23);
+        ctx.stroke();
+    } else {
+        ctx.strokeStyle = '#f5eee0';
+        ctx.lineWidth = Math.max(2, size * 0.055);
+        ctx.beginPath();
+        ctx.arc(0, -size * 0.02, size * 0.26, Math.PI * 1.05, Math.PI * 1.95);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(-size * 0.24, -size * 0.02);
+        ctx.lineTo(-size * 0.10, size * 0.22);
+        ctx.moveTo(0, -size * 0.28);
+        ctx.lineTo(0, size * 0.23);
+        ctx.moveTo(size * 0.24, -size * 0.02);
+        ctx.lineTo(size * 0.10, size * 0.22);
+        ctx.stroke();
+        roundRect(ctx, -size * 0.16, size * 0.18, size * 0.32, size * 0.14, size * 0.04);
+        ctx.fillStyle = '#d9b27f';
+        ctx.fill();
+    }
+    ctx.restore();
 }
 
 export function getTreadSprite(color) {

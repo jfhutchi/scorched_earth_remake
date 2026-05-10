@@ -76,15 +76,36 @@ export class AudioManager {
     }
 
     playRoundWin() {
-        this._oscLayer({ category: 'ui', type: 'triangle', frequency: 440, endFrequency: 660, duration: 0.16, volume: 0.042 });
-        this._oscLayer({ category: 'ui', type: 'sine', frequency: 660, endFrequency: 880, duration: 0.18, volume: 0.038, delay: 0.12 });
-        this._noiseLayer({ category: 'ui', duration: 0.12, volume: 0.018, filterType: 'highpass', frequency: 1400, delay: 0.05 });
+        this._oscLayer({ category: 'ui', type: 'triangle', frequency: 392, endFrequency: 523, duration: 0.16, volume: 0.038 });
+        this._oscLayer({ category: 'ui', type: 'triangle', frequency: 523, endFrequency: 659, duration: 0.18, volume: 0.036, delay: 0.11 });
+        this._oscLayer({ category: 'ui', type: 'sine', frequency: 784, endFrequency: 988, duration: 0.22, volume: 0.032, delay: 0.24 });
+        this._noiseLayer({ category: 'ui', duration: 0.16, volume: 0.018, filterType: 'highpass', frequency: 1500, delay: 0.06, color: 'soft' });
+    }
+
+    playRoundLoss() {
+        this._oscLayer({ category: 'ui', type: 'triangle', frequency: 330, endFrequency: 262, duration: 0.20, volume: 0.034 });
+        this._oscLayer({ category: 'ui', type: 'sine', frequency: 220, endFrequency: 196, duration: 0.24, volume: 0.030, delay: 0.15 });
+        this._noiseLayer({ category: 'ui', duration: 0.18, volume: 0.014, filterType: 'lowpass', frequency: 520, delay: 0.08, color: 'soft' });
+    }
+
+    playNeutralRoundEnd() {
+        this._oscLayer({ category: 'ui', type: 'triangle', frequency: 330, endFrequency: 392, duration: 0.14, volume: 0.030 });
+        this._oscLayer({ category: 'ui', type: 'sine', frequency: 392, endFrequency: 330, duration: 0.16, volume: 0.026, delay: 0.12 });
+        this._noiseLayer({ category: 'ui', duration: 0.09, volume: 0.012, filterType: 'highpass', frequency: 1150, delay: 0.06 });
     }
 
     playMatchWin() {
         this.playRoundWin();
-        this._oscLayer({ category: 'ui', type: 'sine', frequency: 990, endFrequency: 1320, duration: 0.22, volume: 0.036, delay: 0.25 });
-        this._noiseLayer({ category: 'ui', duration: 0.18, volume: 0.024, filterType: 'highpass', frequency: 1700, delay: 0.18 });
+        this._oscLayer({ category: 'ui', type: 'triangle', frequency: 659, endFrequency: 880, duration: 0.24, volume: 0.034, delay: 0.42 });
+        this._oscLayer({ category: 'ui', type: 'sine', frequency: 988, endFrequency: 1319, duration: 0.34, volume: 0.032, delay: 0.62 });
+        this._noiseLayer({ category: 'ui', duration: 0.24, volume: 0.024, filterType: 'highpass', frequency: 1700, delay: 0.36, color: 'soft' });
+    }
+
+    playMatchLoss() {
+        this.playRoundLoss();
+        this._oscLayer({ category: 'ui', type: 'triangle', frequency: 196, endFrequency: 147, duration: 0.34, volume: 0.034, delay: 0.34 });
+        this._oscLayer({ category: 'ui', type: 'sine', frequency: 147, endFrequency: 123, duration: 0.42, volume: 0.024, delay: 0.58 });
+        this._noiseLayer({ category: 'ui', duration: 0.34, volume: 0.017, filterType: 'lowpass', frequency: 430, delay: 0.36, color: 'soft' });
     }
 
     playWeaponCycle() {

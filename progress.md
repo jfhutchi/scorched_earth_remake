@@ -1,6 +1,6 @@
 # Project Progress
 
-Current Version: v0.6.8
+Current Version: v0.6.9
 
 Current Branch: Claude
 
@@ -8,11 +8,11 @@ Release History Source: RELEASE_NOTES.md
 
 ## Latest Completed Work
 
-- Implemented v0.6.8 in the working tree: Mega Bomb rebalance, Mega Bomb economy gating, tank movement audio, page-hidden audio lifecycle handling, duplicate wind HUD cleanup, documentation cleanup, release notes, and generated artifact ignore cleanup.
-- Updated the central version constant so the main menu and `window.GAME_VERSION` report `v0.6.8`; gameplay remains free of a floating version badge.
+- Implemented v0.6.9 in the working tree: default starting money is now none/$0, Heavy Shell uses a heavier-but-practical arc, Mega Bomb late-match gating is preserved, shop cards were redesigned, shared generated weapon/item icons were added, mobile shop cards were compacted, weapon descriptions were clarified, selected weapon HUD/info was improved, floating combat feedback was added, round summaries were improved, generated victory/defeat/round-result stingers were added, parachute usefulness/fall damage was tuned, Napalm now has initial damage plus small burn ticks, Help / How to Play was added, settings/UI polish was applied, and docs were updated.
+- Updated the central version constant so the main menu and `window.GAME_VERSION` report `v0.6.9`; gameplay remains free of a floating version badge.
 - Kept the existing architecture, current weapon list, desktop keyboard controls, mobile touch controls, mobile Play behavior, shop flow, pre-round shop, CPU shopping, generated Web Audio system, mute persistence, destructible terrain, wind physics, shields, First Aid, and parachutes.
-- Documentation now treats RELEASE_NOTES.md as the concise release-history source.
-- Local verification for this pass: `node --check` passed for all `src/*.js`; the web-game Playwright smoke client reported `v0.6.8`; targeted Playwright checks covered main menu version, no gameplay version badge, Normal pre-round Mega Bomb affordability, Round 1 start, keyboard movement/fuel use, Standard Shell firing transition, Mega Bomb reach/debug values, Mega Bomb near-hit damage, shield absorption against Mega Bomb, mobile Play to CPU mode, mobile landscape HUD/controls, wind HUD cleanup, simulated page-hide movement clearing, screenshot review, and no console/page errors.
+- Documentation continues to treat RELEASE_NOTES.md as the concise release-history source.
+- Local verification for this pass: `node --check` passed for all `src/*.js`; `git diff --check` passed with line-ending warnings only; the web-game Playwright smoke client reported `v0.6.9`, `$0` default settings, and pre-round shop state; targeted Playwright checks covered menu version, `window.GAME_VERSION`, Help overlay, pre-round shop cards, Mega Bomb disabled state, no Standard Shell ammo card, Round 1 start, Heavy/Standard/Mega speed-scale debug values, Heavy Shell reach, parachute debug drop, Napalm initial hit plus visible burn tick feedback, forced summary, mobile Play to shop, compact mobile shop screenshots, high-starting-money purchase/refill behavior, screenshot review, and no console/page errors. Real-phone app switching/phone lock behavior, auditory result-stinger quality, and GitHub Pages deployment still need manual verification before cutting a public release.
 
 ## Current Known Issues
 
@@ -23,11 +23,27 @@ Release History Source: RELEASE_NOTES.md
 
 ## Next Candidate
 
-- Run longer full-match playtests on Easy, Normal, and Hard CPU after v0.6.8 to tune CPU economy and weapon preferences with more data.
+- Run longer full-match playtests on Easy, Normal, and Hard CPU after v0.6.9 to tune CPU economy and weapon preferences with more data.
 - Consider optional drag aiming/power controls after mobile layout remains stable.
 - Consider CPU driving logic only after current movement and audio behavior is fully verified.
 
 ## Recent Release Notes
+
+### v0.6.9
+
+- Default starting money changed to `None ($0)` while preserving higher starting money presets and pre-round shop flow.
+- Heavy Shell now has a heavier `0.94` arc than Standard Shell while remaining practical.
+- Mega Bomb remains a `$375`, max-ammo-1 late-match premium weapon under the new default economy.
+- Shop purchases are redesigned as weapon/item cards with generated icons, descriptions, ammo/status, prices, and clear full/too-expensive states.
+- Mobile shop cards use a compact single-column layout with CPU purchase details summarized/collapsed.
+- Selected weapon HUD/info now includes generated weapon identity and ammo clarity.
+- Floating combat feedback now covers damage, shield absorption, First Aid healing, parachutes, fall damage, and Napalm burn ticks.
+- Round summaries now show clearer damage, burn, fall, parachute, money, ammo, and utility details.
+- Added generated victory/defeat/neutral round-end/match result stingers that use the existing Web Audio/mute/lifecycle path.
+- Parachutes now deploy only on meaningful fall protection, show visual/audio/text feedback, and cost `$35`.
+- Napalm now applies initial flame-area damage plus two small `Burn -1` ticks without terrain deformation.
+- Added Help / How to Play and grouped settings UI.
+- Updated README.md, TESTING.md, progress.md, and RELEASE_NOTES.md for v0.6.9.
 
 ### v0.6.8
 
@@ -94,4 +110,4 @@ Original prompt: Upgrade the existing local browser Scorched Earth-style artille
 
 ### Archived Ideas
 
-- Bouncer Shell was previously mentioned as an optional future idea, but it is not a current v0.6.8 plan.
+- Bouncer Shell was previously mentioned as an optional future idea, but it is not a current v0.6.9 plan.

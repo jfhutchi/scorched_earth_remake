@@ -28,6 +28,8 @@ export class Tank {
         this.parachutes = 0;
         this.lastShieldAbsorbed = 0;
         this.shieldFlashTimer = 0;
+        this.parachuteTimer = 0;
+        this.parachuteSeed = Math.random() * 1000;
         this.recoilTimer = 0;
         this.recoilDuration = 0.22;
         this.muzzleFlashTimer = 0;
@@ -51,6 +53,8 @@ export class Tank {
         this.movementFuel = CONFIG.tank.movementFuelPerTurn;
         this.lastShieldAbsorbed = 0;
         this.shieldFlashTimer = 0;
+        this.parachuteTimer = 0;
+        this.parachuteSeed = Math.random() * 1000;
         this.recoilTimer = 0;
         this.muzzleFlashTimer = 0;
         this.fireSeed = Math.random() * 1000;
@@ -185,6 +189,9 @@ export class Tank {
         }
         if (this.shieldFlashTimer > 0) {
             this.shieldFlashTimer = Math.max(0, this.shieldFlashTimer - dt);
+        }
+        if (this.parachuteTimer > 0) {
+            this.parachuteTimer = Math.max(0, this.parachuteTimer - dt);
         }
         if (this.recoilTimer > 0) {
             this.recoilTimer = Math.max(0, this.recoilTimer - dt);

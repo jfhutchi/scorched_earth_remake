@@ -73,7 +73,7 @@ button {
 .rotate-overlay { display: none; }
 
 .menu-card {
-    width: min(760px, calc(100vw - 32px));
+    width: min(840px, calc(100vw - 32px));
     max-height: calc(100vh - 32px);
     max-height: calc(100dvh - 32px);
     overflow: auto;
@@ -170,6 +170,47 @@ button {
     font-weight: 700;
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 6px 14px rgba(0, 0, 0, 0.18);
     transition: transform 0.08s ease, background 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
+}
+
+.grouped-settings {
+    grid-template-columns: 1.65fr 1fr 0.9fr;
+    align-items: stretch;
+}
+
+.settings-group {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    min-width: 0;
+    padding: 12px;
+    border: 1px solid rgba(255, 232, 166, 0.18);
+    border-radius: 8px;
+    background: rgba(8, 14, 15, 0.18);
+}
+
+.settings-group:first-child {
+    grid-template-columns: 0.82fr 1.28fr 1fr;
+}
+
+.settings-group:nth-child(2) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.settings-group legend {
+    padding: 0 6px;
+    color: #ffe8a6;
+    font-size: 12px;
+    font-weight: 900;
+}
+
+.settings-group-note {
+    display: block;
+}
+
+.settings-group-note p {
+    color: #d7cfbb;
+    font-size: 12px;
+    line-height: 1.35;
 }
 
 .btn:hover {
@@ -472,6 +513,20 @@ button {
     white-space: nowrap;
 }
 
+.stat-grid .weapon-stat {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    grid-template-rows: auto auto;
+    align-items: center;
+    gap: 0 5px;
+}
+
+.hud-weapon-icon {
+    grid-row: 1 / span 2;
+    width: 28px;
+    height: 28px;
+}
+
 .stat-grid span.available {
     background: rgba(63, 159, 77, 0.18);
 }
@@ -519,6 +574,49 @@ button {
     font-weight: 800;
 }
 
+.weapon-toast {
+    position: absolute;
+    left: 50%;
+    top: 132px;
+    z-index: 7;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 260px;
+    max-width: min(420px, calc(100vw - 24px));
+    padding: 9px 12px;
+    border: 1px solid rgba(255, 236, 190, 0.24);
+    border-radius: 8px;
+    background: rgba(20, 28, 30, 0.86);
+    color: #f7edd3;
+    pointer-events: none;
+    box-shadow: 0 14px 32px rgba(0, 0, 0, 0.28);
+}
+
+.weapon-toast strong,
+.weapon-toast span {
+    display: block;
+}
+
+.weapon-toast strong {
+    color: #ffe8a6;
+    font-size: 14px;
+}
+
+.weapon-toast span {
+    margin-top: 2px;
+    color: #d7cfbb;
+    font-size: 12px;
+    line-height: 1.25;
+}
+
+.weapon-toast-icon {
+    width: 36px;
+    height: 36px;
+    flex: 0 0 auto;
+}
+
 .overlay {
     position: absolute;
     inset: 0;
@@ -537,8 +635,48 @@ button {
     overflow: auto;
 }
 
+.help-overlay {
+    z-index: 30;
+}
+
+.help-card {
+    max-width: 860px;
+}
+
+.help-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin: 18px 0;
+    text-align: left;
+}
+
+.help-grid section {
+    padding: 14px;
+    border: 1px solid rgba(255, 236, 190, 0.14);
+    border-radius: 8px;
+    background: rgba(12, 20, 20, 0.26);
+}
+
+.help-grid h2 {
+    color: #ffe8a6;
+    font-size: 18px;
+    margin-bottom: 8px;
+}
+
+.help-grid p {
+    color: #e4dcc8;
+    font-size: 14px;
+    line-height: 1.42;
+}
+
+.help-grid p + p {
+    margin-top: 8px;
+}
+
 .wide-card {
-    max-width: 960px;
+    width: min(1080px, calc(100vw - 32px));
+    max-width: 1080px;
 }
 
 .summary-grid,
@@ -577,6 +715,53 @@ button {
     margin-top: 8px;
 }
 
+.summary-card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+
+.summary-card-head h3 {
+    margin-bottom: 0;
+}
+
+.summary-money {
+    color: #9edbe6;
+    font-size: 20px;
+    font-weight: 900;
+}
+
+.summary-stat-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+    margin-bottom: 10px;
+}
+
+.summary-stat-list p {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 6px 8px;
+    border-radius: 6px;
+    background: rgba(255, 236, 190, 0.07);
+}
+
+.summary-stat-list span {
+    color: #cfc4ad;
+}
+
+.summary-stat-list b,
+.summary-inventory b {
+    color: #ffe8a6;
+}
+
+.summary-inventory {
+    margin-top: 5px;
+}
+
 .money-line {
     color: #9edbe6 !important;
     font-size: 20px !important;
@@ -588,6 +773,95 @@ button {
     grid-template-columns: 1fr;
     gap: 8px;
     margin-top: 12px;
+}
+
+.shop-player-card {
+    grid-column: span 2;
+}
+
+.shop-player-hint {
+    margin-top: -2px;
+    color: #cfc4ad !important;
+}
+
+.shop-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: stretch;
+}
+
+.shop-item-card {
+    display: grid;
+    grid-template-columns: 56px minmax(0, 1fr) minmax(104px, auto);
+    gap: 10px;
+    align-items: center;
+    min-height: 96px;
+    padding: 10px;
+    border: 1px solid rgba(255, 236, 190, 0.16);
+    border-radius: 8px;
+    background: linear-gradient(180deg, rgba(255, 236, 190, 0.075), rgba(7, 14, 15, 0.16));
+}
+
+.shop-item-card.is-too-expensive {
+    border-color: rgba(255, 116, 84, 0.24);
+    background: linear-gradient(180deg, rgba(120, 42, 28, 0.16), rgba(7, 14, 15, 0.18));
+}
+
+.shop-item-card.is-full {
+    border-color: rgba(158, 219, 230, 0.24);
+    background: linear-gradient(180deg, rgba(35, 108, 125, 0.18), rgba(7, 14, 15, 0.16));
+}
+
+.shop-item-icon {
+    width: 52px;
+    height: 52px;
+    display: grid;
+    place-items: center;
+    border: 1px solid rgba(255, 236, 190, 0.14);
+    border-radius: 8px;
+    background: rgba(4, 9, 10, 0.22);
+}
+
+.shop-item-icon canvas {
+    width: 48px;
+    height: 48px;
+}
+
+.shop-item-body {
+    min-width: 0;
+}
+
+.shop-item-body h4 {
+    overflow: hidden;
+    color: #ffe8a6;
+    font-size: 15px;
+    line-height: 1.12;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.shop-item-description {
+    margin-top: 3px;
+    color: #e4dcc8 !important;
+}
+
+.shop-item-stats {
+    margin-top: 4px;
+    color: #9edbe6 !important;
+    font-size: 12px !important;
+    font-weight: 800;
+}
+
+.shop-item-action {
+    display: grid;
+    gap: 6px;
+    justify-items: stretch;
+}
+
+.shop-item-price {
+    color: #ffe8a6;
+    font-size: 18px;
+    font-weight: 900;
+    text-align: center;
 }
 
 .human-shop-card {
@@ -876,6 +1150,20 @@ button {
         gap: 8px;
     }
 
+    .grouped-settings {
+        grid-template-columns: 1fr;
+    }
+
+    .settings-group,
+    .settings-group:nth-child(2) {
+        grid-template-columns: 1fr 1fr;
+        padding: 10px;
+    }
+
+    .settings-group-note {
+        display: none;
+    }
+
     .settings-grid label {
         font-size: 12px;
     }
@@ -949,6 +1237,10 @@ button {
         padding: 10px;
     }
 
+    .shop-player-card {
+        grid-column: auto;
+    }
+
     .shop-card h3 {
         margin-bottom: 4px;
         font-size: 16px;
@@ -970,9 +1262,50 @@ button {
     }
 
     .shop-actions {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns: 1fr;
         gap: 6px;
         margin-top: 8px;
+    }
+
+    .shop-item-card {
+        grid-template-columns: 42px minmax(0, 1fr) minmax(74px, auto);
+        min-height: 72px;
+        gap: 8px;
+        padding: 8px;
+    }
+
+    .shop-item-icon {
+        width: 40px;
+        height: 40px;
+    }
+
+    .shop-item-icon canvas {
+        width: 38px;
+        height: 38px;
+    }
+
+    .shop-item-body h4 {
+        font-size: 13px;
+    }
+
+    .shop-item-description {
+        overflow: hidden;
+        font-size: 11px !important;
+        line-height: 1.18 !important;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .shop-item-stats {
+        overflow: hidden;
+        font-size: 10px !important;
+        line-height: 1.15 !important;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .shop-item-price {
+        font-size: 14px;
     }
 
     .shop-buy {
@@ -980,6 +1313,26 @@ button {
         padding: 8px 9px;
         font-size: 12px;
         line-height: 1.12;
+    }
+
+    .help-grid {
+        grid-template-columns: 1fr;
+        gap: 8px;
+        margin: 12px 0;
+    }
+
+    .help-grid section {
+        padding: 10px;
+    }
+
+    .help-grid h2 {
+        font-size: 15px;
+        margin-bottom: 5px;
+    }
+
+    .help-grid p {
+        font-size: 12px;
+        line-height: 1.32;
     }
 
     .cpu-shop-card {
@@ -1009,8 +1362,7 @@ button {
 }
 
 @media (max-width: 768px) and (orientation: landscape) {
-    .inventory-list,
-    .shop-actions {
+    .inventory-list {
         grid-template-columns: repeat(3, minmax(0, 1fr));
     }
 }
@@ -1040,6 +1392,110 @@ body.is-mobile-game #stage {
 body.is-mobile-game #hud { display: none !important; }
 body.is-mobile-game #controlsHint { display: none !important; }
 body.is-mobile-game .mute-chip { display: none !important; }
+body.is-mobile-game .weapon-toast {
+    top: 48px;
+    min-width: 0;
+    padding: 6px 8px;
+    max-width: calc(100vw - 18px);
+}
+
+body.is-mobile-game #shopOverlay .overlay-card,
+body.is-mobile-game #summaryOverlay .overlay-card {
+    width: calc(100vw - 12px);
+    max-width: calc(100vw - 12px);
+    max-height: calc(100dvh - 10px);
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+body.is-mobile-game #shopContent,
+body.is-mobile-game #summaryStats {
+    min-height: 0;
+    overflow: auto;
+    padding-right: 2px;
+}
+
+body.is-mobile-game .summary-grid,
+body.is-mobile-game .shop-grid {
+    grid-template-columns: 1fr;
+    gap: 6px;
+    margin: 8px 0;
+}
+
+body.is-mobile-game .shop-player-card {
+    grid-column: auto;
+}
+
+body.is-mobile-game .shop-actions {
+    grid-template-columns: 1fr;
+    gap: 6px;
+    margin-top: 8px;
+}
+
+body.is-mobile-game .shop-item-card {
+    grid-template-columns: 42px minmax(0, 1fr) minmax(72px, auto);
+    min-height: 70px;
+    gap: 7px;
+    padding: 7px;
+}
+
+body.is-mobile-game .shop-item-icon {
+    width: 40px;
+    height: 40px;
+}
+
+body.is-mobile-game .shop-item-icon canvas {
+    width: 38px;
+    height: 38px;
+}
+
+body.is-mobile-game .shop-item-body h4 {
+    font-size: 13px;
+}
+
+body.is-mobile-game .shop-item-description,
+body.is-mobile-game .shop-item-stats {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+body.is-mobile-game .shop-item-description {
+    font-size: 11px !important;
+    line-height: 1.18 !important;
+}
+
+body.is-mobile-game .shop-item-stats {
+    font-size: 10px !important;
+    line-height: 1.15 !important;
+}
+
+body.is-mobile-game .shop-item-price {
+    font-size: 14px;
+}
+
+body.is-mobile-game #shopOverlay .menu-actions,
+body.is-mobile-game #summaryOverlay .menu-actions {
+    flex-shrink: 0;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    gap: 6px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(255, 236, 190, 0.12);
+    background: rgba(24, 30, 28, 0.97);
+}
+
+body.is-mobile-game #shopOverlay .menu-actions .btn,
+body.is-mobile-game #summaryOverlay .menu-actions .btn {
+    width: auto;
+    min-width: 0;
+    min-height: 38px;
+    padding: 7px 8px;
+    font-size: 12px;
+    line-height: 1.12;
+}
 body.is-mobile-game .small-warning { display: none !important; }
 
 
@@ -1095,6 +1551,15 @@ body.is-mobile-game .mhud-turn {
 body.is-mobile-game .mhud-hp.p1 { background: rgba(199, 82, 47, 0.32); }
 body.is-mobile-game .mhud-hp.p2 { background: rgba(45, 117, 199, 0.32); }
 body.is-mobile-game .mhud-weapon { color: #ffe8a6; }
+body.is-mobile-game .mhud-weapon-pill {
+    gap: 2px;
+    padding-left: 3px;
+}
+body.is-mobile-game .mhud-weapon-icon {
+    width: 20px;
+    height: 20px;
+    margin: -2px 0;
+}
 body.is-mobile-game .mhud-shield { color: #9edbe6; }
 body.is-mobile-game .mhud-info {
     border: 1px solid rgba(158, 219, 230, 0.42);
