@@ -75,6 +75,12 @@ Open with `?debug=1`.
 - [ ] Player HUD panels remain readable and do not become oversized.
 - [ ] HUD remains readable on desktop.
 - [ ] HUD remains readable on mobile landscape.
+- [ ] Give both tanks active shields and verify the shield is clearly visible on Player 1.
+- [ ] Verify the shield is clearly visible on the CPU/blue tank.
+- [ ] Verify active shields remain visible on snowy/light terrain.
+- [ ] Verify active shields remain visible on darker terrain.
+- [ ] Verify active shields remain readable in mobile landscape layout.
+- [ ] Verify shield depletion/break feedback is visible when a shield is spent.
 - [ ] Match Length dropdown is readable when closed, focused, opened, and selected.
 - [ ] Starting Money dropdown is readable when closed, focused, opened, and selected.
 - [ ] CPU Difficulty dropdown is readable when closed, focused, opened, and selected.

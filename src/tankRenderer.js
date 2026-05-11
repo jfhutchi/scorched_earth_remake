@@ -294,26 +294,124 @@ function drawDamageDetails(ctx, tank, turret, time, healthRatio) {
 }
 
 function drawShield(ctx, tank, tilt, time) {
-    if (tank.shieldCharge <= 0 && tank.shieldFlashTimer <= 0) return;
-    const chargeAlpha = Math.min(0.5, 0.16 + tank.shieldCharge / 250);
-    const flashAlpha = tank.shieldFlashTimer > 0 ? tank.shieldFlashTimer / 0.45 * 0.38 : 0;
-    const alpha = chargeAlpha + flashAlpha;
+    const chargeRatio = clamp(tank.shieldCharge / CONFIG.utilities.shieldMaxCharge, 0, 1);
+    const flashRatio = tank.shieldFlashTimer > 0 ? clamp(tank.shieldFlashTimer / 0.45, 0, 1) : 0;
+    const breakRatio = tank.shieldBreakTimer > 0 ? clamp(tank.shieldBreakTimer / 0.78, 0, 1) : 0;
+    if (chargeRatio <= 0 && flashRatio <= 0 && breakRatio <= 0) return;
+
+    const pulse = (Math.sin(time * 4.8 + tank.id * 1.7) + 1) * 0.5;
+    const shimmer = time * 2.4 + tank.id * 0.73;
+    const activeAlpha = chargeRatio > 0 ? 0.42 + chargeRatio * 0.24 + pulse * 0.08 : 0;
+    const flashAlpha = flashRatio * 0.42;
+    const breakAlpha = breakRatio * 0.58;
+    const rimAlpha = clamp(activeAlpha + flashAlpha + breakAlpha * 0.35, 0, 1);
+    const innerAlpha = clamp(0.5 + activeAlpha * 0.38 + flashAlpha, 0, 1);
+    const rx = tank.width / 2 + 23 + pulse * 1.8 + breakAlpha * 9;
+    const ry = tank.height + 22 + pulse * 2.4 + breakAlpha * 10;
 
     ctx.save();
     ctx.translate(tank.x, tank.y - tank.height / 2);
     ctx.rotate(tilt * 0.35);
-    ctx.strokeStyle = `rgba(112, 219, 255, ${alpha})`;
-    ctx.lineWidth = 2 + Math.min(3.5, tank.shieldCharge / 40);
-    ctx.setLineDash([8, 8]);
-    ctx.lineDashOffset = -time * 18;
+
+    if (chargeRatio > 0) {
+        const fill = ctx.createRadialGradient(-rx * 0.18, -ry * 0.18, ry * 0.12, 0, 0, ry * 1.05);
+        fill.addColorStop(0, `rgba(255, 255, 255, ${0.09 + chargeRatio * 0.04})`);
+        fill.addColorStop(0.58, `rgba(104, 234, 255, ${0.10 + chargeRatio * 0.05})`);
+        fill.addColorStop(1, 'rgba(64, 178, 255, 0.02)');
+        ctx.fillStyle = fill;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.shadowColor = `rgba(70, 224, 255, ${0.6 + flashRatio * 0.25})`;
+    ctx.shadowBlur = 14 + flashRatio * 12 + chargeRatio * 7;
+    ctx.strokeStyle = `rgba(28, 58, 66, ${0.5 + activeAlpha * 0.4 + breakAlpha * 0.25})`;
+    ctx.lineWidth = 8 + flashRatio * 2 + breakAlpha * 4;
     ctx.beginPath();
-    ctx.ellipse(0, 0, tank.width / 2 + 17, tank.height + 17, 0, 0, Math.PI * 2);
+    ctx.ellipse(0, 0, rx + 1, ry + 1, 0, 0, Math.PI * 2);
     ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.strokeStyle = `rgba(220, 250, 255, ${0.22 + flashAlpha})`;
-    ctx.lineWidth = 1;
+
+    ctx.shadowBlur = 9 + flashRatio * 10;
+    ctx.strokeStyle = `rgba(103, 239, 255, ${rimAlpha})`;
+    ctx.lineWidth = 4.4 + chargeRatio * 1.3 + flashRatio * 2.4;
     ctx.beginPath();
-    ctx.ellipse(0, 0, tank.width / 2 + 11, tank.height + 11, 0, 0, Math.PI * 2);
+    ctx.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.shadowBlur = 4;
+    ctx.strokeStyle = `rgba(255, 255, 255, ${innerAlpha})`;
+    ctx.lineWidth = 1.4 + flashRatio * 0.8;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, rx - 4, ry - 4, 0, 0, Math.PI * 2);
+    ctx.stroke();
+
+    if (chargeRatio > 0) {
+        for (let i = 0; i < 4; i++) {
+            const start = shimmer + i * Math.PI * 0.62;
+            const length = 0.34 + chargeRatio * 0.12;
+            ctx.strokeStyle = i % 2 === 0
+                ? `rgba(255, 255, 255, ${0.34 + pulse * 0.18})`
+                : `rgba(137, 247, 255, ${0.28 + pulse * 0.16})`;
+            ctx.lineWidth = 2 + chargeRatio * 0.8;
+            drawEllipseArc(ctx, rx + 2, ry + 2, start, start + length);
+        }
+
+        ctx.fillStyle = `rgba(245, 255, 255, ${0.48 + pulse * 0.18})`;
+        for (let i = 0; i < 5; i++) {
+            const angle = -shimmer * 0.65 + i * Math.PI * 0.76;
+            const sparkAlpha = 0.25 + ((Math.sin(time * 5 + i * 1.9) + 1) * 0.18);
+            ctx.globalAlpha = sparkAlpha;
+            ctx.beginPath();
+            ctx.arc(Math.cos(angle) * (rx + 1), Math.sin(angle) * (ry + 1), 1.5 + chargeRatio * 0.8, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+    }
+
+    if (breakRatio > 0) {
+        drawShieldBreakBurst(ctx, rx, ry, 1 - breakRatio, breakAlpha, tank.id);
+    }
+
+    ctx.restore();
+}
+
+function drawEllipseArc(ctx, rx, ry, start, end) {
+    const steps = 12;
+    ctx.beginPath();
+    for (let i = 0; i <= steps; i++) {
+        const t = start + (end - start) * (i / steps);
+        const x = Math.cos(t) * rx;
+        const y = Math.sin(t) * ry;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+}
+
+function drawShieldBreakBurst(ctx, rx, ry, progress, alpha, seed) {
+    const burst = clamp(progress, 0, 1);
+    ctx.save();
+    ctx.shadowColor = `rgba(255, 255, 255, ${alpha})`;
+    ctx.shadowBlur = 18;
+    ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
+    ctx.lineWidth = 2.4;
+    for (let i = 0; i < 10; i++) {
+        const angle = i * Math.PI * 0.2 + Math.sin(seed * 1.3 + i) * 0.08;
+        const inner = 0.92 + burst * 0.12;
+        const outer = 1.06 + burst * 0.46;
+        ctx.beginPath();
+        ctx.moveTo(Math.cos(angle) * rx * inner, Math.sin(angle) * ry * inner);
+        ctx.lineTo(Math.cos(angle) * rx * outer, Math.sin(angle) * ry * outer);
+        ctx.stroke();
+    }
+
+    ctx.strokeStyle = `rgba(116, 237, 255, ${alpha * 0.82})`;
+    ctx.lineWidth = 3 + burst * 2;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, rx + burst * 14, ry + burst * 14, 0, 0, Math.PI * 2);
     ctx.stroke();
     ctx.restore();
 }

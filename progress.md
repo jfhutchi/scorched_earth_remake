@@ -17,6 +17,7 @@ Release History Source: RELEASE_NOTES.md
 - Promoted the polished weapon info card visual language into the broader HUD with dark translucent panels, compact stat tiles, clearer selected weapon presentation, and a wind stat tile.
 - Fixed native select/dropdown contrast so closed and opened menu options remain readable.
 - Fixed Shield cap enforcement so purchases, CPU shopping, debug refills, state sync, and HUD displays clamp Shield at 60.
+- Upgraded shield rendering with a brighter energy bubble, pulse, glow, shimmer accents, and shield-break feedback for better readability on light/snowy and dark themes.
 - Differentiated Splitter Shell and Cluster Bomb: Splitter is now a controlled apex fork shot, while Cluster Bomb remains wider area-saturation bomblets with separate metadata and CPU behavior.
 - Added visual viewport sizing with `--app-height`, safer overlay/shop scrolling, iPhone safe-area padding, local PWA icons, `manifest.webmanifest`, iOS standalone metadata, standalone detection, and Add to Home Screen guidance.
 - Updated README.md, TESTING.md, progress.md, RELEASE_NOTES.md, and BALANCE.md for v0.7.1.
