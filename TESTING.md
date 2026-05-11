@@ -55,6 +55,7 @@ Open with `?debug=1`.
 - [ ] Use the debug panel to add money and confirm HUD/shop money updates immediately.
 - [ ] Use the debug panel to refill all weapons and confirm every v0.7.x catalog weapon is included while Standard Shell remains unlimited.
 - [ ] Use the debug panel to refill Shield, First Aid Kit, and Parachute.
+- [ ] Confirm debug Shield refill and Add Shield actions respect the 60 shield cap.
 - [ ] Use the debug panel to set wind to `0`.
 - [ ] Use the debug panel to setup the weapon test range.
 - [ ] In the debug weapon test range, select and fire every weapon at least once.
@@ -109,6 +110,7 @@ Open with `?debug=1`.
 - [ ] CPU does not select weapons with zero ammo.
 - [ ] CPU does not buy ammo already at max.
 - [ ] CPU prioritizes First Aid or Shield when low on health before luxury weapons.
+- [ ] CPU cannot buy Shield past 60.
 - [ ] CPU avoids wasting Mega Bomb on low-health targets.
 - [ ] CPU considers Excavator Bomb or Airburst Shell when terrain blocks the target.
 - [ ] CPU considers Roller Shell or Heavy Roller when the target is downhill.
@@ -126,6 +128,10 @@ Open with `?debug=1`.
 - [ ] Result audio identity remains distinct for win/loss and round/match states.
 - [ ] Generated audio respects mute and page lifecycle.
 - [ ] Shield, First Aid Kit, and Parachute still work.
+- [ ] Buy Shield until it reaches 60, then confirm Shield cannot exceed 60.
+- [ ] Confirm the Shield shop card disables or shows Full/Max at 60.
+- [ ] Confirm money is not deducted when trying to buy Shield at max.
+- [ ] Confirm HUD and mobile HUD never display Shield above 60 during normal gameplay.
 - [ ] Parachute deploys only for meaningful fall protection.
 - [ ] Round summary remains readable and accurate.
 - [ ] Help / How to Play opens and remains readable on desktop and mobile.

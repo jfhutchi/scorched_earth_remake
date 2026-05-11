@@ -61,7 +61,7 @@ Round income:
 
 | Item | Price | Role | Notes |
 | --- | ---: | --- | --- |
-| Shield Charge | $85 | Defense | Adds 60 shield charge, capped at 180; absorbs 50% of explosion damage while charge remains |
+| Shield Charge | $85 | Defense | Adds 60 shield charge, capped at 60; absorbs 50% of explosion damage while charge remains |
 | First Aid Kit | $110 | Recovery | Fully heals at next round start if damaged; not consumed at full health |
 | Parachute | $35 | Fall protection | Automatically reduces meaningful fall damage after terrain collapses |
 

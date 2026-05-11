@@ -16,6 +16,7 @@ Release History Source: RELEASE_NOTES.md
 - Added a gated developer debug/cheat panel behind `?debug=1` and `Ctrl + Shift + D` for testing money, all catalog weapons, selected ammo, utilities, wind, tank state, flat/weapon/parachute setup, and round/match flow.
 - Promoted the polished weapon info card visual language into the broader HUD with dark translucent panels, compact stat tiles, clearer selected weapon presentation, and a wind stat tile.
 - Fixed native select/dropdown contrast so closed and opened menu options remain readable.
+- Fixed Shield cap enforcement so purchases, CPU shopping, debug refills, state sync, and HUD displays clamp Shield at 60.
 - Differentiated Splitter Shell and Cluster Bomb: Splitter is now a controlled apex fork shot, while Cluster Bomb remains wider area-saturation bomblets with separate metadata and CPU behavior.
 - Added visual viewport sizing with `--app-height`, safer overlay/shop scrolling, iPhone safe-area padding, local PWA icons, `manifest.webmanifest`, iOS standalone metadata, standalone detection, and Add to Home Screen guidance.
 - Updated README.md, TESTING.md, progress.md, RELEASE_NOTES.md, and BALANCE.md for v0.7.1.

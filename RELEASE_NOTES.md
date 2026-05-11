@@ -30,6 +30,7 @@ v0.7.1 is a focused follow-up polish pass on top of the deployed v0.7.0 baseline
 ### Fixed
 
 - Fixed opened dropdown option contrast by enforcing dark readable native select and option colors.
+- Fixed Shield cap enforcement so Shield cannot exceed 60.
 - Improved iPhone Safari shop and result overlay usability with visual-viewport sizing, safe-area padding, internal scroll regions, `-webkit-overflow-scrolling: touch`, and less aggressive page-level touch prevention while overlays are being scrolled.
 - Improved GitHub Pages path validation to include manifest paths.
 - Expanded artifact ignore/check coverage for traces, HAR files, generated screenshots, debug JSON, and video captures.

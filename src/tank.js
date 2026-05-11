@@ -1,4 +1,4 @@
-import { CONFIG, WEAPONS, clamp, getWeaponById, maxAmmoFor } from './config.js';
+import { CONFIG, WEAPONS, clamp, clampShieldCharge, getWeaponById, maxAmmoFor } from './config.js';
 import { drawTank } from './tankRenderer.js';
 
 export class Tank {
@@ -164,6 +164,7 @@ export class Tank {
         this.lastShieldAbsorbed = 0;
 
         if (useShield && this.shieldCharge > 0 && adjustedAmount > 0) {
+            this.shieldCharge = clampShieldCharge(this.shieldCharge);
             const requestedAbsorb = adjustedAmount * CONFIG.utilities.shieldAbsorbRatio;
             const absorbed = Math.min(this.shieldCharge, requestedAbsorb);
             this.shieldCharge = Math.max(0, this.shieldCharge - absorbed);

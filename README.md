@@ -115,7 +115,7 @@ Utilities:
 
 | Item | Price | Effect |
 | --- | ---: | --- |
-| Shield Charge | $85 | Adds 60 shield charge, capped at 180 |
+| Shield Charge | $85 | Adds 60 shield charge, capped at 60 |
 | First Aid Kit | $110 | Fully heals at next round start if damaged |
 | Parachute | $35 | Automatically reduces meaningful fall damage |
 

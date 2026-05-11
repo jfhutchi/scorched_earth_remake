@@ -6,7 +6,7 @@ import { CPUController } from './cpu.js';
 import { BackgroundRenderer } from './backgroundRenderer.js';
 import { drawTankWreck } from './tankRenderer.js';
 import { pickBattleTheme } from './themes.js';
-import { CONFIG, CPU_DIFFICULTY, GAME_VERSION, WEAPONS, clamp, getWeaponById, limitedWeapons, maxAmmoFor } from './config.js';
+import { CONFIG, CPU_DIFFICULTY, GAME_VERSION, WEAPONS, clamp, clampShieldCharge, getWeaponById, limitedWeapons, maxAmmoFor } from './config.js';
 
 export function getWinsNeededToClinch(matchLength) {
     const length = [1, 3, 5].includes(Number(matchLength)) ? Number(matchLength) : CONFIG.settings.defaults.roundsToWin;
@@ -182,7 +182,9 @@ export class Game {
         this.audio.stopTankMoveLoop();
         this.shopCpuPurchased = false;
         this.lastCpuShopPurchases = [];
+        this._clampAllShields();
         if (this.gameMode === 'cpu') this._runCpuShop();
+        this._clampAllShields();
         this.ui.showShop(this._state(), this.getShopItems());
     }
 
@@ -270,6 +272,7 @@ export class Game {
             return player.health < CONFIG.tank.maxHealth;
         }
         if (itemId === 'shield') {
+            player.shieldCharge = clampShieldCharge(player.shieldCharge);
             return player.shieldCharge < CONFIG.utilities.shieldMaxCharge;
         }
         return true;
@@ -405,7 +408,7 @@ export class Game {
                 money: player.money,
                 health: player.health,
                 ammo: { ...player.ammo },
-                shieldCharge: Math.round(player.shieldCharge || 0),
+                shieldCharge: Math.round(clampShieldCharge(player.shieldCharge)),
                 repairKits: player.repairKits || 0,
                 parachutes: player.parachutes || 0,
             })),
@@ -424,7 +427,7 @@ export class Game {
                 power: Math.round(tank.power),
                 movementFuel: Math.round(tank.movementFuel),
                 movementFuelMax: CONFIG.tank.movementFuelPerTurn,
-                shieldCharge: Math.round(tank.shieldCharge || 0),
+                shieldCharge: Math.round(clampShieldCharge(tank.shieldCharge)),
                 repairKits: tank.repairKits || 0,
                 parachutes: tank.parachutes || 0,
                 selectedWeaponId: tank.selectedWeapon().id,
@@ -487,7 +490,7 @@ export class Game {
                 power: Math.round(tank.power),
                 movementFuel: Math.round(tank.movementFuel),
                 money: tank.money,
-                shieldCharge: Math.round(tank.shieldCharge),
+                shieldCharge: Math.round(clampShieldCharge(tank.shieldCharge)),
                 repairKits: tank.repairKits,
                 parachutes: tank.parachutes,
                 isCpu: tank.isCpu,
@@ -1003,10 +1006,7 @@ export class Game {
         if (!indices.length) return { ok: false, message: 'No player data is available. Start a match or setup a test range first.' };
         for (const index of indices) {
             const player = this.playerData[index];
-            player.shieldCharge = Math.min(
-                CONFIG.utilities.shieldMaxCharge,
-                Math.max(0, player.shieldCharge || 0) + CONFIG.utilities.shieldPurchaseCharge
-            );
+            player.shieldCharge = clampShieldCharge((player.shieldCharge || 0) + CONFIG.utilities.shieldPurchaseCharge);
             this._syncTankInventoryFromPlayerData(index);
         }
         this.audio.playShieldActivate();
@@ -1076,6 +1076,7 @@ export class Game {
     _debugRefresh(message) {
         this.lastResult = message;
         this.statusMessage = message;
+        this._clampAllShields();
         if (this.phase === 'shop') this.ui.showShop(this._state(), this.getShopItems());
         else if (this.tanks.length) this.ui.update(this._state());
         this._draw();
@@ -1098,6 +1099,15 @@ export class Game {
             repairKits: 0,
             parachutes: 0,
         }));
+    }
+
+    _clampAllShields() {
+        for (const player of this.playerData) {
+            if (player) player.shieldCharge = clampShieldCharge(player.shieldCharge);
+        }
+        for (const tank of this.tanks) {
+            if (tank) tank.shieldCharge = clampShieldCharge(tank.shieldCharge);
+        }
     }
 
     _createRoundStats() {
@@ -1133,6 +1143,7 @@ export class Game {
         this.playerData[0].name = 'Player 1';
         this.playerData[1].name = p2IsCpu ? 'CPU' : 'Player 2';
         this.roundStartMessages = this._applyRepairKitsForNewRound();
+        this._clampAllShields();
 
         const p1 = new Tank({
             id: 1,
@@ -1232,7 +1243,8 @@ export class Game {
         tank.health = clamp(Math.round(data.health), 1, CONFIG.tank.maxHealth);
         tank.alive = tank.health > 0;
         tank.money = Math.max(0, Math.round(data.money));
-        tank.shieldCharge = Math.max(0, data.shieldCharge);
+        data.shieldCharge = clampShieldCharge(data.shieldCharge);
+        tank.shieldCharge = data.shieldCharge;
         tank.repairKits = Math.max(0, data.repairKits);
         tank.parachutes = Math.max(0, data.parachutes);
         tank.ammo = { ...data.ammo, standard: Infinity };
@@ -1246,7 +1258,8 @@ export class Game {
 
         data.money = Math.max(0, Math.round(tank.money));
         data.health = clamp(tank.health, 0, CONFIG.tank.maxHealth);
-        data.shieldCharge = Math.max(0, tank.shieldCharge);
+        tank.shieldCharge = clampShieldCharge(tank.shieldCharge);
+        data.shieldCharge = tank.shieldCharge;
         data.repairKits = Math.max(0, tank.repairKits);
         data.parachutes = Math.max(0, tank.parachutes);
         data.ammo = ammoSnapshotFromTank(tank);
@@ -1258,7 +1271,8 @@ export class Game {
         if (!tank || !data) return;
 
         tank.money = Math.max(0, Math.round(data.money));
-        tank.shieldCharge = Math.max(0, data.shieldCharge);
+        data.shieldCharge = clampShieldCharge(data.shieldCharge);
+        tank.shieldCharge = data.shieldCharge;
         tank.repairKits = Math.max(0, data.repairKits);
         tank.parachutes = Math.max(0, data.parachutes);
         tank.ammo = { ...data.ammo, standard: Infinity };
@@ -2434,7 +2448,7 @@ export class Game {
             player.health = survived
                 ? clamp(tank.health, 1, CONFIG.tank.maxHealth)
                 : CONFIG.utilities.rebuildHealthAfterDeath;
-            player.shieldCharge = Math.max(0, tank.shieldCharge);
+            player.shieldCharge = clampShieldCharge(tank.shieldCharge);
             player.repairKits = Math.max(0, tank.repairKits);
             player.parachutes = Math.max(0, tank.parachutes);
             player.ammo = ammoSnapshotFromTank(tank);
@@ -2480,7 +2494,8 @@ export class Game {
         };
 
         if (cpu.health < 85) tryBuy('repair', cpu.health < 55 ? Math.min(1, profile.repairBuyChance + 0.25) : profile.repairBuyChance);
-        if (cpu.shieldCharge < CONFIG.utilities.shieldPurchaseCharge) tryBuy('shield', profile.shieldBuyChance);
+        cpu.shieldCharge = clampShieldCharge(cpu.shieldCharge);
+        if (cpu.shieldCharge < CONFIG.utilities.shieldMaxCharge) tryBuy('shield', profile.shieldBuyChance);
         const shopWeapons = limitedWeapons().sort((a, b) => (a.shopPriority ?? 50) - (b.shopPriority ?? 50));
         for (const weapon of shopWeapons) {
             if ((cpu.ammo[weapon.id] || 0) >= maxAmmoFor(weapon.id)) continue;
@@ -2499,7 +2514,7 @@ export class Game {
         if (itemId === 'shield') {
             player.shieldCharge = Math.min(
                 CONFIG.utilities.shieldMaxCharge,
-                player.shieldCharge + CONFIG.utilities.shieldPurchaseCharge
+                clampShieldCharge(player.shieldCharge) + CONFIG.utilities.shieldPurchaseCharge
             );
         }
         if (itemId === 'repair') player.repairKits += 1;
@@ -2685,7 +2700,7 @@ function summarizeInventory(player) {
     return {
         money: player.money,
         ammo: { ...player.ammo },
-        shieldCharge: Math.round(player.shieldCharge),
+        shieldCharge: Math.round(clampShieldCharge(player.shieldCharge)),
         repairKits: player.repairKits,
         parachutes: player.parachutes,
         health: player.health,

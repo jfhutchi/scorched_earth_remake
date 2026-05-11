@@ -1,4 +1,5 @@
 export const GAME_VERSION = 'v0.7.1';
+export const MAX_SHIELD = 60;
 
 export const WEAPON_CATEGORIES = {
     BASIC: 'Basic Shells',
@@ -84,7 +85,7 @@ export const CONFIG = {
     },
     utilities: {
         shieldPurchaseCharge: 60,
-        shieldMaxCharge: 180,
+        shieldMaxCharge: MAX_SHIELD,
         shieldAbsorbRatio: 0.5,
         // First Aid Kit fully restores health between rounds (v0.6).
         firstAidFullHeal: true,
@@ -103,7 +104,7 @@ export const CONFIG = {
             price: 85,
             description: 'Adds extra damage absorption.',
             shortDescription: 'Extra damage absorption',
-            stats: ['Shield: +60', 'Max: 180'],
+            stats: ['Shield: +60', `Max: ${MAX_SHIELD}`],
         },
         repair: {
             label: 'First Aid Kit',
@@ -945,6 +946,11 @@ export function weaponPrice(weapon) {
 
 export function clamp(value, min, max) {
     return Math.max(min, Math.min(max, value));
+}
+
+export function clampShieldCharge(value) {
+    const numeric = Number(value);
+    return Number.isFinite(numeric) ? clamp(numeric, 0, MAX_SHIELD) : 0;
 }
 
 export function maxAmmoFor(weaponId) {
