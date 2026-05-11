@@ -1,14 +1,16 @@
 # Manual Testing Checklist
 
-Current version: `v0.7.0`
+Current version: `v0.7.1`
 
-Use a local static server, open the game in a desktop or mobile browser, and keep DevTools open for console errors. For mobile testing, use a real device on the LAN IP when possible.
+Use a local static server, open Crater Command in a desktop or mobile browser, and keep DevTools open for console errors. For mobile testing, use a real device on the LAN IP when possible.
 
 ## Required Pre-Merge Smoke Test
 
-- [ ] Main menu shows `v0.7.0`.
+- [ ] Browser tab title uses `Crater Command`.
+- [ ] Main menu shows `Crater Command`.
+- [ ] Main menu shows `v0.7.1`.
 - [ ] Gameplay screen does not show a floating version badge.
-- [ ] `window.GAME_VERSION` returns `"v0.7.0"`.
+- [ ] `window.GAME_VERSION` returns `"v0.7.1"`.
 - [ ] Single Player vs CPU starts from the primary menu action.
 - [ ] Phone-sized layout shows the single `Play` button and it starts Single Player vs CPU.
 - [ ] Two Player Local remains available on desktop/wider layouts.
@@ -17,13 +19,14 @@ Use a local static server, open the game in a desktop or mobile browser, and kee
 - [ ] Pre-round shop opens before Round 1 with `$0`.
 - [ ] Standard Shell is unlimited and has no shop ammo card.
 - [ ] Existing weapons still appear, buy/refill where limited, select, fire, and resolve.
-- [ ] New v0.7.0 weapons appear in the shop with icons, descriptions, category labels, prices, and ammo states.
+- [ ] New v0.7.x weapons appear in the shop with icons, descriptions, category labels, prices, and ammo states.
 - [ ] New weapons can be bought/refilled, selected, fired, and resolved without turn lockups.
 - [ ] CPU can shop, take turns, and fire supported weapons without freezing.
 - [ ] Mobile landscape controls and compact shop remain usable.
 - [ ] Desktop keyboard controls still work.
-- [ ] `BALANCE.md` exists and references `v0.7.0`.
+- [ ] `BALANCE.md` exists and references `v0.7.1`.
 - [ ] GitHub Actions validation passes.
+- [ ] GitHub Actions workflows run without Node 20 deprecation warnings.
 - [ ] No stale test artifacts are committed.
 - [ ] No startup or normal-play console errors occur.
 
@@ -43,10 +46,19 @@ Use a local static server, open the game in a desktop or mobile browser, and kee
 - [ ] Confirm the final score is correct.
 - [ ] Confirm no console errors occur.
 
-## v0.7.0 Weapon Catalog Checks
+## v0.7.1 Debug and Weapon Catalog Checks
 
 Open with `?debug=1`.
 
+- [ ] Press `Ctrl + Shift + D` and confirm the compact debug panel toggles.
+- [ ] Load without `?debug=1`, press `Ctrl + Shift + D`, and confirm debug controls do not appear.
+- [ ] Use the debug panel to add money and confirm HUD/shop money updates immediately.
+- [ ] Use the debug panel to refill all weapons and confirm every v0.7.x catalog weapon is included while Standard Shell remains unlimited.
+- [ ] Use the debug panel to refill Shield, First Aid Kit, and Parachute.
+- [ ] Use the debug panel to set wind to `0`.
+- [ ] Use the debug panel to setup the weapon test range.
+- [ ] In the debug weapon test range, select and fire every weapon at least once.
+- [ ] Use the debug panel to force round wins and match wins without corrupting flow.
 - [ ] `window.debugWeapons()` lists every weapon id, name, category, price, ammo cap, speed scale, damage/radius values, CPU weight, and profile flags.
 - [ ] `window.testWeaponCatalog().ok` is `true`.
 - [ ] `window.testWeaponCatalog()` reports categories and no duplicate weapon ids.
@@ -55,6 +67,19 @@ Open with `?debug=1`.
 - [ ] `window.setupWeaponTest()` sets wind to 0, gives both players full ammo, and starts a predictable aiming scenario.
 - [ ] `window.testWeaponReach()` includes existing and new weapons with reach, price, category, role, damage, and terrain data.
 
+## HUD and Menu Readability
+
+- [ ] Selected weapon display uses the improved dark card styling and remains readable.
+- [ ] Angle, Power, Ammo, Move, and Wind stat blocks use the updated mini-card visual language.
+- [ ] Player HUD panels remain readable and do not become oversized.
+- [ ] HUD remains readable on desktop.
+- [ ] HUD remains readable on mobile landscape.
+- [ ] Match Length dropdown is readable when closed, focused, opened, and selected.
+- [ ] Starting Money dropdown is readable when closed, focused, opened, and selected.
+- [ ] CPU Difficulty dropdown is readable when closed, focused, opened, and selected.
+- [ ] Wind dropdown is readable when closed, focused, opened, and selected.
+- [ ] Terrain dropdown is readable when closed, focused, opened, and selected.
+
 ## Weapon Behavior Checks
 
 - [ ] Standard Shell fires and remains unlimited.
@@ -62,11 +87,12 @@ Open with `?debug=1`.
 - [ ] Dirt Bomb fires, consumes ammo, adds terrain, and keeps low damage.
 - [ ] Roller Shell rolls along slopes and does not roll forever.
 - [ ] Napalm Canister applies initial flame-area damage plus two small burn ticks.
-- [ ] Cluster Bomb splits into five lighter bomblets and resolves.
+- [ ] Cluster Bomb splits into several wide-spread lighter bomblets, covers more area than Splitter Shell, and resolves.
 - [ ] Mega Bomb remains max ammo 1, costs `$375`, and remains late-match.
 - [ ] Precision Shell has a small crater/radius and stronger direct-hit behavior.
 - [ ] Airburst Shell detonates above terrain or near exposed targets and creates only modest terrain damage.
-- [ ] Splitter Shell splits into three medium shards and is distinct from Cluster Bomb.
+- [ ] Splitter Shell forks into a controlled two/three-child pattern near the top of the arc, brackets the target predictably, and resolves.
+- [ ] Splitter Shell and Cluster Bomb have distinct icons, descriptions, visuals, sounds, and CPU role behavior.
 - [ ] Heavy Roller rolls more heavily than Roller Shell and resolves reliably.
 - [ ] Excavator Bomb removes noticeable terrain with low/moderate damage.
 - [ ] Mound Maker creates a larger focused mound without breaking tank placement.
@@ -107,18 +133,31 @@ Open with `?debug=1`.
 ## CI and Static Validation
 
 - [ ] `node --check` passes for all source and script files.
-- [ ] `node scripts/validate-version.mjs v0.7.0` passes.
-- [ ] `node scripts/check-release-notes.mjs v0.7.0` passes.
+- [ ] `node scripts/validate-version.mjs v0.7.1` passes.
+- [ ] `node scripts/check-release-notes.mjs v0.7.1` passes.
 - [ ] `node scripts/check-artifacts.mjs` passes.
 - [ ] `node scripts/check-pages-paths.mjs` passes.
 - [ ] Version branches run validation only.
 - [ ] GitHub Pages deployment workflow runs only from `main`.
+- [ ] Workflow logs do not show Node 20 action deprecation warnings.
 
 ## Mobile and GitHub Pages
 
 - [ ] Mobile landscape layout has usable controls, readable HUD, and reachable shop buttons.
 - [ ] Mobile portrait rotate overlay still appears unless the player continues anyway.
 - [ ] No horizontal scrolling in the mobile shop.
+- [ ] iPhone Safari normal browser landscape uses the visible viewport and keeps gameplay controls tappable.
+- [ ] iPhone Safari pre-round and between-round shop content scrolls if it exceeds the visible area.
+- [ ] iPhone Safari `Start Round`, `Continue`, `New Match`, and `Main Menu` buttons are visible and tappable.
+- [ ] iPhone Safari match result screen buttons are visible and tappable.
+- [ ] iPhone Safari Add to Home Screen creates a Crater Command home-screen app entry.
+- [ ] PWA/standalone launch hides the install hint and keeps the layout usable.
+- [ ] `manifest.webmanifest` loads from the GitHub Pages project path.
+- [ ] PWA icons load from local `icons/` paths.
+- [ ] `Try Fullscreen` works on supported browsers and fails gracefully where unsupported.
+- [ ] Android Chrome still keeps the mobile shop and gameplay controls usable.
+- [ ] Gameplay controls still prevent accidental page scroll during active gameplay.
+- [ ] Shop/menu screens allow intended scrolling.
 - [ ] GitHub Pages project path works after merge to `main`: `https://jfhutchi.github.io/scorched_earth_remake/`.
 - [ ] No root-relative runtime asset paths or CDN dependencies are introduced.
 

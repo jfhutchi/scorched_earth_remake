@@ -1,8 +1,8 @@
 # Balance Reference
 
-Current version: `v0.7.0`
+Current version: `v0.7.1`
 
-BALANCE.md is the tuning reference for weapons, economy, utility items, and CPU usage. It documents intent and current values; it does not claim the balance is final.
+BALANCE.md is the Crater Command tuning reference for weapons, economy, utility items, and CPU usage. It documents intent and current values; it does not claim the balance is final.
 
 ## Philosophy
 
@@ -11,6 +11,7 @@ BALANCE.md is the tuning reference for weapons, economy, utility items, and CPU 
 - Prices should reflect power, flexibility, and ammo scarcity.
 - Terrain tools should change battlefield shape without dominating damage.
 - Fire and split weapons should apply pressure without locking turn resolution.
+- Splitter Shell and Cluster Bomb should stay tactically distinct: Splitter is a controlled fork shot, while Cluster Bomb is wide area saturation.
 - Mega Bomb should feel premium but remain late-match, max-ammo-1, and not a guaranteed one-hit kill.
 - CPU should look intentional but stay beatable, especially on Easy and Normal.
 
@@ -52,8 +53,8 @@ Round income:
 | Napalm Canister | Fire Weapons | Fire | $95 | 3 | Medium | Scorch + burn | Medium-heavy | Initial flame hit plus 2 x -1 burn ticks | Useful on rough/exposed terrain |
 | Firestorm Canister | Fire Weapons | Heavy fire | $180 | 2 | Medium area | Wide scorch | Heavy | Wider flame line plus 3 x -1 burn ticks | Low CPU weight; avoids low-value targets |
 | Airburst Shell | Precision Weapons | Airburst | $120 | 3 | Medium area | Small overhead crater | Medium | Detonates above terrain or near exposed tanks | Useful for ridge pressure and exposed tanks |
-| Splitter Shell | Split / Cluster Weapons | Split | $125 | 3 | Spread | Three small shard craters | Medium-hard | Splits into 3 medium shards near arc peak | Safer pressure after misses or obstruction |
-| Cluster Bomb | Split / Cluster Weapons | Cluster | $130 | 2 | Wide spread | Five small bomblet craters | Hard | Splits into 5 lighter bomblets | Favored at long range or after misses |
+| Splitter Shell | Split / Cluster Weapons | Controlled fork | $125 | 3 | Controlled fork | Three small child-shell craters | Medium-hard | Predictably forks into 3 child shells near arc peak | Useful for bracketing with a decent line/arc |
+| Cluster Bomb | Split / Cluster Weapons | Cluster | $130 | 2 | Wide spread | Five small bomblet craters | Hard | Wide-scatter bomblets for area coverage | Favored for rough terrain, obstruction, long range, or repeated misses |
 | Mega Bomb | Heavy Explosives | Premium | $375 | 1 | Extreme | Massive crater | Very heavy | Late-match premium blast | Hard-gated; avoids low-health waste |
 
 ## Utility Items
@@ -72,6 +73,7 @@ Round income:
 - Mega Bomb is not bought when the CPU is unhealthy, under-shielded, or barely able to afford it.
 - Terrain builders have low shop priority and low CPU purchase chance.
 - Firestorm, Heavy Roller, Cluster Bomb, and Mega Bomb have conservative CPU weights.
+- Splitter Shell has a moderate CPU purchase chance because it rewards better arcs and should not be spammed by Easy CPU.
 
 ## CPU Firing Notes
 
@@ -82,13 +84,25 @@ Round income:
 - CPU avoids Mega Bomb on low-health targets and avoids terrain builders as damage weapons.
 - CPU considers Excavator Bomb or Airburst Shell when terrain obstructs the target.
 - CPU considers Roller Shell and Heavy Roller when the target is downhill.
+- CPU considers Cluster Bomb when it wants wide area coverage or probability hits.
+- CPU considers Splitter Shell when it has a reasonable arc and wants a controlled multi-hit bracket.
+
+## Splitter Shell vs Cluster Bomb
+
+Splitter Shell is a controlled mid-air fork weapon. It splits near the top of its arc into three predictable child shells: one continues mostly forward while the side children fork outward and down. It should reward a decent initial shot and help bracket a target that is almost lined up.
+
+Cluster Bomb is the chaotic area-saturation weapon. It splits into several lower-damage bomblets with wider scatter and smaller craters. It should be better for uneven terrain, loose area denial, and probability hits when exact aim is uncertain.
+
+Neither should obsolete the other: Splitter is more predictable and aim-rewarding, while Cluster covers more ground and creates more terrain chaos.
+
+Debug mode (`?debug=1`, then `Ctrl + Shift + D`) is available as a balancing aid for quickly granting money/ammo/utilities, setting wind, preparing flat/weapon test ranges, and forcing match flow without grinding through the normal economy.
 
 ## Known Balance Risks
 
 - Airburst Shell may need tuning if overhead hits become too reliable on steep terrain.
 - Mound Maker can reshape cover strongly; tank placement should be watched after repeated mounds.
 - Firestorm Canister is intentionally expensive and limited, but wide fire damage may need real-match tuning.
-- Splitter Shell and Cluster Bomb overlap in pressure role; Splitter should stay fewer/stronger, Cluster wider/lighter.
+- Splitter Shell and Cluster Bomb still need longer full-match tuning to confirm the controlled-fork vs wide-scatter split stays valuable.
 - CPU does not drive tanks, so weapon selection cannot fully account for repositioning.
 
 ## Future Weapon Ideas

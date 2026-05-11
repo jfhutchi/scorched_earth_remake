@@ -3,27 +3,39 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="application-name" content="Crater Command" />
+    <meta name="description" content="Crater Command is a local browser artillery tank game with destructible terrain, wind, generated audio, weapon shops, and CPU or local play." />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Crater Command" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="theme-color" content="#17394a" />
-    <title>Tank Artillery Duel</title>
+    <title>Crater Command</title>
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
     <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
     <div id="app">
         <div id="menu" class="screen">
             <main class="menu-card">
-                <h1 class="title">Tank Artillery Duel</h1>
-                <p id="menuVersion" class="version-line">v0.7.0</p>
+                <h1 class="title">Crater Command</h1>
+                <p id="menuVersion" class="version-line">v0.7.1</p>
                 <p class="subtitle">Destroy the opposing tank across a shifting battlefield of wind, craters, dirt mounds, rolling shells, flame patches, split weapons, and limited special ammo.</p>
 
                 <div class="menu-actions">
                     <button id="mobilePlayBtn" class="btn primary mobile-only">Play</button>
-                    <button id="twoPlayerBtn" class="btn primary desktop-only">Two Player Local</button>
-                    <button id="cpuBtn" class="btn primary alt desktop-only">Single Player vs CPU</button>
+                    <button id="cpuBtn" class="btn primary desktop-only">Play vs CPU</button>
+                    <button id="twoPlayerBtn" class="btn primary alt desktop-only">Two Player Local</button>
+                    <button id="fullscreenBtn" class="btn small">Try Fullscreen</button>
                     <button id="helpBtn" class="btn small">How to Play</button>
                     <button id="menuMuteBtn" class="btn small">Sound: On</button>
                 </div>
+
+                <section id="pwaHint" class="pwa-hint" aria-label="Install guidance">
+                    <p id="pwaHintText">Use Try Fullscreen for supported browsers, or install Crater Command to your home screen for a more app-like layout.</p>
+                    <button id="pwaHintDismissBtn" type="button" class="btn small">Dismiss</button>
+                </section>
 
                 <section class="settings-grid grouped-settings" aria-label="Match settings">
                     <fieldset class="settings-group">
@@ -118,7 +130,7 @@
                         <section>
                             <h2>Weapons</h2>
                             <p>Standard Shell is unlimited. The catalog groups weapons into basic shells, precision, terrain, rolling, fire, split, and heavy explosive roles.</p>
-                            <p>New v0.7.0 shop weapons include Precision Shell, Airburst Shell, Splitter Shell, Heavy Roller, Excavator Bomb, Mound Maker, and Firestorm Canister. Mega Bomb remains expensive and late-match.</p>
+                            <p>New v0.7.x shop weapons include Precision Shell, Airburst Shell, Splitter Shell, Heavy Roller, Excavator Bomb, Mound Maker, and Firestorm Canister. Splitter Shell is a controlled fork shot; Cluster Bomb is wide area coverage. Mega Bomb remains expensive and late-match.</p>
                         </section>
                         <section>
                             <h2>Utilities</h2>
@@ -128,6 +140,11 @@
                             <h2>Controls</h2>
                             <p>Desktop: Arrow keys aim and set power, A/D move, Space fires, Tab or W cycles weapons, M mutes, Esc returns to menu.</p>
                             <p>Mobile: use move, angle, PWR, FIRE, WPN, mute, and menu buttons. Landscape is the intended mobile layout.</p>
+                        </section>
+                        <section>
+                            <h2>Fullscreen</h2>
+                            <p>Desktop and supported mobile browsers can try fullscreen from the main menu. iPhone Safari tabs cannot always force true fullscreen.</p>
+                            <p>For the best iPhone fullscreen-like experience, tap Share -> Add to Home Screen, then launch Crater Command from the home screen.</p>
                         </section>
                     </div>
                     <div class="menu-actions">
@@ -189,11 +206,12 @@
                             <span id="modeVal">Two Player Local</span>
                         </div>
                         <div class="stat-grid">
-                            <span>A <b id="angleVal">45 deg</b></span>
-                            <span>P <b id="powerVal">50</b></span>
-                            <span class="weapon-stat">Wpn <canvas id="weaponIcon" class="hud-weapon-icon" width="32" height="32"></canvas><b id="weaponVal">Standard Shell</b></span>
-                            <span>Ammo <b id="ammoVal">Unlimited</b></span>
-                            <span>Move <b id="moveVal">90 px</b></span>
+                            <span><small>Angle</small><b id="angleVal">45 deg</b></span>
+                            <span><small>Power</small><b id="powerVal">50</b></span>
+                            <span class="weapon-stat"><canvas id="weaponIcon" class="hud-weapon-icon" width="32" height="32"></canvas><small>Weapon</small><b id="weaponVal">Standard Shell</b></span>
+                            <span><small>Ammo</small><b id="ammoVal">Unlimited</b></span>
+                            <span><small>Move</small><b id="moveVal">90 px</b></span>
+                            <span><small>Wind</small><b id="windVal">0 calm</b></span>
                         </div>
                         <div class="result-line" id="resultVal">Round ready.</div>
                     </section>

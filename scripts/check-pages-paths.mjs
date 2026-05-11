@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
-const files = ['index.html', 'styles.css'];
+const files = ['index.html', 'styles.css', 'manifest.webmanifest'];
 collectJs('src');
 
 const failures = [];
@@ -14,6 +14,19 @@ for (const file of files) {
     ];
     for (const check of checks) {
         if (check.pattern.test(text)) failures.push(`${file}: ${check.message}`);
+    }
+    if (file.endsWith('.webmanifest')) {
+        const manifest = JSON.parse(text);
+        const pathValues = [
+            manifest.start_url,
+            manifest.scope,
+            ...(Array.isArray(manifest.icons) ? manifest.icons.map((icon) => icon.src) : []),
+        ].filter(Boolean);
+        for (const value of pathValues) {
+            if (/^(?:\/(?!\/)|https?:\/\/)/i.test(value)) {
+                failures.push(`${file}: manifest path must be GitHub Pages-relative: ${value}`);
+            }
+        }
     }
 }
 

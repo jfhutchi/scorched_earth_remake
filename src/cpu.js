@@ -94,9 +94,16 @@ export class CPUController {
                 score *= targetSlope > 0.42 || this.missStreak >= 1 ? 1.28 : 0.78;
                 if (role === 'fireHeavy' && (target.health <= 38 || difficulty === 'easy')) score *= 0.48;
             }
-            if (role === 'cluster' || role === 'split') {
-                score *= distance > 520 || this.missStreak >= 2 || obstruction ? 1.38 : 0.78;
-                if (role === 'cluster' && difficulty === 'easy') score *= 0.45;
+            if (role === 'cluster') {
+                score *= distance > 520 || this.missStreak >= 2 || obstruction || Math.abs(targetSlope) > 0.48 ? 1.46 : 0.72;
+                if (difficulty === 'easy') score *= 0.45;
+            }
+            if (role === 'controlledFork') {
+                score *= distance > 360 && distance < 760 && !obstruction ? 1.24 : 0.74;
+                if (this.missStreak === 1) score *= 1.18;
+                if (this.missStreak >= 3) score *= 0.72;
+                if (difficulty === 'easy') score *= 0.36;
+                if (difficulty === 'hard' && exposed) score *= 1.18;
             }
             if (role === 'airburst') {
                 score *= obstruction || exposed ? 1.4 : 0.74;

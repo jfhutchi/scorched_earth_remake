@@ -1,10 +1,10 @@
-# Tank Artillery Duel
+# Crater Command
 
-Current version: `v0.7.0`
+Current version: `v0.7.1`
 
-Tank Artillery Duel is a local browser-based 2D artillery tank game inspired by classic artillery duels. Two tanks fight across destructible hilly terrain with wind, turn-based aiming, movement fuel, generated Web Audio, match scoring, money, a pre-round and between-round shop, and an optional CPU opponent.
+Crater Command is a local browser-based 2D artillery tank game inspired by classic artillery duels. Two tanks fight across destructible hilly terrain with wind, turn-based aiming, movement fuel, generated Web Audio, match scoring, money, a pre-round and between-round shop, and an optional CPU opponent.
 
-v0.7.0 adds the weapon-system foundation: a centralized weapon catalog with categories, tactical roles, ammo/economy metadata, generated icon/visual/sound profiles, CPU-use hints, and debug validation helpers. It also adds the first expanded original weapon pack, improves CPU weapon choice, introduces [BALANCE.md](BALANCE.md), and adds GitHub Actions validation for version branches. Online multiplayer, room codes, accounts, backends, WebRTC, and external assets are still not implemented.
+v0.7.1 builds on the deployed v0.7.0 weapon-system foundation. It renames the displayed game to Crater Command, updates GitHub Actions for Node 24-compatible action versions, adds a gated developer debug panel, refreshes HUD styling, fixes dropdown contrast, differentiates Splitter Shell from Cluster Bomb, and improves iPhone Safari/PWA support. Online multiplayer, room codes, accounts, backends, WebRTC, and external assets are still not implemented.
 
 Release history lives in [RELEASE_NOTES.md](RELEASE_NOTES.md). Balance notes live in [BALANCE.md](BALANCE.md).
 
@@ -30,16 +30,18 @@ To test from a phone on the same Wi-Fi, use your machine's LAN IP, for example `
 
 ## GitHub Pages Verification
 
-The live game displays `v0.7.0` on the main menu only. Gameplay intentionally does not show a floating version badge over the canvas, HUD, or touch controls. `window.GAME_VERSION` is always available and returns `"v0.7.0"`.
+The live game displays `v0.7.1` on the main menu only. Gameplay intentionally does not show a floating version badge over the canvas, HUD, or touch controls. `window.GAME_VERSION` is always available and returns `"v0.7.1"`.
 
 After a GitHub Pages deployment from `main`:
 
 - Hard refresh `https://jfhutchi.github.io/scorched_earth_remake/`.
-- Confirm the main menu shows `v0.7.0`.
-- Open DevTools and confirm `window.GAME_VERSION` returns `"v0.7.0"`.
+- Confirm the main menu shows `Crater Command`.
+- Confirm the main menu shows `v0.7.1`.
+- Open DevTools and confirm `window.GAME_VERSION` returns `"v0.7.1"`.
 - Confirm no gameplay version badge appears.
 - Confirm no external image or audio assets are requested.
 - Confirm version branches run validation only and do not deploy production Pages.
+- Confirm `manifest.webmanifest` and local PWA icons load from the project path.
 
 ## Current Features
 
@@ -54,10 +56,12 @@ After a GitHub Pages deployment from `main`:
 - Centralized weapon catalog with categories, tactical roles, prices, ammo caps, starting ammo, labels, icon profiles, visual profiles, sound profiles, CPU-use weights, and shop priorities.
 - Shop cards generated from weapon metadata, plus separate Shield, First Aid Kit, and Parachute utility cards.
 - Economy, round summaries, pre-round shop before Round 1, between-round shop, score tracking, and inventory HUD.
+- Polished dark translucent HUD card styling for selected weapon, stat tiles, turn status, and player panels.
 - Shield charge, First Aid full-heal behavior, parachutes, floating combat feedback, and bounded burn ticks.
 - Generated Canvas weapon/item icons and projectile sprites. No external image assets are used.
 - Generated Web Audio firing, impact, ambience, tank movement, utility, purchase, blocked-purchase, round start, and result sounds. No external audio files are used.
 - Help / How to Play overlay, grouped settings, and debug/smoke hooks.
+- PWA manifest, local generated icons, iOS home-screen metadata, visible-viewport sizing, and Add to Home Screen guidance for a more app-like iPhone experience.
 
 ## Weapon Categories
 
@@ -90,8 +94,8 @@ Standard Shell remains unlimited and does not appear as a shop ammo card. Every 
 | Napalm Canister | Fire Weapons | 0 | 3 | $95 | Flame hit plus two small burn ticks |
 | Firestorm Canister | Fire Weapons | 0 | 2 | $180 | Wider expensive fire area |
 | Airburst Shell | Precision Weapons | 0 | 3 | $120 | Detonates above terrain or near exposed tanks |
-| Splitter Shell | Split / Cluster Weapons | 0 | 3 | $125 | Three medium shards near arc peak |
-| Cluster Bomb | Split / Cluster Weapons | 0 | 2 | $130 | Five lighter bomblets |
+| Splitter Shell | Split / Cluster Weapons | 0 | 3 | $125 | Controlled fork shot near arc peak |
+| Cluster Bomb | Split / Cluster Weapons | 0 | 2 | $130 | Wide bomblet area coverage |
 | Mega Bomb | Heavy Explosives | 0 | 1 | $375 | Late-match premium blast |
 
 ## Economy and Shop
@@ -146,16 +150,26 @@ Phone landscape remains the intended mobile gameplay mode.
 - Fire and weapon-cycle trigger once per tap.
 - Mobile movement buttons use the same movement and movement-audio path as desktop `A` / `D`.
 - The mobile shop uses compact single-column item cards so `Start Round` / `Start Next Round` stays reachable.
+- iPhone Safari browser tabs cannot always force true fullscreen. For the best fullscreen-like iPhone experience, tap Share -> Add to Home Screen, then launch Crater Command from the home screen.
+- Supported browsers can try fullscreen from the main menu `Try Fullscreen` button; unsupported browsers fail gracefully and keep the game playable.
 
 ## CPU
 
-CPU weapon choice now reads catalog roles and considers available ammo, enemy distance, target health, shields, rough terrain, terrain obstruction, uphill/downhill relation, miss streak, and difficulty. Easy CPU heavily favors Standard Shell and can make premium mistakes. Normal and Hard use roles more intentionally, avoid wasting Mega Bomb on low-value targets, and prefer defensive utilities when low on health.
+CPU weapon choice now reads catalog roles and considers available ammo, enemy distance, target health, shields, rough terrain, terrain obstruction, uphill/downhill relation, exposed targets, miss streak, and difficulty. Easy CPU heavily favors Standard Shell and can make premium mistakes. Normal and Hard use roles more intentionally, avoid wasting Mega Bomb on low-value targets, prefer defensive utilities when low on health, use Cluster Bomb for wider area coverage, and use Splitter Shell as a more controlled bracketing shot.
 
 CPU shopping uses the same affordability and full-ammo rules as human shopping, respects ammo caps, prioritizes First Aid and Shield when damaged, and uses shop priorities and CPU-use weights for weapon refills.
 
 ## Debug Helpers
 
-Normal play does not expose extra debug helpers. Add `?debug=1` to enable:
+Normal play does not expose extra debug controls. Add `?debug=1` to enable developer debug mode, then press `Ctrl + Shift + D` to toggle the compact debug panel. The panel is for local testing weapons, money, ammo, utilities, wind, tank state, setup ranges, and match flow; it does not add any backend or online cheat system.
+
+Debug mode includes:
+
+- Money grants and `$9999` set actions for active player, Player 1, and Player 2/CPU.
+- Refill actions for all catalog-driven limited weapons, selected weapon ammo, Shield, First Aid Kit, and Parachute while preserving Standard Shell as unlimited.
+- Wind controls, flat terrain, weapon test range, parachute/fall test, all-supplies setup, tank heal/damage/destroy actions, forced round wins, forced match wins, end turn, and return to main menu.
+
+`?debug=1` also enables:
 
 - `window.debugGameState()`
 - `window.debugWeapons()`
@@ -169,6 +183,9 @@ Normal play does not expose extra debug helpers. Add `?debug=1` to enable:
 - `window.debugTurnState()`
 - `window.debugMovementState()`
 - `window.exportDebugGameState()`
+- `window.debugGrantMoney(amount, playerId)`
+- `window.debugRefillWeapons(playerId)`
+- `window.debugRefillUtilities(playerId)`
 
 `window.render_game_to_text()`, `window.advanceTime(ms)`, and `window.GAME_VERSION` are always available for smoke testing.
 
@@ -177,6 +194,8 @@ Normal play does not expose extra debug helpers. Add `?debug=1` to enable:
 ```text
 index.html          Page shell, menu, HUD, help, summary, shop, touch controls
 styles.css          Responsive layout, HUD, shop cards, help, touch controls
+manifest.webmanifest PWA metadata for Crater Command
+icons/              Local generated PWA and Apple touch icons
 src/config.js       Version, tunables, weapon catalog, economy, CPU difficulty
 src/main.js         Entry point, DOM wiring, canvas sizing, touch wiring, debug hooks
 src/game.js         Game loop, turn flow, economy, shop, scoring, collisions, rendering

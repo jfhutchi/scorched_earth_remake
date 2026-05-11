@@ -70,6 +70,7 @@ export class UI {
         this.weaponIcon = document.getElementById('weaponIcon');
         this.ammoVal = document.getElementById('ammoVal');
         this.moveVal = document.getElementById('moveVal');
+        this.windVal = document.getElementById('windVal');
         this.resultVal = document.getElementById('resultVal');
         this.controlsHint = document.getElementById('controlsHint');
 
@@ -372,6 +373,7 @@ export class UI {
         this.moveVal.textContent = `${Math.round(active.movementFuel)} px`;
         this.moveVal.parentElement.classList.toggle('empty', active.movementFuel <= 0);
         this.moveVal.parentElement.classList.toggle('available', state.phase === 'aiming' && !active.isCpu && active.movementFuel > 0);
+        if (this.windVal) this.windVal.textContent = formatWind(state.wind);
         this.resultVal.textContent = state.lastResult;
         this.controlsHint.textContent = this._controlsText(state);
     }
@@ -686,6 +688,11 @@ function shortInv(tank) {
 
 function formatAmmo(ammo) {
     return Number.isFinite(ammo) ? String(ammo) : 'Unlimited';
+}
+
+function formatWind(wind) {
+    if (!Number.isFinite(wind) || wind === 0) return '0 calm';
+    return `${Math.abs(wind).toFixed(1)} ${wind > 0 ? 'right' : 'left'}`;
 }
 
 function healthColor(hp) {
