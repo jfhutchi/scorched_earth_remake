@@ -254,6 +254,14 @@ function startMatch(mode) {
     game.start(mode, ui.getSettings());
 }
 
+if (ui.campaignBtn) {
+    ui.campaignBtn.addEventListener('click', (e) => {
+        e.currentTarget.blur();
+        if (isPhoneViewport() || isCoarsePointer()) tryFullscreen({ quiet: true });
+        startMatch('siege');
+    });
+}
+
 ui.twoPlayerBtn.addEventListener('click', (e) => {
     e.currentTarget.blur();
     startMatch('two-player');
@@ -268,10 +276,10 @@ if (mobilePlayBtn) {
     mobilePlayBtn.addEventListener('click', (e) => {
         e.currentTarget.blur();
         // On phones, attempt fullscreen + landscape lock as a best-effort
-        // before starting Single Player vs CPU. Both are wrapped in try/catch
+        // before starting Campaign. Both are wrapped in try/catch
         // so failure cannot break gameplay.
         if (isPhoneViewport() || isCoarsePointer()) tryFullscreen({ quiet: true });
-        startMatch('cpu');
+        startMatch('siege');
     });
 }
 
@@ -353,6 +361,22 @@ ui.shopMenuBtn.addEventListener('click', (e) => {
     game.audio.playUiClick();
     game.returnToMenu();
 });
+
+if (ui.siegeReplayBtn) {
+    ui.siegeReplayBtn.addEventListener('click', (e) => {
+        e.currentTarget.blur();
+        game.audio.playStartMatch();
+        game.restartCastleSiegeLevel();
+    });
+}
+
+if (ui.siegeMenuBtn) {
+    ui.siegeMenuBtn.addEventListener('click', (e) => {
+        e.currentTarget.blur();
+        game.audio.playUiClick();
+        game.returnToMenu();
+    });
+}
 
 ui.muteBtn.addEventListener('click', (e) => {
     e.currentTarget.blur();

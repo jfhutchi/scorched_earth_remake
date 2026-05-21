@@ -20,16 +20,16 @@
         <div id="menu" class="screen">
             <main class="menu-card">
                 <h1 class="title">Crater Command</h1>
-                <p id="menuVersion" class="version-line">v0.7.1</p>
+                <p id="menuVersion" class="version-line">v0.8.0</p>
                 <p class="subtitle">Destroy the opposing tank across a shifting battlefield of wind, craters, dirt mounds, rolling shells, flame patches, split weapons, and limited special ammo.</p>
 
                 <div class="menu-actions">
-                    <button id="mobilePlayBtn" class="btn primary mobile-only">Play</button>
-                    <button id="cpuBtn" class="btn primary desktop-only">Play vs CPU</button>
+                    <button id="campaignBtn" class="btn primary">Play Campaign</button>
+                    <button id="cpuBtn" class="btn primary alt desktop-only">Duel vs CPU</button>
                     <button id="twoPlayerBtn" class="btn primary alt desktop-only">Two Player Local</button>
-                    <button id="fullscreenBtn" class="btn small">Try Fullscreen</button>
                     <button id="helpBtn" class="btn small">How to Play</button>
                     <button id="menuMuteBtn" class="btn small">Sound: On</button>
+                    <button id="fullscreenBtn" class="btn small">Try Fullscreen</button>
                 </div>
 
                 <section id="pwaHint" class="pwa-hint" aria-label="Install guidance">
@@ -299,6 +299,18 @@
                         <button id="summaryMenuBtn" class="btn">Main Menu</button>
                     </div>
                     <p id="summaryNote" class="note">Keyboard: N continues when a shop is available, Escape returns to menu. On touch, use the on-screen N or ≡ buttons.</p>
+                </div>
+            </div>
+
+            <div id="siegeResultOverlay" class="overlay hidden siege-result-overlay" role="dialog" aria-modal="true" aria-label="Castle Siege result">
+                <div class="menu-card overlay-card siege-result-card">
+                    <h1 id="siegeResultTitle" class="title">Castle Siege</h1>
+                    <div id="siegeResultStars" class="siege-stars" aria-label="Stars">Stars 0/3</div>
+                    <div id="siegeResultStats" class="summary-grid siege-result-stats"></div>
+                    <div class="menu-actions">
+                        <button id="siegeReplayBtn" class="btn primary">Replay</button>
+                        <button id="siegeMenuBtn" class="btn">Main Menu</button>
+                    </div>
                 </div>
             </div>
 

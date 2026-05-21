@@ -1,6 +1,6 @@
 # Manual Testing Checklist
 
-Current version: `v0.7.1`
+Current version: `v0.8.0`
 
 Use a local static server, open Crater Command in a desktop or mobile browser, and keep DevTools open for console errors. For mobile testing, use a real device on the LAN IP when possible.
 
@@ -8,11 +8,12 @@ Use a local static server, open Crater Command in a desktop or mobile browser, a
 
 - [ ] Browser tab title uses `Crater Command`.
 - [ ] Main menu shows `Crater Command`.
-- [ ] Main menu shows `v0.7.1`.
+- [ ] Main menu shows `v0.8.0`.
 - [ ] Gameplay screen does not show a floating version badge.
-- [ ] `window.GAME_VERSION` returns `"v0.7.1"`.
-- [ ] Single Player vs CPU starts from the primary menu action.
-- [ ] Phone-sized layout shows the single `Play` button and it starts Single Player vs CPU.
+- [ ] `window.GAME_VERSION` returns `"v0.8.0"`.
+- [ ] Play Campaign starts Castle Siege `siege_001`.
+- [ ] Duel vs CPU still starts.
+- [ ] Phone-sized layout shows the Campaign entry and it starts Castle Siege.
 - [ ] Two Player Local remains available on desktop/wider layouts.
 - [ ] Match Length, Starting Money, CPU Difficulty, Wind, and Terrain dropdowns are readable when closed and when opened.
 - [ ] Default starting money is `None ($0)`.
@@ -24,7 +25,7 @@ Use a local static server, open Crater Command in a desktop or mobile browser, a
 - [ ] CPU can shop, take turns, and fire supported weapons without freezing.
 - [ ] Mobile landscape controls and compact shop remain usable.
 - [ ] Desktop keyboard controls still work.
-- [ ] `BALANCE.md` exists and references `v0.7.1`.
+- [ ] `BALANCE.md` exists and references `v0.8.0`.
 - [ ] GitHub Actions validation passes.
 - [ ] GitHub Actions workflows run without Node 20 deprecation warnings.
 - [ ] No stale test artifacts are committed.
@@ -45,6 +46,23 @@ Use a local static server, open Crater Command in a desktop or mobile browser, a
 - [ ] Confirm rounds 4 and 5 are not played.
 - [ ] Confirm the final score is correct.
 - [ ] Confirm no console errors occur.
+
+## v0.8.0 Castle Siege Checks
+
+- [ ] Campaign starts `siege_001` / Old Watchtower.
+- [ ] Existing Duel vs CPU still starts.
+- [ ] Existing Two Player Local still starts on desktop/wider layouts.
+- [ ] Player can aim and fire the left-side cannon.
+- [ ] Projectiles collide with castle blocks before terrain collision.
+- [ ] Blocks lose HP, show damage, and disappear when destroyed.
+- [ ] Explosion damage applies to nearby castle blocks.
+- [ ] Destroying `castle_core` triggers victory.
+- [ ] Firing all 8 shots without destroying the core triggers failure.
+- [ ] Victory/failure result shows level name, stars, coins earned, shots remaining, Replay, and Main Menu.
+- [ ] Replay restarts `siege_001`.
+- [ ] Main Menu returns to the main menu.
+- [ ] Progress is written to `localStorage` under `crater-command-siege-progress-v1`.
+- [ ] No console errors occur.
 
 ## v0.7.1 Debug and Weapon Catalog Checks
 
@@ -145,8 +163,8 @@ Open with `?debug=1`.
 ## CI and Static Validation
 
 - [ ] `node --check` passes for all source and script files.
-- [ ] `node scripts/validate-version.mjs v0.7.1` passes.
-- [ ] `node scripts/check-release-notes.mjs v0.7.1` passes.
+- [ ] `node scripts/validate-version.mjs v0.8.0` passes.
+- [ ] `node scripts/check-release-notes.mjs v0.8.0` passes.
 - [ ] `node scripts/check-artifacts.mjs` passes.
 - [ ] `node scripts/check-pages-paths.mjs` passes.
 - [ ] Version branches run validation only.

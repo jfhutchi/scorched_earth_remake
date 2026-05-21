@@ -809,6 +809,38 @@ select option:disabled {
     text-align: left;
 }
 
+.siege-result-card {
+    max-width: 720px;
+}
+
+.siege-stars {
+    display: inline-block;
+    margin: 0 auto 12px;
+    padding: 7px 12px;
+    border: 1px solid rgba(255, 228, 155, 0.34);
+    border-radius: 999px;
+    background: linear-gradient(180deg, rgba(120, 74, 35, 0.48), rgba(48, 34, 25, 0.32));
+    color: #ffe49b;
+    font-size: 14px;
+    font-weight: 900;
+}
+
+.siege-stars[data-stars="3"] {
+    color: #fff4bb;
+    border-color: rgba(255, 228, 155, 0.7);
+    box-shadow: 0 0 24px rgba(255, 214, 112, 0.16);
+}
+
+.siege-result-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.siege-result-stat p {
+    color: #9edbe6;
+    font-size: 22px;
+    font-weight: 900;
+}
+
 .summary-card,
 .shop-card {
     padding: 14px;
@@ -1367,6 +1399,20 @@ select option:disabled {
         flex: 1 1 0;
     }
 
+    #siegeResultOverlay .menu-actions {
+        flex-direction: row;
+        flex-wrap: nowrap;
+    }
+
+    #siegeResultOverlay .menu-actions .btn {
+        width: auto;
+        flex: 1 1 0;
+    }
+
+    .siege-result-stats {
+        grid-template-columns: 1fr;
+    }
+
     .shop-card {
         padding: 10px;
     }
@@ -1540,7 +1586,8 @@ body.is-mobile-game .weapon-toast {
 }
 
 body.is-mobile-game #shopOverlay .overlay-card,
-body.is-mobile-game #summaryOverlay .overlay-card {
+body.is-mobile-game #summaryOverlay .overlay-card,
+body.is-mobile-game #siegeResultOverlay .overlay-card {
     width: calc(100vw - 12px);
     max-width: calc(100vw - 12px);
     max-height: calc(var(--app-height, 100dvh) - 10px);
@@ -1552,7 +1599,8 @@ body.is-mobile-game #summaryOverlay .overlay-card {
 }
 
 body.is-mobile-game #shopContent,
-body.is-mobile-game #summaryStats {
+body.is-mobile-game #summaryStats,
+body.is-mobile-game #siegeResultStats {
     min-height: 0;
     overflow: auto;
     -webkit-overflow-scrolling: touch;
@@ -1561,7 +1609,8 @@ body.is-mobile-game #summaryStats {
 }
 
 body.is-mobile-game .summary-grid,
-body.is-mobile-game .shop-grid {
+body.is-mobile-game .shop-grid,
+body.is-mobile-game .siege-result-stats {
     grid-template-columns: 1fr;
     gap: 6px;
     margin: 8px 0;
@@ -1626,7 +1675,8 @@ body.is-mobile-game .shop-item-price {
 }
 
 body.is-mobile-game #shopOverlay .menu-actions,
-body.is-mobile-game #summaryOverlay .menu-actions {
+body.is-mobile-game #summaryOverlay .menu-actions,
+body.is-mobile-game #siegeResultOverlay .menu-actions {
     flex-shrink: 0;
     flex-direction: row;
     flex-wrap: nowrap;
@@ -1637,7 +1687,8 @@ body.is-mobile-game #summaryOverlay .menu-actions {
 }
 
 body.is-mobile-game #shopOverlay .menu-actions .btn,
-body.is-mobile-game #summaryOverlay .menu-actions .btn {
+body.is-mobile-game #summaryOverlay .menu-actions .btn,
+body.is-mobile-game #siegeResultOverlay .menu-actions .btn {
     width: auto;
     min-width: 0;
     min-height: 38px;
