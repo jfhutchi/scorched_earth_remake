@@ -676,6 +676,11 @@ export class Game {
                     hp: Math.max(0, Math.round(block.hp)),
                     maxHp: block.maxHp,
                     destroyed: block.destroyed,
+                    supported: Boolean(block.supported),
+                    falling: Boolean(block.falling),
+                    velocityY: Math.round(block.velocityY || 0),
+                    lastSupportedY: Math.round(block.lastSupportedY || block.y),
+                    recentImpact: Number((block.recentImpact || 0).toFixed(2)),
                     tags: block.tags,
                 })),
                 result: siege.result,
@@ -1717,6 +1722,13 @@ export class Game {
         }
 
         this.tanks.forEach((tank) => tank.update(dt));
+        if (this.gameMode === 'siege' && this.siege && !this.gameOver) {
+            const collapse = this.siege.update(dt, this.terrain);
+            if (collapse.impactDamage > 0) {
+                this.lastResult = `Castle blocks settled with ${Math.round(collapse.impactDamage)} impact damage.`;
+                if (collapse.destroyedCore) this.statusMessage = 'Castle core shattered during collapse.';
+            }
+        }
         this._updateFeedback(dt);
         this._updateBurns(dt);
 
@@ -1729,7 +1741,8 @@ export class Game {
 
         if (this.phase === 'resolving' || this.phase === 'siegeResolving') {
             this.phaseTimer -= dt;
-            if (this.phaseTimer <= 0 && this.pendingBurns.length === 0) {
+            const siegeSettling = this.gameMode === 'siege' && this.siege && this.siege.isSettling();
+            if (this.phaseTimer <= 0 && this.pendingBurns.length === 0 && !siegeSettling) {
                 if (this.gameMode === 'siege') this._finishCastleSiegeResolution();
                 else this._finishShotResolution();
             }
@@ -2288,19 +2301,27 @@ export class Game {
         else projectile.done = true;
 
         const terrainMessage = this._applyTerrainEffect(x, y, weapon);
+        const result = this.siege.applyImpact(x, y, weapon);
+        this.shotInfo.totalDamage = result.totalDamage;
+        if (result.totalDamage > 0) {
+            this._addFloatingText(x, y - 18, `Castle -${Math.round(result.totalDamage)}`, '#ffe49b', { size: 17 });
+            this.audio.playHit({ x, width: this.width });
+        }
+        if (result.blocksDestroyed > 0) {
+            this._addFloatingText(x, y - 42, `${result.blocksDestroyed} block${result.blocksDestroyed === 1 ? '' : 's'} down`, '#9edbe6', { size: 16 });
+        }
         const explosion = new Explosion(x, y, weapon.explosionRadius, weapon);
         this.explosions.push(explosion);
         this._addScreenShake(weapon);
         this.audio.playExplosion(weapon, { x, width: this.width });
 
         if (!final) return;
-        this.siege.finishIfNeeded();
         this.phase = 'siegeResolving';
         this.phaseTimer = Math.max(0.7, this._remainingExplosionTime() + 0.12);
         this.lastResult = this.siege.failure
             ? `Final shot hit the ground. ${terrainMessage} The castle core is still standing.`
-            : `Shot hit the ground. ${terrainMessage}`;
-        this.statusMessage = 'Impact resolving.';
+            : castleSiegeTerrainImpactText(terrainMessage, result);
+        this.statusMessage = result.objectiveComplete ? 'Castle core destroyed.' : 'Impact resolving.';
     }
 
     _resolveImpact(x, y, collision) {
@@ -2899,7 +2920,7 @@ export class Game {
         ctx.translate(shake.x, shake.y);
         this.terrain.draw(ctx);
         if (this.gameMode === 'siege' && this.siege) {
-            drawCastleSiegeBlocks(ctx, this.siege.blocks);
+            drawCastleSiegeBlocks(ctx, this.siege.blocks, this.visualTime);
         }
 
         for (const tank of this.tanks) {
@@ -3231,6 +3252,18 @@ function castleSiegeImpactText(hitBlock, result) {
         return `${capitalize(material)} block hit for ${Math.round(result.totalDamage)} total damage.`;
     }
     return `${capitalize(material)} block clipped. No meaningful damage.`;
+}
+
+function castleSiegeTerrainImpactText(terrainMessage, result) {
+    const prefix = `Shot hit the ground. ${terrainMessage}`;
+    if (result.objectiveComplete) return `${prefix} The blast destroyed the castle core.`;
+    if (result.blocksDestroyed > 0) {
+        return `${prefix} Splash destroyed ${result.blocksDestroyed} castle block${result.blocksDestroyed === 1 ? '' : 's'}.`;
+    }
+    if (result.totalDamage > 0) {
+        return `${prefix} Splash dealt ${Math.round(result.totalDamage)} castle damage.`;
+    }
+    return prefix;
 }
 
 function capitalize(value) {

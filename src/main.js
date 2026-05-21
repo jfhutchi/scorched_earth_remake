@@ -12,7 +12,6 @@ const game = new Game(canvas, ui);
 const smallWarning = document.getElementById('smallWarning');
 const orientationHint = document.getElementById('orientationHint');
 const touchContainer = document.getElementById('touchControls');
-const mobilePlayBtn = document.getElementById('mobilePlayBtn');
 const rotateOverlay = document.getElementById('rotateOverlay');
 const rotateContinueBtn = document.getElementById('rotateContinueBtn');
 const rotateMenuBtn = document.getElementById('rotateMenuBtn');
@@ -271,17 +270,6 @@ ui.cpuBtn.addEventListener('click', (e) => {
     e.currentTarget.blur();
     startMatch('cpu');
 });
-
-if (mobilePlayBtn) {
-    mobilePlayBtn.addEventListener('click', (e) => {
-        e.currentTarget.blur();
-        // On phones, attempt fullscreen + landscape lock as a best-effort
-        // before starting Campaign. Both are wrapped in try/catch
-        // so failure cannot break gameplay.
-        if (isPhoneViewport() || isCoarsePointer()) tryFullscreen({ quiet: true });
-        startMatch('siege');
-    });
-}
 
 if (fullscreenBtn) {
     fullscreenBtn.addEventListener('click', (e) => {

@@ -1,6 +1,6 @@
 import { CASTLE_MATERIALS } from './castleSiegeBlocks.js';
 
-export function drawCastleSiegeBlocks(ctx, blocks) {
+export function drawCastleSiegeBlocks(ctx, blocks, visualTime = currentTimeSeconds()) {
     if (!ctx || !Array.isArray(blocks)) return;
 
     for (const block of blocks) {
@@ -10,7 +10,7 @@ export function drawCastleSiegeBlocks(ctx, blocks) {
 
     for (const block of blocks) {
         if (!block || block.destroyed) continue;
-        drawBlock(ctx, block);
+        drawBlock(ctx, block, visualTime);
     }
 }
 
@@ -107,13 +107,14 @@ function drawBlockShadow(ctx, block) {
     ctx.restore();
 }
 
-function drawBlock(ctx, block) {
+function drawBlock(ctx, block, visualTime) {
     const material = CASTLE_MATERIALS[block.material] || CASTLE_MATERIALS.wood;
     const damageRatio = block.maxHp > 0 ? 1 - block.hp / block.maxHp : 0;
     const core = isCore(block);
 
     ctx.save();
-    if (core) drawCoreGlow(ctx, block, damageRatio);
+    if (block.falling) drawFallStreak(ctx, block);
+    if (core) drawCoreGlow(ctx, block, damageRatio, visualTime);
 
     const gradient = ctx.createLinearGradient(block.x, block.y, block.x, block.y + block.height);
     gradient.addColorStop(0, lighten(material.fill, core ? 36 : 18));
@@ -136,12 +137,12 @@ function drawBlock(ctx, block) {
     if (block.material === 'wood') drawWoodGrain(ctx, block);
     if (core) drawCrystalFacets(ctx, block);
     if (damageRatio > 0.18) drawCracks(ctx, block, damageRatio);
+    if (block.recentImpact > 0) drawRecentImpact(ctx, block);
     ctx.restore();
 }
 
-function drawCoreGlow(ctx, block, damageRatio) {
-    const time = typeof performance !== 'undefined' ? performance.now() / 1000 : 0;
-    const pulse = 0.55 + Math.sin(time * 5.2) * 0.45;
+function drawCoreGlow(ctx, block, damageRatio, visualTime) {
+    const pulse = 0.55 + Math.sin(visualTime * 5.2) * 0.45;
     const cx = block.x + block.width / 2;
     const cy = block.y + block.height / 2;
     const radius = Math.max(block.width, block.height) * (0.72 + pulse * 0.18);
@@ -153,6 +154,20 @@ function drawCoreGlow(ctx, block, damageRatio) {
     ctx.beginPath();
     ctx.arc(cx, cy, radius, 0, Math.PI * 2);
     ctx.fill();
+}
+
+function drawFallStreak(ctx, block) {
+    const speed = Math.min(1, Math.max(0, (block.velocityY || 0) / 620));
+    if (speed <= 0.05) return;
+    ctx.fillStyle = `rgba(18, 22, 22, ${0.12 + speed * 0.14})`;
+    ctx.fillRect(block.x + 3, block.y - 8 - speed * 10, block.width - 6, 8 + speed * 12);
+}
+
+function drawRecentImpact(ctx, block) {
+    const alpha = Math.min(1, Math.max(0, block.recentImpact / 0.45));
+    ctx.strokeStyle = `rgba(255, 238, 176, ${0.25 + alpha * 0.4})`;
+    ctx.lineWidth = 2;
+    ctx.strokeRect(block.x + 3, block.y + 3, block.width - 6, block.height - 6);
 }
 
 function drawWoodGrain(ctx, block) {
@@ -226,6 +241,10 @@ function shiftHex(hex, amount) {
     const g = clamp(((value >> 8) & 255) + amount, 0, 255);
     const b = clamp((value & 255) + amount, 0, 255);
     return `rgb(${r}, ${g}, ${b})`;
+}
+
+function currentTimeSeconds() {
+    return typeof performance !== 'undefined' ? performance.now() / 1000 : 0;
 }
 
 function clamp(value, min, max) {
