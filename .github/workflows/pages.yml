@@ -32,10 +32,10 @@ jobs:
         run: node scripts/static-check.mjs
 
       - name: Version consistency
-        run: node scripts/validate-version.mjs v0.8.0
+        run: node scripts/validate-version.mjs v0.9.0
 
       - name: Release notes entry
-        run: node scripts/check-release-notes.mjs v0.8.0
+        run: node scripts/check-release-notes.mjs v0.9.0
 
       - name: Artifact pollution
         run: node scripts/check-artifacts.mjs

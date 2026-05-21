@@ -1,6 +1,36 @@
 # Release Notes
 
-## v0.8.0 - Pending
+## v0.9.0 - Pending
+
+### Summary
+
+v0.9.0 turns Castle Siege from a one-level vertical slice into a campaign level-engine milestone while preserving Duel vs CPU and Two Player Local. It adds a level-select screen, 16 handcrafted levels across two worlds, a 6-star World 2 unlock gate, next-level routing after victories, and a minimal `src/siege/` module structure for future Castle Siege work. It does not add a backend, accounts, online multiplayer, ads, in-app purchases, procedural generation, external assets, or a new build system.
+
+### Added
+
+- Castle Siege level-select overlay with campaign totals, per-world progress, per-level stars, locked level states, and Main Menu routing.
+- World catalog for Outpost and Quarry, including world membership, star unlock requirements, and level unlock helpers.
+- Sixteen Castle Siege levels: `siege_001` through `siege_008` in Outpost, and `siege_009` through `siege_016` in Quarry.
+- Wood/crystal Outpost levels and stone-supported Quarry levels.
+- Next Level action on victory when the next campaign level is unlocked.
+- Progress helpers for total stars and per-level progress reads.
+
+### Changed
+
+- Moved Castle Siege modules into the minimal `src/siege/` folder.
+- Refactored Castle Siege level data into per-level files aggregated by `src/siege/levels.js`.
+- Campaign now opens the level-select screen instead of immediately starting `siege_001`.
+- Updated workflow validation references to `v0.9.0`.
+
+### Preserved
+
+- Duel vs CPU, Two Player Local, mobile controls, generated Canvas visuals, generated Web Audio, debug helpers, static module loading, local Castle Siege progress storage, and GitHub Pages-safe relative paths remain intact.
+
+### Testing
+
+- Local checks should include static syntax validation, version/release/artifact/path validation, level-select smoke testing, first-level victory and Next Level routing, World 2 lock/unlock checks, and regression starts for Duel vs CPU and Two Player Local.
+
+## v0.8.0 - Previous
 
 ### Summary
 

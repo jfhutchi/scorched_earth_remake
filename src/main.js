@@ -2,6 +2,7 @@ import { Game } from './game.js';
 import { UI } from './ui.js';
 import { CONFIG, GAME_VERSION, WEAPONS } from './config.js';
 import { initTouchInput, updateTouchControlsState } from './touchInput.js';
+import { loadCastleSiegeProgress } from './siege/progress.js';
 
 const canvas = document.getElementById('gameCanvas');
 canvas.width = CONFIG.canvas.width;
@@ -253,11 +254,28 @@ function startMatch(mode) {
     game.start(mode, ui.getSettings());
 }
 
+function openLevelSelect() {
+    ui.showGame();
+    ui.showLevelSelect(loadCastleSiegeProgress(), {
+        onSelect: (levelId) => {
+            game.audio.playStartMatch();
+            game.startCastleSiege(ui.getSettings(), levelId);
+            refreshLayout();
+        },
+        onBack: () => {
+            game.audio.playUiClick();
+            game.returnToMenu();
+        },
+    });
+    refreshLayout();
+}
+
 if (ui.campaignBtn) {
     ui.campaignBtn.addEventListener('click', (e) => {
         e.currentTarget.blur();
         if (isPhoneViewport() || isCoarsePointer()) tryFullscreen({ quiet: true });
-        startMatch('siege');
+        game.audio.playUiClick();
+        openLevelSelect();
     });
 }
 
@@ -363,6 +381,28 @@ if (ui.siegeMenuBtn) {
         e.currentTarget.blur();
         game.audio.playUiClick();
         game.returnToMenu();
+    });
+}
+
+if (ui.siegeNextBtn) {
+    ui.siegeNextBtn.addEventListener('click', (e) => {
+        e.currentTarget.blur();
+        const levelId = e.currentTarget.dataset.levelId;
+        if (!levelId) {
+            game.audio.playBlocked();
+            return;
+        }
+        game.audio.playStartMatch();
+        game.startCastleSiege(ui.getSettings(), levelId);
+        refreshLayout();
+    });
+}
+
+if (ui.siegeLevelSelectBtn) {
+    ui.siegeLevelSelectBtn.addEventListener('click', (e) => {
+        e.currentTarget.blur();
+        game.audio.playUiClick();
+        openLevelSelect();
     });
 }
 

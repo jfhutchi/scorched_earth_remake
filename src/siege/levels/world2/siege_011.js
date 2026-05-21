@@ -1,0 +1,23 @@
+export const siege_011 = {
+    id: 'siege_011',
+    name: 'Stone Pillars',
+    worldId: 'world2',
+    shotLimit: 9,
+    parShots: 5,
+    playerStartX: 180,
+    startingAngle: 50,
+    startingPower: 70,
+    objective: { type: 'destroy_core', targetTag: 'castle_core' },
+    windMode: 'light',
+    terrainRoughness: 'smooth',
+    loadout: [{ weaponId: 'standard', ammo: Infinity }],
+    hint: 'Stone supports take two clean hits. Plan your shots.',
+    blocks: [
+        { id: 'sp_l_base', material: 'stone', x: 780, y: 496, width: 36, height: 76, tags: ['foundation', 'support'] },
+        { id: 'sp_r_base', material: 'stone', x: 904, y: 496, width: 36, height: 76, tags: ['foundation', 'support'] },
+        { id: 'sp_beam',   material: 'wood', x: 770, y: 460, width: 180, height: 36, tags: ['beam'] },
+        { id: 'sp_core',   type: 'castle_core', material: 'crystal', x: 800, y: 408, width: 120, height: 52, hp: 56, tags: ['castle_core', 'objective'] },
+        { id: 'sp_brace_l', material: 'wood', x: 770, y: 376, width: 36, height: 32, tags: ['ornament'] },
+        { id: 'sp_brace_r', material: 'wood', x: 914, y: 376, width: 36, height: 32, tags: ['ornament'] },
+    ],
+};

@@ -1,4 +1,4 @@
-export const GAME_VERSION = 'v0.8.0';
+export const GAME_VERSION = 'v0.9.0';
 export const MAX_SHIELD = 60;
 
 export const WEAPON_CATEGORIES = {

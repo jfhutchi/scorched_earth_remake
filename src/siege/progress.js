@@ -113,3 +113,18 @@ function clampInt(value, min, max) {
     const numeric = Math.round(Number(value) || 0);
     return Math.max(min, Math.min(max, numeric));
 }
+
+export function getStarsTotal(progress) {
+    if (!progress || !progress.completedLevels) return 0;
+    let total = 0;
+    for (const entry of Object.values(progress.completedLevels)) {
+        if (entry && Number.isFinite(entry.bestStars)) total += entry.bestStars;
+    }
+    return total;
+}
+
+export function getLevelProgress(progress, levelId) {
+    if (!progress || !progress.completedLevels || !levelId) return null;
+    const entry = progress.completedLevels[levelId];
+    return entry ? sanitizeLevelProgress(entry) : null;
+}

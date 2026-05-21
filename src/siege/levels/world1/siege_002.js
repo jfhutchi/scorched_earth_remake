@@ -1,0 +1,23 @@
+export const siege_002 = {
+    id: 'siege_002',
+    name: 'Twin Stack',
+    worldId: 'world1',
+    shotLimit: 7,
+    parShots: 3,
+    playerStartX: 160,
+    startingAngle: 48,
+    startingPower: 66,
+    objective: { type: 'destroy_core', targetTag: 'castle_core' },
+    windMode: 'calm',
+    terrainRoughness: 'smooth',
+    loadout: [{ weaponId: 'standard', ammo: Infinity }],
+    hint: 'Two pillars hold the roof. Drop either and the core comes down.',
+    blocks: [
+        { id: 'l_base', material: 'wood', x: 770, y: 534, width: 40, height: 38, tags: ['foundation'] },
+        { id: 'l_mid',  material: 'wood', x: 770, y: 496, width: 40, height: 38 },
+        { id: 'r_base', material: 'wood', x: 890, y: 534, width: 40, height: 38, tags: ['foundation'] },
+        { id: 'r_mid',  material: 'wood', x: 890, y: 496, width: 40, height: 38 },
+        { id: 'beam',   material: 'wood', x: 770, y: 458, width: 160, height: 38, tags: ['beam'] },
+        { id: 'p_core', type: 'castle_core', material: 'crystal', x: 820, y: 420, width: 60, height: 38, hp: 30, tags: ['castle_core', 'objective'] },
+    ],
+};

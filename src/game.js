@@ -6,8 +6,11 @@ import { CPUController } from './cpu.js';
 import { BackgroundRenderer } from './backgroundRenderer.js';
 import { drawTankWreck } from './tankRenderer.js';
 import { pickBattleTheme } from './themes.js';
-import { CastleSiegeMode } from './castleSiegeMode.js';
-import { drawCastleSiegeBlocks, drawCastleSiegeHudOverlay, drawCastleSiegeObjectiveMarker } from './castleSiegeRenderer.js';
+import { CastleSiegeMode } from './siege/mode.js';
+import { drawCastleSiegeBlocks, drawCastleSiegeHudOverlay, drawCastleSiegeObjectiveMarker } from './siege/renderer.js';
+import { getCastleSiegeLevel } from './siege/levels.js';
+import { loadCastleSiegeProgress } from './siege/progress.js';
+import { getNextLevelInCampaign, isLevelUnlocked } from './siege/worlds.js';
 import { CONFIG, CPU_DIFFICULTY, GAME_VERSION, WEAPONS, clamp, clampShieldCharge, getWeaponById, limitedWeapons, maxAmmoFor } from './config.js';
 
 export function getWinsNeededToClinch(matchLength) {
@@ -2734,9 +2737,30 @@ export class Game {
         this.statusMessage = 'Castle Siege complete.';
         this.lastResult = `${this.siege.level.name} cleared with ${this.siege.calculateStars()} star${this.siege.calculateStars() === 1 ? '' : 's'}.`;
         if (typeof this.ui.showCastleSiegeResult === 'function') {
-            this.ui.showCastleSiegeResult(this.siege.result || this.siege.summary().result);
+            this.ui.showCastleSiegeResult(this._castleSiegeResultWithNext(this.siege.result || this.siege.summary().result));
         }
         this.audio.playMatchWin();
+    }
+
+    _castleSiegeResultWithNext(result) {
+        if (!result || !result.victory) {
+            return result ? { ...result, nextLevelId: null, nextLevelName: null } : result;
+        }
+
+        const next = getNextLevelInCampaign(result.levelId || this.siege?.level?.id);
+        const progress = loadCastleSiegeProgress();
+        if (!next || !isLevelUnlocked(next.levelId, progress)) {
+            return { ...result, nextLevelId: null, nextLevelName: null };
+        }
+
+        const nextLevel = getCastleSiegeLevel(next.levelId);
+        return {
+            ...result,
+            nextLevelId: next.levelId,
+            nextLevelName: nextLevel ? nextLevel.name : next.levelId,
+            nextWorldId: next.worldId,
+            nextCrossesWorld: next.crossesWorld,
+        };
     }
 
     _showCastleSiegeFailure() {
@@ -2750,7 +2774,7 @@ export class Game {
         this.statusMessage = 'Castle Siege failed.';
         this.lastResult = 'Out of shots. The castle core survived.';
         if (typeof this.ui.showCastleSiegeResult === 'function') {
-            this.ui.showCastleSiegeResult(this.siege.result || this.siege.summary().result);
+            this.ui.showCastleSiegeResult(this._castleSiegeResultWithNext(this.siege.result || this.siege.summary().result));
         }
         this.audio.playMatchLoss();
     }

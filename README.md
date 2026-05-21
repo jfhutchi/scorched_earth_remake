@@ -1,10 +1,10 @@
 # Crater Command
 
-Current version: `v0.8.0`
+Current version: `v0.9.0`
 
 Crater Command is a local browser-based 2D artillery tank game inspired by classic artillery duels. Two tanks fight across destructible hilly terrain with wind, turn-based aiming, movement fuel, generated Web Audio, match scoring, money, a pre-round and between-round shop, and an optional CPU opponent.
 
-v0.8.0 adds the first playable Castle Siege campaign vertical slice on top of the existing duel game. The new Campaign entry starts `siege_001`, where one player cannon has limited shots to destroy a destructible castle core. Duel vs CPU, Two Player Local, generated visuals/audio, mobile controls, and static GitHub Pages hosting remain preserved. Online multiplayer, room codes, accounts, backends, WebRTC, and external assets are still not implemented.
+v0.9.0 expands Castle Siege into a level-engine milestone with a level-select screen, 16 handcrafted levels across two worlds, and a 6-star gate for World 2. Duel vs CPU, Two Player Local, generated visuals/audio, mobile controls, and static GitHub Pages hosting remain preserved. Online multiplayer, room codes, accounts, backends, WebRTC, ads, in-app purchases, and external assets are still not implemented.
 
 Release history lives in [RELEASE_NOTES.md](RELEASE_NOTES.md). Balance notes live in [BALANCE.md](BALANCE.md).
 
@@ -30,14 +30,14 @@ To test from a phone on the same Wi-Fi, use your machine's LAN IP, for example `
 
 ## GitHub Pages Verification
 
-The live game displays `v0.8.0` on the main menu only. Gameplay intentionally does not show a floating version badge over the canvas, HUD, or touch controls. `window.GAME_VERSION` is always available and returns `"v0.8.0"`.
+The live game displays `v0.9.0` on the main menu only. Gameplay intentionally does not show a floating version badge over the canvas, HUD, or touch controls. `window.GAME_VERSION` is always available and returns `"v0.9.0"`.
 
 After a GitHub Pages deployment from `main`:
 
 - Hard refresh `https://jfhutchi.github.io/scorched_earth_remake/`.
 - Confirm the main menu shows `Crater Command`.
-- Confirm the main menu shows `v0.8.0`.
-- Open DevTools and confirm `window.GAME_VERSION` returns `"v0.8.0"`.
+- Confirm the main menu shows `v0.9.0`.
+- Open DevTools and confirm `window.GAME_VERSION` returns `"v0.9.0"`.
 - Confirm no gameplay version badge appears.
 - Confirm no external image or audio assets are requested.
 - Confirm version branches run validation only and do not deploy production Pages.
@@ -45,7 +45,7 @@ After a GitHub Pages deployment from `main`:
 
 ## Current Features
 
-- Campaign / Castle Siege vertical slice with one level, destructible castle blocks, a core objective, limited shots, victory/failure results, and local progress.
+- Campaign / Castle Siege level engine with 16 levels across Outpost and Quarry, a level-select screen, star-gated world unlocks, destructible castle blocks, a core objective, limited shots, victory/failure results, next-level routing, and local progress.
 - Single Player vs CPU and Two Player Local modes.
 - Phone-sized layouts show the Campaign entry as the primary start path.
 - Two Player Local remains available on desktop and wider layouts.

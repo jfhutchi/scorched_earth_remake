@@ -1,4 +1,4 @@
-import { CASTLE_MATERIALS } from './castleSiegeBlocks.js';
+import { CASTLE_MATERIALS } from './blocks.js';
 
 export function drawCastleSiegeBlocks(ctx, blocks, visualTime = currentTimeSeconds()) {
     if (!ctx || !Array.isArray(blocks)) return;
