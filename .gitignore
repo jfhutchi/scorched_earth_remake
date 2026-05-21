@@ -9,6 +9,12 @@ temp/
 .nyc_output/
 debug-output/
 *.trace.zip
+*.trace
 *.log
 *.har
+*-screenshot.png
+screenshot-*.png
+debug-*.json
+*.webm
+*.mp4
 .claude/

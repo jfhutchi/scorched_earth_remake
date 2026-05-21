@@ -124,24 +124,46 @@ export function getProjectileSprite(weapon) {
     } else if (shape === 'cluster' || shape === 'splitter' || shape === 'clusterBomblet' || shape === 'splitterShard') {
         const scale = shape === 'clusterBomblet' || shape === 'splitterShard' ? 0.68 : 1;
         ctx.scale(scale, scale);
-        roundRect(ctx, -12, -6, 24, 12, 5);
-        ctx.fillStyle = dark;
-        ctx.fill();
-        roundRect(ctx, -8, -5, 16, 10, 4);
-        ctx.fillStyle = color;
-        ctx.fill();
-        ctx.fillStyle = colorWithAlpha(light, 0.9);
-        ctx.fillRect(-5, -4, 3, 8);
-        ctx.fillRect(2, -4, 3, 8);
         if (shape === 'splitter' || shape === 'splitterShard') {
-            ctx.strokeStyle = '#ecfff5';
-            ctx.lineWidth = 2;
+            ctx.fillStyle = dark;
             ctx.beginPath();
-            ctx.moveTo(-10, 0);
-            ctx.lineTo(10, -7);
-            ctx.moveTo(-8, 4);
-            ctx.lineTo(11, 5);
+            ctx.moveTo(14, 0);
+            ctx.lineTo(-8, -6);
+            ctx.lineTo(-13, 0);
+            ctx.lineTo(-8, 6);
+            ctx.closePath();
+            ctx.fill();
+            ctx.strokeStyle = colorWithAlpha(light, 0.96);
+            ctx.lineWidth = 2.4;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(-11, 0);
+            ctx.lineTo(12, 0);
+            ctx.moveTo(-2, 0);
+            ctx.lineTo(10, -8);
+            ctx.moveTo(-2, 0);
+            ctx.lineTo(10, 8);
             ctx.stroke();
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.arc(-3, 0, 4.6, 0, Math.PI * 2);
+            ctx.fill();
+        } else {
+            roundRect(ctx, -12, -6, 24, 12, 5);
+            ctx.fillStyle = dark;
+            ctx.fill();
+            roundRect(ctx, -8, -5, 16, 10, 4);
+            ctx.fillStyle = color;
+            ctx.fill();
+            ctx.fillStyle = colorWithAlpha(light, 0.9);
+            ctx.fillRect(-5, -4, 3, 8);
+            ctx.fillRect(2, -4, 3, 8);
+            ctx.fillStyle = colorWithAlpha('#fff4b8', 0.88);
+            for (const point of [[-14, -11], [-4, -13], [8, -12], [-12, 11], [2, 13], [14, 9]]) {
+                ctx.beginPath();
+                ctx.arc(point[0], point[1], 2.2, 0, Math.PI * 2);
+                ctx.fill();
+            }
         }
     } else if (shape === 'airburst') {
         ctx.strokeStyle = colorWithAlpha(light, 0.9);

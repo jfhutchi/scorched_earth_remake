@@ -1,12 +1,28 @@
+Original prompt: Implement v0.7.1 as a focused Crater Command polish, debug, CI, mobile Safari/PWA, HUD, dropdown, Splitter/Cluster differentiation, and documentation pass on top of deployed v0.7.0.
+
 # Project Progress
 
-Current Version: v0.7.0
+Current Version: v0.7.1
 
-Current Branch: version/v0.7.0
+Current Branch: version/v0.7.1
 
 Release History Source: RELEASE_NOTES.md
 
 ## Latest Completed Work
+
+- Implemented the v0.7.1 Crater Command follow-up pass on top of the deployed v0.7.0 baseline.
+- Renamed the displayed game title, browser metadata, iOS home-screen metadata, and PWA manifest metadata to Crater Command without renaming the repository or changing the GitHub Pages URL.
+- Updated GitHub Actions validation and Pages workflows for Node 24-compatible official action versions, kept Pages deployment main-only, and included manifest/icons in the Pages artifact.
+- Added a gated developer debug/cheat panel behind `?debug=1` and `Ctrl + Shift + D` for testing money, all catalog weapons, selected ammo, utilities, wind, tank state, flat/weapon/parachute setup, and round/match flow.
+- Promoted the polished weapon info card visual language into the broader HUD with dark translucent panels, compact stat tiles, clearer selected weapon presentation, and a wind stat tile.
+- Fixed native select/dropdown contrast so closed and opened menu options remain readable.
+- Fixed Shield cap enforcement so purchases, CPU shopping, debug refills, state sync, and HUD displays clamp Shield at 60.
+- Upgraded shield rendering with a brighter energy bubble, pulse, glow, shimmer accents, and shield-break feedback for better readability on light/snowy and dark themes.
+- Differentiated Splitter Shell and Cluster Bomb: Splitter is now a controlled apex fork shot, while Cluster Bomb remains wider area-saturation bomblets with separate metadata and CPU behavior.
+- Added visual viewport sizing with `--app-height`, safer overlay/shop scrolling, iPhone safe-area padding, local PWA icons, `manifest.webmanifest`, iOS standalone metadata, standalone detection, and Add to Home Screen guidance.
+- Updated README.md, TESTING.md, progress.md, RELEASE_NOTES.md, and BALANCE.md for v0.7.1.
+
+## v0.7.0 Baseline Preserved
 
 - Implemented the v0.7.0 weapon-system foundation in the working tree: the weapon catalog now carries categories, tactical roles, prices, ammo caps, starting ammo, unlimited-ammo flags, damage/terrain labels, arc difficulty, icon profiles, visual profiles, sound profiles, CPU-use weights, shop priority, and special behavior metadata.
 - Added the first expanded original weapon pack: Precision Shell, Airburst Shell, Splitter Shell, Heavy Roller, Excavator Bomb, Mound Maker, and Firestorm Canister. Existing Standard Shell, Heavy Shell, Dirt Bomb, Roller Shell, Napalm Canister, Cluster Bomb, and Mega Bomb remain represented in the same catalog.
@@ -21,13 +37,15 @@ Release History Source: RELEASE_NOTES.md
 ## Current Known Issues
 
 - CPU aiming is intentionally simple and CPU tanks do not drive with movement fuel.
-- Expanded v0.7.0 weapon balance needs longer full-match tuning after this foundation pass.
-- Real-phone app switching, phone locking, auditory weapon-sound quality, real-phone Two Player Local handoff usability, and GitHub Pages deployment still need manual verification before cutting a public release.
+- Expanded v0.7.1 weapon balance still needs longer full-match tuning, especially Splitter Shell versus Cluster Bomb.
+- Real-phone iPhone Safari Add to Home Screen launch, real-phone app switching, phone locking, auditory weapon-sound quality, real-phone Two Player Local handoff usability, and GitHub Pages deployment still need manual verification before cutting a public release.
 - Terrain remains heightmap-based, so caves and overhangs are out of scope.
 - Two Player Local is intentionally hidden on phone-sized viewports; the handoff overlay only matters when Two Player Local is reached on desktop or via wider viewports.
 
 ## Next Candidate
 
+- Real iPhone Safari landscape and home-screen PWA checks for viewport, shop scrolling, and button reachability.
+- Longer Splitter Shell and Cluster Bomb side-by-side balance testing on Easy, Normal, and Hard CPU.
 - Longer full-match playtests on Easy, Normal, and Hard CPU after the expanded weapon pack.
 - Tune Airburst Shell trigger height/radius if it becomes too reliable.
 - Tune Mound Maker and Excavator Bomb after repeated terrain-shaping tests.
@@ -37,6 +55,19 @@ Release History Source: RELEASE_NOTES.md
 - Consider CPU driving logic only after current movement and audio behavior is fully verified.
 
 ## Recent Release Notes
+
+### v0.7.1
+
+- Renamed the displayed game and project-facing metadata to Crater Command while preserving the repository name and GitHub Pages URL.
+- Updated the central version to v0.7.1; main menu version and `window.GAME_VERSION` match, with no gameplay version badge.
+- Updated GitHub Actions to Node 24-compatible action versions and kept validation on `version/**` plus PRs into `main`.
+- Added the gated debug/cheat panel for local weapon, money, ammo, utility, wind, tank-state, setup, and match-flow testing.
+- Refreshed HUD visual language using the weapon info card style as the design anchor.
+- Fixed dropdown contrast/readability in native select controls.
+- Differentiated Splitter Shell as a controlled fork shot from Cluster Bomb as wide bomblet area coverage.
+- Added PWA/home-screen metadata and local generated icons for Crater Command.
+- Improved iPhone Safari viewport sizing, safe-area handling, shop scrolling, overlay scrolling, and fullscreen/Add to Home Screen guidance.
+- Updated README.md, TESTING.md, progress.md, RELEASE_NOTES.md, and BALANCE.md for v0.7.1.
 
 ### v0.7.0
 

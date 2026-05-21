@@ -1,6 +1,59 @@
 # Release Notes
 
-## v0.7.0 - Pending
+## v0.7.1 - Pending
+
+### Summary
+
+v0.7.1 is a focused follow-up polish pass on top of the deployed v0.7.0 baseline. It renames the displayed game to Crater Command, updates GitHub Actions to Node 24-compatible action versions, adds a gated developer debug panel, improves HUD and dropdown readability, differentiates Splitter Shell from Cluster Bomb, and improves iPhone Safari viewport/shop handling with PWA home-screen support. It does not add online multiplayer, networking, room codes, a backend, external image assets, or external audio files.
+
+### Added
+
+- Crater Command browser metadata, manifest metadata, iOS home-screen metadata, and local generated PWA icons.
+- `manifest.webmanifest` with GitHub Pages-safe relative `start_url`, `scope`, and icon paths.
+- A main-menu `Try Fullscreen` action plus iPhone Add to Home Screen guidance that hides in standalone/fullscreen display modes or after dismissal.
+- Gated developer debug mode behind `?debug=1`, with `Ctrl+Shift+D` toggling a compact debug panel.
+- Debug controls for money, all catalog weapons, selected weapon refill, utilities, wind, tank health/damage, shields, flat/weapon/parachute test setups, turn flow, forced round wins, forced match wins, and returning to the main menu.
+- Debug window helpers including `window.DEBUG_MODE`, `window.debugGrantMoney()`, `window.debugSetMoney()`, `window.debugRefillWeapons()`, `window.debugRefillUtilities()`, and `window.debugSetupWeaponTest()`.
+
+### Changed
+
+- Updated the central version target to `v0.7.1`; the main menu shows `v0.7.1`, and `window.GAME_VERSION` returns `"v0.7.1"`.
+- Renamed the displayed game title and project-facing browser/PWA metadata from Tank Artillery Duel to Crater Command without renaming the repository or changing the GitHub Pages URL.
+- Updated GitHub Actions validation and Pages workflows to use `actions/checkout@v6`, `actions/setup-node@v6` with Node 24, and `actions/upload-pages-artifact@v5`.
+- Kept Pages deployment main-only while validation continues to run on `version/**` pushes and pull requests into `main`.
+- Pages deployment now stages `manifest.webmanifest` and the local `icons/` folder.
+- Promoted the polished weapon info card visual language into the main HUD: darker translucent panels, cleaner borders, stronger stat tile hierarchy, and a wind stat tile.
+- Splitter Shell now uses controlled-fork metadata and behavior while Cluster Bomb remains wide-scatter area coverage.
+- CPU weapon choice now treats Splitter Shell and Cluster Bomb as different tactical roles instead of the same split category.
+- Browser viewport sizing now updates `--app-height` from `visualViewport.height` or `innerHeight` and applies it to app, game, shop, summary, and overlay sizing.
+
+### Fixed
+
+- Fixed opened dropdown option contrast by enforcing dark readable native select and option colors.
+- Fixed Shield cap enforcement so Shield cannot exceed 60.
+- Improved shield visual clarity and animation so active shields are much easier to see.
+- Improved iPhone Safari shop and result overlay usability with visual-viewport sizing, safe-area padding, internal scroll regions, `-webkit-overflow-scrolling: touch`, and less aggressive page-level touch prevention while overlays are being scrolled.
+- Improved GitHub Pages path validation to include manifest paths.
+- Expanded artifact ignore/check coverage for traces, HAR files, generated screenshots, debug JSON, and video captures.
+
+### Preserved
+
+- Desktop keyboard controls, mobile touch controls, mobile Play behavior, Play vs CPU primary action, Two Player Local secondary mode, match-end/best-of logic, local handoff behavior, Standard Shell unlimited ammo, Heavy Shell heavier arc, Mega Bomb late-match gating, Napalm hit plus burn ticks, Parachute behavior, shop cards, compact mobile shop layout, generated audio lifecycle, and GitHub Pages compatibility are preserved.
+
+### Testing
+
+- Local checks should include JavaScript syntax validation, version/release/artifact/path validation, local browser smoke testing, debug panel actions, dropdown readability checks, Splitter/Cluster weapon tests, and mobile overlay/shop checks.
+- TESTING.md now includes checking that GitHub Actions workflows run without Node 20 deprecation warnings.
+- Real iPhone Safari Add to Home Screen launch and production GitHub Pages deployment still require device/release verification after merge to `main`.
+
+### Known Limitations
+
+- A normal iPhone Safari tab cannot always be forced into true fullscreen; v0.7.1 maximizes the visible viewport and provides PWA/home-screen guidance for a more fullscreen-like experience.
+- CPU tanks still do not drive with movement fuel.
+- CPU aim and weapon choice remain intentionally imperfect.
+- Terrain remains heightmap-based and cannot represent caves or overhangs.
+
+## v0.7.0 - Previous
 
 ### Summary
 

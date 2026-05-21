@@ -1,4 +1,4 @@
-import { CONFIG, WEAPONS, clamp, getWeaponById, maxAmmoFor } from './config.js';
+import { CONFIG, WEAPONS, clamp, clampShieldCharge, getWeaponById, maxAmmoFor } from './config.js';
 import { drawTank } from './tankRenderer.js';
 
 export class Tank {
@@ -32,6 +32,7 @@ export class Tank {
         this.parachutes = 0;
         this.lastShieldAbsorbed = 0;
         this.shieldFlashTimer = 0;
+        this.shieldBreakTimer = 0;
         this.parachuteTimer = 0;
         this.parachuteSeed = Math.random() * 1000;
         this.recoilTimer = 0;
@@ -57,6 +58,7 @@ export class Tank {
         this.movementFuel = CONFIG.tank.movementFuelPerTurn;
         this.lastShieldAbsorbed = 0;
         this.shieldFlashTimer = 0;
+        this.shieldBreakTimer = 0;
         this.parachuteTimer = 0;
         this.parachuteSeed = Math.random() * 1000;
         this.recoilTimer = 0;
@@ -164,12 +166,17 @@ export class Tank {
         this.lastShieldAbsorbed = 0;
 
         if (useShield && this.shieldCharge > 0 && adjustedAmount > 0) {
+            this.shieldCharge = clampShieldCharge(this.shieldCharge);
+            const beforeShield = this.shieldCharge;
             const requestedAbsorb = adjustedAmount * CONFIG.utilities.shieldAbsorbRatio;
             const absorbed = Math.min(this.shieldCharge, requestedAbsorb);
             this.shieldCharge = Math.max(0, this.shieldCharge - absorbed);
             adjustedAmount = Math.max(0, adjustedAmount - absorbed);
             this.lastShieldAbsorbed = Math.round(absorbed);
             this.shieldFlashTimer = 0.45;
+            if (beforeShield > 0 && this.shieldCharge <= 0 && absorbed > 0) {
+                this.shieldBreakTimer = 0.78;
+            }
         }
 
         const dmg = Math.max(0, Math.round(adjustedAmount));
@@ -193,6 +200,9 @@ export class Tank {
         }
         if (this.shieldFlashTimer > 0) {
             this.shieldFlashTimer = Math.max(0, this.shieldFlashTimer - dt);
+        }
+        if (this.shieldBreakTimer > 0) {
+            this.shieldBreakTimer = Math.max(0, this.shieldBreakTimer - dt);
         }
         if (this.parachuteTimer > 0) {
             this.parachuteTimer = Math.max(0, this.parachuteTimer - dt);

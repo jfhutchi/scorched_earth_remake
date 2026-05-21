@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 
-const expected = process.argv[2] || 'v0.7.0';
+const expected = process.argv[2] || 'v0.7.1';
 const checks = [
     {
         file: 'src/config.js',
@@ -42,6 +42,11 @@ const checks = [
         file: 'BALANCE.md',
         test: (text) => text.includes(expected),
         message: `BALANCE.md must mention ${expected}`,
+    },
+    {
+        file: 'manifest.webmanifest',
+        test: (text) => text.includes('Crater Command') && text.includes('Crater'),
+        message: 'manifest.webmanifest must contain Crater Command PWA names',
     },
 ];
 

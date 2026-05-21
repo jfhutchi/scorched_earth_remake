@@ -16,7 +16,13 @@ const blockedDirs = new Set([
 
 const blockedFilePatterns = [
     /\.trace\.zip$/i,
+    /\.trace$/i,
     /\.log$/i,
+    /\.har$/i,
+    /(?:^|-)screenshot-?.*\.png$/i,
+    /^debug-.*\.json$/i,
+    /\.webm$/i,
+    /\.mp4$/i,
 ];
 
 const skipDirs = new Set(['.git', 'node_modules']);

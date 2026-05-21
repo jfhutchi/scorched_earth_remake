@@ -6,7 +6,7 @@ import { CPUController } from './cpu.js';
 import { BackgroundRenderer } from './backgroundRenderer.js';
 import { drawTankWreck } from './tankRenderer.js';
 import { pickBattleTheme } from './themes.js';
-import { CONFIG, CPU_DIFFICULTY, GAME_VERSION, WEAPONS, clamp, getWeaponById, limitedWeapons, maxAmmoFor } from './config.js';
+import { CONFIG, CPU_DIFFICULTY, GAME_VERSION, WEAPONS, clamp, clampShieldCharge, getWeaponById, limitedWeapons, maxAmmoFor } from './config.js';
 
 export function getWinsNeededToClinch(matchLength) {
     const length = [1, 3, 5].includes(Number(matchLength)) ? Number(matchLength) : CONFIG.settings.defaults.roundsToWin;
@@ -182,7 +182,9 @@ export class Game {
         this.audio.stopTankMoveLoop();
         this.shopCpuPurchased = false;
         this.lastCpuShopPurchases = [];
+        this._clampAllShields();
         if (this.gameMode === 'cpu') this._runCpuShop();
+        this._clampAllShields();
         this.ui.showShop(this._state(), this.getShopItems());
     }
 
@@ -270,6 +272,7 @@ export class Game {
             return player.health < CONFIG.tank.maxHealth;
         }
         if (itemId === 'shield') {
+            player.shieldCharge = clampShieldCharge(player.shieldCharge);
             return player.shieldCharge < CONFIG.utilities.shieldMaxCharge;
         }
         return true;
@@ -405,7 +408,7 @@ export class Game {
                 money: player.money,
                 health: player.health,
                 ammo: { ...player.ammo },
-                shieldCharge: Math.round(player.shieldCharge || 0),
+                shieldCharge: Math.round(clampShieldCharge(player.shieldCharge)),
                 repairKits: player.repairKits || 0,
                 parachutes: player.parachutes || 0,
             })),
@@ -424,7 +427,7 @@ export class Game {
                 power: Math.round(tank.power),
                 movementFuel: Math.round(tank.movementFuel),
                 movementFuelMax: CONFIG.tank.movementFuelPerTurn,
-                shieldCharge: Math.round(tank.shieldCharge || 0),
+                shieldCharge: Math.round(clampShieldCharge(tank.shieldCharge)),
                 repairKits: tank.repairKits || 0,
                 parachutes: tank.parachutes || 0,
                 selectedWeaponId: tank.selectedWeapon().id,
@@ -487,7 +490,7 @@ export class Game {
                 power: Math.round(tank.power),
                 movementFuel: Math.round(tank.movementFuel),
                 money: tank.money,
-                shieldCharge: Math.round(tank.shieldCharge),
+                shieldCharge: Math.round(clampShieldCharge(tank.shieldCharge)),
                 repairKits: tank.repairKits,
                 parachutes: tank.parachutes,
                 isCpu: tank.isCpu,
@@ -536,6 +539,8 @@ export class Game {
             cpuUseWeight: weapon.cpuUseWeight,
             shopPriority: weapon.shopPriority,
             arcDifficulty: weapon.arcDifficulty,
+            splitPattern: weapon.splitPattern || weapon.splitBehavior?.pattern || null,
+            spreadType: weapon.spreadType || weapon.splitBehavior?.spreadType || null,
             hasIconProfile: Boolean(weapon.iconProfile),
             hasVisualProfile: Boolean(weapon.visualProfile),
             hasSoundProfile: Boolean(weapon.soundProfile),
@@ -892,6 +897,197 @@ export class Game {
         };
     }
 
+    debugGrantMoney(amount, playerIndex = 'active', { set = false } = {}) {
+        const indices = this._debugResolvePlayerIndices(playerIndex);
+        if (!indices.length) return { ok: false, message: 'No player data is available. Start a match or setup a test range first.' };
+        const value = Math.max(0, Math.round(amount));
+        for (const index of indices) {
+            const player = this.playerData[index];
+            player.money = set ? value : Math.max(0, Math.round(player.money || 0) + value);
+            this._syncTankInventoryFromPlayerData(index);
+        }
+        return this._debugRefresh(set ? `Set money to $${value}.` : `Added $${value}.`);
+    }
+
+    debugRefillWeapons(playerIndex = 'active') {
+        const indices = this._debugResolvePlayerIndices(playerIndex);
+        if (!indices.length) return { ok: false, message: 'No player data is available. Start a match or setup a test range first.' };
+        for (const index of indices) {
+            const player = this.playerData[index];
+            for (const weapon of WEAPONS) {
+                const max = maxAmmoFor(weapon.id);
+                player.ammo[weapon.id] = Number.isFinite(max) ? max : Infinity;
+            }
+            this._syncTankInventoryFromPlayerData(index);
+        }
+        return this._debugRefresh('Refilled all limited weapons; Standard Shell remains unlimited.');
+    }
+
+    debugRefillWeapon(weaponId, playerIndex = 'active') {
+        const weapon = getWeaponById(weaponId);
+        const indices = this._debugResolvePlayerIndices(playerIndex);
+        if (!weapon || !indices.length) return { ok: false, message: 'Choose a valid weapon and player first.' };
+        for (const index of indices) {
+            const player = this.playerData[index];
+            const max = maxAmmoFor(weapon.id);
+            player.ammo[weapon.id] = Number.isFinite(max) ? max : Infinity;
+            this._syncTankInventoryFromPlayerData(index);
+            const tank = this.tanks[index];
+            if (tank) tank.selectWeaponById(weapon.id);
+        }
+        return this._debugRefresh(`Refilled ${weapon.name}.`);
+    }
+
+    debugRefillUtilities(playerIndex = 'active', utility = 'all') {
+        const indices = this._debugResolvePlayerIndices(playerIndex);
+        if (!indices.length) return { ok: false, message: 'No player data is available. Start a match or setup a test range first.' };
+        for (const index of indices) {
+            const player = this.playerData[index];
+            if (utility === 'all' || utility === 'shield') player.shieldCharge = CONFIG.utilities.shieldMaxCharge;
+            if (utility === 'all' || utility === 'repair') player.repairKits = Math.max(player.repairKits || 0, 3);
+            if (utility === 'all' || utility === 'parachute') player.parachutes = Math.max(player.parachutes || 0, 3);
+            this._syncTankInventoryFromPlayerData(index);
+        }
+        return this._debugRefresh(utility === 'all' ? 'Refilled all utilities.' : `Refilled ${utility}.`);
+    }
+
+    debugHeal(playerIndex = 'active') {
+        const indices = this._debugResolvePlayerIndices(playerIndex);
+        if (!indices.length) return { ok: false, message: 'No player data is available. Start a match or setup a test range first.' };
+        for (const index of indices) {
+            const player = this.playerData[index];
+            player.health = CONFIG.tank.maxHealth;
+            const tank = this.tanks[index];
+            if (tank) {
+                tank.health = CONFIG.tank.maxHealth;
+                tank.alive = true;
+                tank.deathEffectPlayed = false;
+                tank.wreckSmokeTime = 0;
+            }
+            this._syncTankInventoryFromPlayerData(index);
+        }
+        return this._debugRefresh('Healed selected tank state to full.');
+    }
+
+    debugDamageActiveEnemy(amount, { destroy = false } = {}) {
+        if (!this.terrain || !this.tanks.length || this.phase === 'menu') {
+            return { ok: false, message: 'Start a live round or setup a test range before damaging tanks.' };
+        }
+        const winnerIndex = this.currentPlayer === 0 ? 0 : 1;
+        const enemyIndex = winnerIndex === 0 ? 1 : 0;
+        const enemy = this.tanks[enemyIndex];
+        if (!enemy) return { ok: false, message: 'Enemy tank is not available.' };
+        if (destroy) {
+            return this.forceRoundWin(winnerIndex);
+        }
+        const damage = Math.max(0, Math.round(amount));
+        const wasAlive = enemy.alive;
+        const actual = enemy.applyDamage(damage, { useShield: false });
+        if (wasAlive && !enemy.alive) this._triggerTankDeathEffects([enemyIndex]);
+        this._syncPlayerDataFromTank(enemyIndex);
+        if (!enemy.alive) {
+            this._checkWinCondition();
+            return { ok: true, message: `${enemy.name} destroyed by debug damage.`, phase: this.phase };
+        }
+        return this._debugRefresh(`${enemy.name} took ${actual} debug damage.`);
+    }
+
+    debugClearShields() {
+        for (let index = 0; index < this.playerData.length; index++) {
+            this.playerData[index].shieldCharge = 0;
+            if (this.tanks[index]) this.tanks[index].shieldCharge = 0;
+            this._syncTankInventoryFromPlayerData(index);
+        }
+        return this._debugRefresh('Cleared all shields.');
+    }
+
+    debugAddShield(playerIndex = 'active') {
+        const indices = this._debugResolvePlayerIndices(playerIndex);
+        if (!indices.length) return { ok: false, message: 'No player data is available. Start a match or setup a test range first.' };
+        for (const index of indices) {
+            const player = this.playerData[index];
+            player.shieldCharge = clampShieldCharge((player.shieldCharge || 0) + CONFIG.utilities.shieldPurchaseCharge);
+            this._syncTankInventoryFromPlayerData(index);
+        }
+        this.audio.playShieldActivate();
+        return this._debugRefresh('Added shield charge.');
+    }
+
+    debugSetWind(value) {
+        if (!this.terrain || this.phase === 'menu') return { ok: false, message: 'Start a round or setup a test range before changing wind.' };
+        this.wind = clamp(Number(value) || 0, CONFIG.wind.min, CONFIG.wind.max);
+        return this._debugRefresh(`Wind set to ${this.wind}.`);
+    }
+
+    debugGiveAllTestingSupplies(playerIndex = 'all') {
+        const money = this.debugGrantMoney(9999, playerIndex, { set: true });
+        if (!money.ok) return money;
+        this.debugRefillWeapons(playerIndex);
+        this.debugRefillUtilities(playerIndex, 'all');
+        return this._debugRefresh('Granted all weapons, utilities, and money for testing.');
+    }
+
+    debugSetupFlatTerrain() {
+        const result = this.setupAimTest();
+        this.lastResult = 'Debug flat terrain ready with wind 0.';
+        this.statusMessage = 'Debug flat terrain ready.';
+        this._draw();
+        this.ui.update(this._state());
+        return { ...result, message: this.lastResult };
+    }
+
+    debugEndTurn() {
+        if (!this.terrain || !this.tanks.length || this.phase !== 'aiming' || this.gameOver) {
+            return { ok: false, message: 'End Turn is only available during a live aiming turn.' };
+        }
+        this.projectile = null;
+        this.projectiles = [];
+        this.keys.clear();
+        this.currentPlayer = this.currentPlayer === 0 ? 1 : 0;
+        this.shotInfo = null;
+        this._rollWind();
+        this._startTurn(true);
+        return { ok: true, message: 'Turn ended.', currentPlayer: this.currentPlayer };
+    }
+
+    debugForceMatchWin(playerIndex = 0) {
+        if (!this.terrain || !this.tanks.length || this.phase === 'menu') this.setupAimTest();
+        if (this.phase === 'roundSummary' || this.phase === 'shop') {
+            this.phase = 'aiming';
+            this.gameOver = false;
+        }
+        const winnerIndex = playerIndex === 1 ? 1 : 0;
+        const loserIndex = winnerIndex === 0 ? 1 : 0;
+        const winsNeeded = getWinsNeededToClinch(this.settings.roundsToWin);
+        this.score[winnerIndex] = Math.max(this.score[winnerIndex], winsNeeded - 1);
+        this.score[loserIndex] = Math.min(this.score[loserIndex], winsNeeded - 1);
+        return this.forceRoundWin(winnerIndex);
+    }
+
+    _debugResolvePlayerIndices(playerIndex) {
+        if (!this.playerData.length) return [];
+        if (playerIndex === 'all') return this.playerData.map((_player, index) => index);
+        if (playerIndex === 'active') return [clamp(this.currentPlayer || 0, 0, this.playerData.length - 1)];
+        const numeric = Number(playerIndex);
+        if (!Number.isInteger(numeric) || numeric < 0 || numeric >= this.playerData.length) return [];
+        return [numeric];
+    }
+
+    _debugRefresh(message) {
+        this.lastResult = message;
+        this.statusMessage = message;
+        this._clampAllShields();
+        if (this.phase === 'shop') this.ui.showShop(this._state(), this.getShopItems());
+        else if (this.tanks.length) this.ui.update(this._state());
+        this._draw();
+        return {
+            ok: true,
+            message,
+            phase: this.phase,
+            state: this.debugState(),
+        };
+    }
+
     _createPlayerData() {
         const startingMoney = CONFIG.economy.startingMoney[this.settings.startingMoney] ?? CONFIG.economy.startingMoney.none;
         return [0, 1].map((index) => ({
@@ -903,6 +1099,15 @@ export class Game {
             repairKits: 0,
             parachutes: 0,
         }));
+    }
+
+    _clampAllShields() {
+        for (const player of this.playerData) {
+            if (player) player.shieldCharge = clampShieldCharge(player.shieldCharge);
+        }
+        for (const tank of this.tanks) {
+            if (tank) tank.shieldCharge = clampShieldCharge(tank.shieldCharge);
+        }
     }
 
     _createRoundStats() {
@@ -938,6 +1143,7 @@ export class Game {
         this.playerData[0].name = 'Player 1';
         this.playerData[1].name = p2IsCpu ? 'CPU' : 'Player 2';
         this.roundStartMessages = this._applyRepairKitsForNewRound();
+        this._clampAllShields();
 
         const p1 = new Tank({
             id: 1,
@@ -1037,7 +1243,8 @@ export class Game {
         tank.health = clamp(Math.round(data.health), 1, CONFIG.tank.maxHealth);
         tank.alive = tank.health > 0;
         tank.money = Math.max(0, Math.round(data.money));
-        tank.shieldCharge = Math.max(0, data.shieldCharge);
+        data.shieldCharge = clampShieldCharge(data.shieldCharge);
+        tank.shieldCharge = data.shieldCharge;
         tank.repairKits = Math.max(0, data.repairKits);
         tank.parachutes = Math.max(0, data.parachutes);
         tank.ammo = { ...data.ammo, standard: Infinity };
@@ -1051,7 +1258,8 @@ export class Game {
 
         data.money = Math.max(0, Math.round(tank.money));
         data.health = clamp(tank.health, 0, CONFIG.tank.maxHealth);
-        data.shieldCharge = Math.max(0, tank.shieldCharge);
+        tank.shieldCharge = clampShieldCharge(tank.shieldCharge);
+        data.shieldCharge = tank.shieldCharge;
         data.repairKits = Math.max(0, tank.repairKits);
         data.parachutes = Math.max(0, tank.parachutes);
         data.ammo = ammoSnapshotFromTank(tank);
@@ -1063,7 +1271,8 @@ export class Game {
         if (!tank || !data) return;
 
         tank.money = Math.max(0, Math.round(data.money));
-        tank.shieldCharge = Math.max(0, data.shieldCharge);
+        data.shieldCharge = clampShieldCharge(data.shieldCharge);
+        tank.shieldCharge = data.shieldCharge;
         tank.repairKits = Math.max(0, data.repairKits);
         tank.parachutes = Math.max(0, data.parachutes);
         tank.ammo = { ...data.ammo, standard: Infinity };
@@ -1716,15 +1925,30 @@ export class Game {
         const split = weapon.splitBehavior || {};
         const count = split.count || weapon.bomblets || 5;
         const baseSpeed = Math.max(85, Math.abs(projectile.vx) * 0.35);
+        const direction = Math.sign(projectile.vx) || 1;
+        const pattern = split.pattern || weapon.splitPattern || 'wideScatter';
         this.projectile = null;
+        const childWeapon = createBombletWeapon(weapon);
         for (let i = 0; i < count; i++) {
             const spread = i - (count - 1) / 2;
+            const jitter = pattern === 'wideScatter'
+                ? (Math.random() - 0.5) * baseSpeed * (split.randomSpread ?? 0.18)
+                : 0;
+            const childVx = pattern === 'controlledFork'
+                ? projectile.vx * (spread === 0 ? (split.forwardVxScale ?? 0.78) : (split.forkVxScale ?? 0.66))
+                    + spread * direction * baseSpeed * (split.forkSpreadScale ?? 0.18)
+                : projectile.vx * (split.childVxScale ?? 0.38)
+                    + spread * baseSpeed * (split.spreadScale ?? 0.34)
+                    + jitter;
+            const childVy = pattern === 'controlledFork'
+                ? Math.max(36, projectile.vy * 0.18 + (split.childDownKick ?? 62) + Math.abs(spread) * 24)
+                : Math.max(20, projectile.vy * (split.childVyScale ?? 0.35)) + Math.abs(spread) * 13 + Math.random() * 18;
             const bomblet = new Projectile(
                 projectile.x + spread * 3,
                 projectile.y,
-                projectile.vx * (split.childVxScale ?? 0.38) + spread * baseSpeed * (split.spreadScale ?? 0.34),
-                Math.max(20, projectile.vy * (split.childVyScale ?? 0.35)) + Math.abs(spread) * 8,
-                createBombletWeapon(weapon)
+                childVx,
+                childVy,
+                childWeapon
             );
             bomblet.isBomblet = true;
             bomblet.parentWeapon = weapon;
@@ -2224,7 +2448,7 @@ export class Game {
             player.health = survived
                 ? clamp(tank.health, 1, CONFIG.tank.maxHealth)
                 : CONFIG.utilities.rebuildHealthAfterDeath;
-            player.shieldCharge = Math.max(0, tank.shieldCharge);
+            player.shieldCharge = clampShieldCharge(tank.shieldCharge);
             player.repairKits = Math.max(0, tank.repairKits);
             player.parachutes = Math.max(0, tank.parachutes);
             player.ammo = ammoSnapshotFromTank(tank);
@@ -2270,7 +2494,8 @@ export class Game {
         };
 
         if (cpu.health < 85) tryBuy('repair', cpu.health < 55 ? Math.min(1, profile.repairBuyChance + 0.25) : profile.repairBuyChance);
-        if (cpu.shieldCharge < CONFIG.utilities.shieldPurchaseCharge) tryBuy('shield', profile.shieldBuyChance);
+        cpu.shieldCharge = clampShieldCharge(cpu.shieldCharge);
+        if (cpu.shieldCharge < CONFIG.utilities.shieldMaxCharge) tryBuy('shield', profile.shieldBuyChance);
         const shopWeapons = limitedWeapons().sort((a, b) => (a.shopPriority ?? 50) - (b.shopPriority ?? 50));
         for (const weapon of shopWeapons) {
             if ((cpu.ammo[weapon.id] || 0) >= maxAmmoFor(weapon.id)) continue;
@@ -2289,7 +2514,7 @@ export class Game {
         if (itemId === 'shield') {
             player.shieldCharge = Math.min(
                 CONFIG.utilities.shieldMaxCharge,
-                player.shieldCharge + CONFIG.utilities.shieldPurchaseCharge
+                clampShieldCharge(player.shieldCharge) + CONFIG.utilities.shieldPurchaseCharge
             );
         }
         if (itemId === 'repair') player.repairKits += 1;
@@ -2475,7 +2700,7 @@ function summarizeInventory(player) {
     return {
         money: player.money,
         ammo: { ...player.ammo },
-        shieldCharge: Math.round(player.shieldCharge),
+        shieldCharge: Math.round(clampShieldCharge(player.shieldCharge)),
         repairKits: player.repairKits,
         parachutes: player.parachutes,
         health: player.health,
@@ -2544,7 +2769,7 @@ function cpuAmmoBuyChance(weaponId, profile, money) {
     if (weapon.role === 'rollingHeavy') return base * 0.34;
     if (weapon.role === 'fire') return base * 0.54;
     if (weapon.role === 'fireHeavy') return money >= price + 90 ? base * 0.24 : 0;
-    if (weapon.role === 'split') return base * 0.36;
+    if (weapon.role === 'controlledFork') return base * 0.42;
     if (weapon.role === 'cluster') return base * 0.40;
     if (weapon.role === 'airburst') return base * 0.36;
     if (weapon.role === 'precision') return base * 0.52;
@@ -2592,7 +2817,8 @@ function reachNotes(weapon) {
     if (weapon.role === 'rolling' || weapon.role === 'rollingHeavy') return 'Impacts terrain first, then rolls along the heightmap.';
     if (weapon.role === 'fire' || weapon.role === 'fireHeavy') return 'Area threat depends on flame width after impact.';
     if (weapon.role === 'airburst') return 'Detonates above terrain or near exposed tanks after the minimum fuse age.';
-    if (isSplitWeapon(weapon)) return 'Carrier reach is shown; submunitions spread after split.';
+    if (weapon.role === 'controlledFork') return 'Carrier reach is shown; three predictable child shells fork near the arc peak.';
+    if (weapon.role === 'cluster') return 'Carrier reach is shown; bomblets scatter widely after split.';
     if (weapon.role === 'precision') return 'Small radius and fast arc reward accurate direct shots.';
     if (weapon.role === 'terrainDestroy') return 'Low damage but a large terrain-removal radius.';
     if (weapon.role === 'terrainBuild') return 'Low damage utility mound; reach uses normal arcing ballistics.';

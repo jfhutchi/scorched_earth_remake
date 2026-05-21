@@ -1,4 +1,4 @@
-import { CONFIG, GAME_VERSION, WEAPONS, maxAmmoFor } from './config.js';
+import { CONFIG, GAME_VERSION, MAX_SHIELD, WEAPONS, clampShieldCharge, maxAmmoFor } from './config.js';
 import { drawUtilityIcon, drawWeaponIcon } from './visualAssets.js';
 
 export class UI {
@@ -70,6 +70,7 @@ export class UI {
         this.weaponIcon = document.getElementById('weaponIcon');
         this.ammoVal = document.getElementById('ammoVal');
         this.moveVal = document.getElementById('moveVal');
+        this.windVal = document.getElementById('windVal');
         this.resultVal = document.getElementById('resultVal');
         this.controlsHint = document.getElementById('controlsHint');
 
@@ -372,6 +373,7 @@ export class UI {
         this.moveVal.textContent = `${Math.round(active.movementFuel)} px`;
         this.moveVal.parentElement.classList.toggle('empty', active.movementFuel <= 0);
         this.moveVal.parentElement.classList.toggle('available', state.phase === 'aiming' && !active.isCpu && active.movementFuel > 0);
+        if (this.windVal) this.windVal.textContent = formatWind(state.wind);
         this.resultVal.textContent = state.lastResult;
         this.controlsHint.textContent = this._controlsText(state);
     }
@@ -407,9 +409,9 @@ export class UI {
         bar.style.width = `${percent}%`;
         bar.style.background = healthColor(percent);
         text.textContent = `${tank.health}/100`;
-        const shield = Math.max(0, Math.round(tank.shieldCharge || 0));
+        const shield = Math.round(clampShieldCharge(tank.shieldCharge));
         if (shieldRow) shieldRow.classList.toggle('empty', shield <= 0);
-        if (shieldFill) shieldFill.style.width = `${Math.min(100, shield / 180 * 100)}%`;
+        if (shieldFill) shieldFill.style.width = `${Math.min(100, shield / MAX_SHIELD * 100)}%`;
         if (shieldText) shieldText.textContent = String(shield);
     }
 
@@ -442,7 +444,7 @@ export class UI {
 
 function inventoryText(entity, { includeMoney = true, context = 'hud' } = {}) {
     const money = Math.round(entity.money || 0);
-    const shield = Math.round(entity.shieldCharge || 0);
+    const shield = Math.round(clampShieldCharge(entity.shieldCharge));
     const repairs = entity.repairKits || 0;
     const parachutes = entity.parachutes || 0;
     const parts = [];
@@ -474,7 +476,7 @@ function inventoryLines(entity) {
     for (const weapon of WEAPONS.filter((candidate) => Number.isFinite(maxAmmoFor(candidate.id)))) {
         lines.push(`${weapon.inventoryName}: ${ammoForEntity(entity, weapon.id)}/${maxAmmoFor(weapon.id)}`);
     }
-    lines.push(`Shield: ${Math.round(entity.shieldCharge || 0)}`);
+    lines.push(`Shield: ${Math.round(clampShieldCharge(entity.shieldCharge))}`);
     lines.push(`First Aid: ${entity.repairKits || 0}`);
     lines.push(`Parachutes: ${entity.parachutes || 0}`);
     if (Number.isFinite(entity.health)) lines.push(`HP: ${Math.round(entity.health)}/100`);
@@ -595,7 +597,8 @@ function shopStatLine(player, item, weapon) {
         return [...filtered.slice(0, 3), ammo].join(' | ');
     }
     if (item.id === 'shield') {
-        return `Owned shield: ${Math.round(player.shieldCharge || 0)} | Price: $${item.price}`;
+        const shield = Math.round(clampShieldCharge(player.shieldCharge));
+        return shield >= MAX_SHIELD ? `Shield: Full (${MAX_SHIELD}/${MAX_SHIELD})` : `Owned shield: ${shield}/${MAX_SHIELD} | Price: $${item.price}`;
     }
     if (item.id === 'repair') {
         return `Owned: ${player.repairKits || 0} | Heal: Full | Price: $${item.price}`;
@@ -629,7 +632,7 @@ function isShopItemFull(player, item) {
         return (player.health || 0) >= max;
     }
     if (item.id === 'shield') {
-        return (player.shieldCharge || 0) >= 180;
+        return clampShieldCharge(player.shieldCharge) >= MAX_SHIELD;
     }
     return false;
 }
@@ -654,11 +657,11 @@ function inventoryAmmoText(inventory) {
 
 function inventoryUtilityText(inventory) {
     if (!inventory) return 'No item data.';
-    return `Shield ${Math.round(inventory.shieldCharge || 0)} | First Aid ${inventory.repairKits || 0} | Parachutes ${inventory.parachutes || 0} | HP ${Math.round(inventory.health || 0)}/100`;
+    return `Shield ${Math.round(clampShieldCharge(inventory.shieldCharge))} | First Aid ${inventory.repairKits || 0} | Parachutes ${inventory.parachutes || 0} | HP ${Math.round(inventory.health || 0)}/100`;
 }
 
 function formatShieldCompact(tank) {
-    const shield = Math.round(tank.shieldCharge || 0);
+    const shield = Math.round(clampShieldCharge(tank.shieldCharge));
     return shield > 0 ? `+Shield ${shield}` : '';
 }
 
@@ -678,7 +681,7 @@ function shortInv(tank) {
         parts.push(`${weapon.compactName} ${ammoForEntity(tank, weapon.id)}`);
     }
     if (ownedWeapons.length > 4) parts.push(`+${ownedWeapons.length - 4} wpn`);
-    parts.push(`Shield ${Math.round(tank.shieldCharge || 0)}`);
+    parts.push(`Shield ${Math.round(clampShieldCharge(tank.shieldCharge))}`);
     parts.push(`Aid ${tank.repairKits || 0}`);
     parts.push(`Chute ${tank.parachutes || 0}`);
     return parts.join(' | ');
@@ -686,6 +689,11 @@ function shortInv(tank) {
 
 function formatAmmo(ammo) {
     return Number.isFinite(ammo) ? String(ammo) : 'Unlimited';
+}
+
+function formatWind(wind) {
+    if (!Number.isFinite(wind) || wind === 0) return '0 calm';
+    return `${Math.abs(wind).toFixed(1)} ${wind > 0 ? 'right' : 'left'}`;
 }
 
 function healthColor(hp) {

@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 
-const expected = process.argv[2] || 'v0.7.0';
+const expected = process.argv[2] || 'v0.7.1';
 const text = readFileSync('RELEASE_NOTES.md', 'utf8');
 const headings = [...text.matchAll(/^##\s+(.+)$/gm)].map((match) => match[1].trim());
 const first = headings[0] || '';
