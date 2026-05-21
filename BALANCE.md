@@ -1,6 +1,6 @@
 # Balance Reference
 
-Current version: `v0.7.1`
+Current version: `v0.8.0`
 
 BALANCE.md is the Crater Command tuning reference for weapons, economy, utility items, and CPU usage. It documents intent and current values; it does not claim the balance is final.
 
@@ -25,6 +25,12 @@ Round income:
 - `$50` base allowance.
 - `$75` round win bonus.
 - `$25` survival bonus.
+
+Castle Siege rewards:
+
+- `$50` base clear reward.
+- `$10`, `$25`, or `$50` star bonus for 1, 2, or 3 stars.
+- `$100` first-clear bonus per level; replays do not repeat that first-clear bonus.
 
 ## Weapon Categories
 

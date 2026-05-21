@@ -6,6 +6,8 @@ import { CPUController } from './cpu.js';
 import { BackgroundRenderer } from './backgroundRenderer.js';
 import { drawTankWreck } from './tankRenderer.js';
 import { pickBattleTheme } from './themes.js';
+import { CastleSiegeMode } from './castleSiegeMode.js';
+import { drawCastleSiegeBlocks, drawCastleSiegeHudOverlay, drawCastleSiegeObjectiveMarker } from './castleSiegeRenderer.js';
 import { CONFIG, CPU_DIFFICULTY, GAME_VERSION, WEAPONS, clamp, clampShieldCharge, getWeaponById, limitedWeapons, maxAmmoFor } from './config.js';
 
 export function getWinsNeededToClinch(matchLength) {
@@ -32,6 +34,7 @@ export class Game {
         this.lastFrame = performance.now();
         this.running = false;
         this.gameMode = 'two-player';
+        this.siege = null;
         this.settings = normalizeSettings();
         this.roundNumber = 0;
         this.score = [0, 0];
@@ -75,8 +78,14 @@ export class Game {
     }
 
     start(mode = 'two-player', settings = {}) {
+        if (mode === 'siege') {
+            this.startCastleSiege(settings);
+            return;
+        }
+
         this.settings = normalizeSettings(settings);
         this.gameMode = mode;
+        this.siege = null;
         this.score = [0, 0];
         this.roundNumber = 0;
         this.matchWinnerIndex = null;
@@ -122,6 +131,138 @@ export class Game {
         }
     }
 
+    startCastleSiege(settings = {}, levelId = 'siege_001') {
+        this.siege = new CastleSiegeMode(levelId);
+        this.settings = normalizeSettings({
+            ...settings,
+            windMode: this.siege.level.windMode || settings.windMode,
+            terrainRoughness: this.siege.level.terrainRoughness || settings.terrainRoughness,
+        });
+        this.gameMode = 'siege';
+        this.score = [0, 0];
+        this.roundNumber = 1;
+        this.matchWinnerIndex = null;
+        this.turnState = {
+            activePlayerId: 0,
+            turnNumber: 1,
+            handoffPending: false,
+            inputLocked: false,
+            lastResultAudioRound: -1,
+        };
+        this.playerData = [{
+            name: 'Player 1',
+            money: 0,
+            health: CONFIG.tank.maxHealth,
+            ammo: createSiegeAmmo(this.siege.level.loadout),
+            shieldCharge: 0,
+            repairKits: 0,
+            parachutes: 0,
+        }];
+        this.tanks = [];
+        this.terrain = null;
+        this.projectile = null;
+        this.projectiles = [];
+        this.explosions = [];
+        this.visualTime = 0;
+        this.screenShakeTime = 0;
+        this.screenShakeIntensity = 0;
+        this.gameOver = false;
+        this.lastSummary = null;
+        this.cpuTimer = 0;
+        this.shotInfo = null;
+        this.roundStats = this._createRoundStats();
+        this.wind = 0;
+        this.lastCpuShopPurchases = [];
+        this.feedbackTexts = [];
+        this.pendingBurns = [];
+        this.shopCpuPurchased = false;
+        this.audio.stopTankMoveLoop({ fade: 0, force: true });
+        this.audio.stopAmbience();
+        this.ui.hideAllOverlays();
+        if (typeof this.ui.hideHandoff === 'function') this.ui.hideHandoff();
+        if (typeof this.ui.hideCastleSiegeResult === 'function') this.ui.hideCastleSiegeResult();
+
+        this.theme = pickBattleTheme(this.theme?.id || null);
+        this.terrain = new Terrain(this.width, this.height, this.settings.terrainRoughness, this.theme.id);
+        this._prepareCastleSiegeTerrain(this.siege.blocks, this.siege.level.playerStartX);
+
+        const player = new Tank({
+            id: 1,
+            playerIndex: 0,
+            name: 'Player 1',
+            label: 'Player 1',
+            x: this.siege.level.playerStartX,
+            color: '#f16f45',
+            facing: 1,
+        });
+        this.tanks = [player];
+        this._syncTankFromPlayerData(0);
+        player.settleOn(this.terrain);
+        player.angle = this.siege.level.startingAngle;
+        player.power = this.siege.level.startingPower;
+        player.selectWeaponById('standard');
+
+        this.currentPlayer = 0;
+        this.keys.clear();
+        this.cpu.resetRound();
+        this._rollWind();
+        this.audio.startAmbience(this.theme);
+        this.phase = 'siegeAiming';
+        this.statusMessage = `${this.siege.level.name}: destroy the castle core.`;
+        this.lastResult = `Castle Siege ready. ${this.siege.shotsRemaining} shots available.`;
+        this._draw();
+        this.ui.update(this._state());
+        this.audio.playRoundStart();
+
+        if (!this.running) {
+            this.running = true;
+            this.lastFrame = performance.now();
+            requestAnimationFrame(this.loop);
+        }
+    }
+
+    restartCastleSiegeLevel(levelId = this.siege ? this.siege.level.id : 'siege_001') {
+        this.ui.showGame();
+        this.startCastleSiege(this.settings, levelId);
+    }
+
+    _prepareCastleSiegeTerrain(blocks, playerX) {
+        if (!this.terrain) return;
+
+        for (let x = 0; x < this.terrain.width; x++) {
+            const ridge = Math.sin((x / this.terrain.width) * Math.PI) * 58;
+            this.terrain.heights[x] = this.height * 0.76 - ridge + Math.sin(x * 0.012) * 5;
+        }
+
+        const playerGround = Math.round(this.height * 0.72);
+        this._setTerrainRangeHeight(playerX - 72, playerX + 72, playerGround);
+
+        const liveBlocks = Array.isArray(blocks) ? blocks : [];
+        if (liveBlocks.length) {
+            const minX = Math.min(...liveBlocks.map((block) => block.x));
+            const maxX = Math.max(...liveBlocks.map((block) => block.x + block.width));
+            const groundY = Math.max(...liveBlocks.map((block) => block.y + block.height));
+            this._setTerrainRangeHeight(minX - 220, maxX + 44, groundY);
+        }
+
+        if (typeof this.terrain._smoothRange === 'function') {
+            this.terrain._smoothRange(0, this.terrain.width - 1, 1);
+        }
+        this.terrain.craters = [];
+        this.terrain.mounds = [];
+        this.terrain.scorchMarks = [];
+        if (typeof this.terrain._generateVisualDetails === 'function') this.terrain._generateVisualDetails();
+    }
+
+    _setTerrainRangeHeight(startX, endX, targetY) {
+        if (!this.terrain) return;
+        const start = Math.max(0, Math.floor(startX));
+        const end = Math.min(this.terrain.width - 1, Math.ceil(endX));
+        for (let x = start; x <= end; x++) {
+            this.terrain.heights[x] = clamp(targetY, this.height * 0.38, this.height - 18);
+        }
+    }
+
     _clearCanvas() {
         if (!this.ctx) return;
         this.ctx.fillStyle = '#8ccced';
@@ -136,6 +277,7 @@ export class Game {
         this.explosions = [];
         this.feedbackTexts = [];
         this.pendingBurns = [];
+        this.siege = null;
         this.cpuTimer = 0;
         this.keys.clear();
         this.audio.stopTankMoveLoop({ fade: 0, force: true });
@@ -153,6 +295,10 @@ export class Game {
 
     resetCurrentRound() {
         if (this.phase === 'menu') return;
+        if (this.gameMode === 'siege') {
+            this.restartCastleSiegeLevel();
+            return;
+        }
         this._setupRound({ incrementRound: false });
     }
 
@@ -320,7 +466,7 @@ export class Game {
             return;
         }
         if (action === 'restart') {
-            if (['aiming', 'cpuThinking', 'projectile', 'resolving'].includes(this.phase)) {
+            if (['aiming', 'cpuThinking', 'projectile', 'resolving', 'siegeAiming', 'siegeProjectile', 'siegeResolving', 'siegeVictory', 'siegeFailure'].includes(this.phase)) {
                 this.resetCurrentRound();
             }
             return;
@@ -460,6 +606,7 @@ export class Game {
 
     renderTextState() {
         const active = this.tanks[this.currentPlayer] || null;
+        const siege = this.siege ? this.siege.summary() : null;
         const payload = {
             version: GAME_VERSION,
             coordinateSystem: 'Canvas pixels, origin top-left, x right, y down.',
@@ -513,6 +660,26 @@ export class Game {
                 y: Math.round(projectile.y),
                 weapon: projectile.weapon.name,
             })),
+            siege: siege ? {
+                levelId: siege.levelId,
+                levelName: siege.levelName,
+                shotsRemaining: siege.shotsRemaining,
+                shotLimit: siege.shotLimit,
+                victory: siege.victory,
+                failure: siege.failure,
+                objectiveHealth: siege.objectiveHealth,
+                blocks: siege.blocks.map((block) => ({
+                    id: block.id,
+                    material: block.material,
+                    x: Math.round(block.x),
+                    y: Math.round(block.y),
+                    hp: Math.max(0, Math.round(block.hp)),
+                    maxHp: block.maxHp,
+                    destroyed: block.destroyed,
+                    tags: block.tags,
+                })),
+                result: siege.result,
+            } : null,
         };
         return JSON.stringify(payload);
     }
@@ -1305,6 +1472,7 @@ export class Game {
             lastCpuShopPurchases: [...this.lastCpuShopPurchases],
             muted: this.audio.muted,
             turnState: { ...this.turnState },
+            siege: this.siege ? this.siege.summary() : null,
         };
     }
 
@@ -1351,7 +1519,9 @@ export class Game {
 
             if (code === 'KeyR' && !e.repeat) {
                 e.preventDefault();
-                if (this.phase === 'aiming' || this.phase === 'cpuThinking' || this.phase === 'projectile' || this.phase === 'resolving') {
+                if (this.phase === 'aiming' || this.phase === 'cpuThinking' || this.phase === 'projectile' || this.phase === 'resolving'
+                    || this.phase === 'siegeAiming' || this.phase === 'siegeProjectile' || this.phase === 'siegeResolving'
+                    || this.phase === 'siegeVictory' || this.phase === 'siegeFailure') {
                     this.resetCurrentRound();
                 }
                 return;
@@ -1409,7 +1579,7 @@ export class Game {
 
     _handlePageActive() {
         this.audio.handlePageVisible();
-        if (this.running && this.theme && ['aiming', 'cpuThinking', 'projectile', 'resolving', 'handoff'].includes(this.phase)) {
+        if (this.running && this.theme && ['aiming', 'cpuThinking', 'projectile', 'resolving', 'handoff', 'siegeAiming', 'siegeProjectile', 'siegeResolving'].includes(this.phase)) {
             this.audio.startAmbience(this.theme);
         }
     }
@@ -1428,18 +1598,24 @@ export class Game {
         return this.tanks[this.currentPlayer];
     }
 
+    _isProjectilePhase() {
+        return this.phase === 'projectile' || this.phase === 'siegeProjectile';
+    }
+
     _canHumanControl() {
         const active = this._activeTank();
+        const aimingPhase = this.gameMode === 'siege' ? this.phase === 'siegeAiming' : this.phase === 'aiming';
         return Boolean(
             this.running &&
             !this.gameOver &&
-            this.phase === 'aiming' &&
+            aimingPhase &&
             !this.turnState.inputLocked &&
             !this.turnState.handoffPending &&
             active &&
             active.alive &&
             !active.isCpu &&
-            !this.projectile
+            !this.projectile &&
+            (!this.siege || this.siege.shotsRemaining > 0)
         );
     }
 
@@ -1528,7 +1704,7 @@ export class Game {
             if (this.screenShakeTime === 0) this.screenShakeIntensity = 0;
         }
 
-        if (this.phase === 'aiming' && this._canHumanControl()) {
+        if ((this.phase === 'aiming' || this.phase === 'siegeAiming') && this._canHumanControl()) {
             this._updateHumanAim(dt);
             this._updateHumanMovement(dt);
         } else {
@@ -1544,16 +1720,19 @@ export class Game {
         this._updateFeedback(dt);
         this._updateBurns(dt);
 
-        if ((this.projectile || this.projectiles.length > 0) && this.phase === 'projectile') {
+        if ((this.projectile || this.projectiles.length > 0) && this._isProjectilePhase()) {
             this._updateProjectile(dt);
         }
 
         this.explosions.forEach((explosion) => explosion.update(dt));
         this.explosions = this.explosions.filter((explosion) => explosion.alive);
 
-        if (this.phase === 'resolving') {
+        if (this.phase === 'resolving' || this.phase === 'siegeResolving') {
             this.phaseTimer -= dt;
-            if (this.phaseTimer <= 0 && this.pendingBurns.length === 0) this._finishShotResolution();
+            if (this.phaseTimer <= 0 && this.pendingBurns.length === 0) {
+                if (this.gameMode === 'siege') this._finishCastleSiegeResolution();
+                else this._finishShotResolution();
+            }
         }
 
         this.ui.update(this._state());
@@ -1743,9 +1922,17 @@ export class Game {
     }
 
     _fireSelectedWeapon() {
-        if (this.gameOver || this.projectile || this.phase !== 'aiming') return false;
+        const aimingPhase = this.gameMode === 'siege' ? 'siegeAiming' : 'aiming';
+        if (this.gameOver || this.projectile || this.phase !== aimingPhase) return false;
         const shooter = this._activeTank();
         if (!shooter || !shooter.alive) return false;
+        if (this.gameMode === 'siege' && (!this.siege || this.siege.shotsRemaining <= 0)) {
+            if (this.siege) {
+                this.siege.finishIfNeeded();
+                if (this.siege.failure) this._showCastleSiegeFailure();
+            }
+            return false;
+        }
         this.audio.stopTankMoveLoop();
 
         const weapon = shooter.selectedWeapon();
@@ -1756,6 +1943,7 @@ export class Game {
         }
 
         if (!shooter.consumeSelectedAmmo()) return false;
+        if (this.gameMode === 'siege' && !this.siege.consumeShot()) return false;
         this._syncPlayerDataFromTank(this.currentPlayer);
         this.roundStats[this.currentPlayer].shotsFired += 1;
 
@@ -1766,7 +1954,7 @@ export class Game {
         this.projectiles = [];
         this.shotInfo = {
             shooterIndex: this.currentPlayer,
-            targetIndex: this.currentPlayer === 0 ? 1 : 0,
+            targetIndex: this.gameMode === 'siege' ? null : (this.currentPlayer === 0 ? 1 : 0),
             weaponId: weapon.id,
             collision: 'miss',
             impactX: muzzle.x,
@@ -1778,7 +1966,7 @@ export class Game {
             minTargetDistance: Infinity,
             clusterImpactCount: 0,
         };
-        this.phase = 'projectile';
+        this.phase = this.gameMode === 'siege' ? 'siegeProjectile' : 'projectile';
         this.statusMessage = `${shooter.name} fired ${weapon.name}.`;
         this.audio.playFire(weapon, { x: muzzle.x, width: this.width });
         this.ui.update(this._state());
@@ -1796,7 +1984,12 @@ export class Game {
                 this._updateOneProjectile(projectile, step, windAccel);
             }
             this.projectiles = this.projectiles.filter((projectile) => !projectile.done);
-            if (!this.projectile && this.projectiles.length === 0 && this.phase === 'projectile') {
+            if (!this.projectile && this.projectiles.length === 0 && this._isProjectilePhase()) {
+                if (this.gameMode === 'siege') {
+                    this._resolveCastleSiegeMiss(this.shotInfo?.impactX || 0, this.shotInfo?.impactY || 0);
+                    remaining -= step;
+                    continue;
+                }
                 const parentWeapon = this.shotInfo ? getWeaponById(this.shotInfo.weaponId) : null;
                 if (parentWeapon && isSplitWeapon(parentWeapon)) {
                     this._completeSplitShot(parentWeapon);
@@ -1809,7 +2002,7 @@ export class Game {
     }
 
     _updateOneProjectile(projectile, dt, windAccel) {
-        if (!projectile || projectile.done || this.phase !== 'projectile') return;
+        if (!projectile || projectile.done || !this._isProjectilePhase()) return;
 
         if (projectile.rolling) {
             this._updateRollingProjectile(projectile, dt);
@@ -1846,6 +2039,8 @@ export class Game {
                 p.done = true;
                 this.shotInfo.impactX = p.x;
                 this.shotInfo.impactY = p.y;
+            } else if (this.gameMode === 'siege') {
+                this._resolveCastleSiegeMiss(p.x, p.y);
             } else {
                 this._resolveMiss(p.x, p.y);
             }
@@ -1860,18 +2055,28 @@ export class Game {
             }
         }
 
-        for (let i = 0; i < this.tanks.length; i++) {
-            const tank = this.tanks[i];
-            if (!tank.alive) continue;
-            if (this.shotInfo && i === this.shotInfo.shooterIndex && p.age < 0.2) continue;
-
-            const circle = tank.boundingCircle();
-            const dx = p.x - circle.x;
-            const dy = p.y - circle.y;
-            const hitRadius = circle.r + p.radius;
-            if (dx * dx + dy * dy <= hitRadius * hitRadius) {
-                this._resolveProjectileImpact(p, p.x, p.y, 'tank', { final: !p.isBomblet });
+        if (this.gameMode === 'siege' && this.siege) {
+            const hitBlock = this.siege.findBlockHit(p);
+            if (hitBlock) {
+                this._resolveCastleSiegeImpact(p, p.x, p.y, hitBlock, { final: !p.isBomblet });
                 return;
+            }
+        }
+
+        if (this.gameMode !== 'siege') {
+            for (let i = 0; i < this.tanks.length; i++) {
+                const tank = this.tanks[i];
+                if (!tank.alive) continue;
+                if (this.shotInfo && i === this.shotInfo.shooterIndex && p.age < 0.2) continue;
+
+                const circle = tank.boundingCircle();
+                const dx = p.x - circle.x;
+                const dy = p.y - circle.y;
+                const hitRadius = circle.r + p.radius;
+                if (dx * dx + dy * dy <= hitRadius * hitRadius) {
+                    this._resolveProjectileImpact(p, p.x, p.y, 'tank', { final: !p.isBomblet });
+                    return;
+                }
             }
         }
 
@@ -1880,6 +2085,10 @@ export class Game {
             if (p.y >= groundY) {
                 if (p.weapon.behavior === 'roller' && !p.rolling) {
                     this._startRollingProjectile(p, groundY);
+                    return;
+                }
+                if (this.gameMode === 'siege') {
+                    this._resolveCastleSiegeTerrainImpact(p, p.x, groundY, { final: !p.isBomblet });
                     return;
                 }
                 this._resolveProjectileImpact(p, p.x, groundY, 'terrain', { final: !p.isBomblet });
@@ -1986,6 +2195,10 @@ export class Game {
         const previousGround = this.terrain.heightAt(previousX);
         const nextX = previousX + projectile.rollDirection * projectile.rollSpeed * dt;
         if (nextX < 4 || nextX > this.width - 4) {
+            if (this.gameMode === 'siege') {
+                this._resolveCastleSiegeTerrainImpact(projectile, previousX, previousGround, { final: true });
+                return;
+            }
             this._resolveProjectileImpact(projectile, previousX, previousGround, 'terrain');
             return;
         }
@@ -2003,21 +2216,35 @@ export class Game {
         projectile.y = nextGround - projectile.radius;
         this._trackProjectileDistance(projectile);
 
-        for (let i = 0; i < this.tanks.length; i++) {
-            const tank = this.tanks[i];
-            if (!tank.alive) continue;
-            if (this.shotInfo && i === this.shotInfo.shooterIndex && projectile.rollAge < 0.25) continue;
-            const circle = tank.boundingCircle();
-            const dx = projectile.x - circle.x;
-            const dy = projectile.y - circle.y;
-            const nearRadius = circle.r + projectile.radius + 10;
-            if (dx * dx + dy * dy <= nearRadius * nearRadius) {
-                this._resolveProjectileImpact(projectile, projectile.x, this.terrain.heightAt(projectile.x), 'tank');
+        if (this.gameMode === 'siege' && this.siege) {
+            const hitBlock = this.siege.findBlockHit(projectile);
+            if (hitBlock) {
+                this._resolveCastleSiegeImpact(projectile, projectile.x, projectile.y, hitBlock, { final: true });
                 return;
             }
         }
 
+        if (this.gameMode !== 'siege') {
+            for (let i = 0; i < this.tanks.length; i++) {
+                const tank = this.tanks[i];
+                if (!tank.alive) continue;
+                if (this.shotInfo && i === this.shotInfo.shooterIndex && projectile.rollAge < 0.25) continue;
+                const circle = tank.boundingCircle();
+                const dx = projectile.x - circle.x;
+                const dy = projectile.y - circle.y;
+                const nearRadius = circle.r + projectile.radius + 10;
+                if (dx * dx + dy * dy <= nearRadius * nearRadius) {
+                    this._resolveProjectileImpact(projectile, projectile.x, this.terrain.heightAt(projectile.x), 'tank');
+                    return;
+                }
+            }
+        }
+
         if (obstruction || projectile.rollAge > (behavior.maxAge ?? 2.8) || projectile.rollSpeed <= 20) {
+            if (this.gameMode === 'siege') {
+                this._resolveCastleSiegeTerrainImpact(projectile, projectile.x, this.terrain.heightAt(projectile.x), { final: true });
+                return;
+            }
             this._resolveProjectileImpact(projectile, projectile.x, this.terrain.heightAt(projectile.x), 'terrain');
         }
     }
@@ -2034,9 +2261,84 @@ export class Game {
         this.statusMessage = 'Shot missed.';
     }
 
+    _resolveCastleSiegeMiss(x, y) {
+        if (!this.shotInfo || !this.siege) return;
+        this.shotInfo.impactX = x;
+        this.shotInfo.impactY = y;
+        this.shotInfo.collision = 'miss';
+        this.projectile = null;
+        this.projectiles = [];
+        this.siege.finishIfNeeded();
+        this.phase = 'siegeResolving';
+        this.phaseTimer = 0.55;
+        this.lastResult = this.siege.failure
+            ? 'Final shot missed. The castle core is still standing.'
+            : 'Shot missed the castle.';
+        this.statusMessage = 'Shot missed.';
+    }
+
+    _resolveCastleSiegeTerrainImpact(projectile, x, y, { final = true } = {}) {
+        if (!projectile || !this.shotInfo || !this.siege) return;
+
+        const weapon = projectile.weapon;
+        this.shotInfo.impactX = x;
+        this.shotInfo.impactY = y;
+        this.shotInfo.collision = 'terrain';
+        if (projectile === this.projectile) this.projectile = null;
+        else projectile.done = true;
+
+        const terrainMessage = this._applyTerrainEffect(x, y, weapon);
+        const explosion = new Explosion(x, y, weapon.explosionRadius, weapon);
+        this.explosions.push(explosion);
+        this._addScreenShake(weapon);
+        this.audio.playExplosion(weapon, { x, width: this.width });
+
+        if (!final) return;
+        this.siege.finishIfNeeded();
+        this.phase = 'siegeResolving';
+        this.phaseTimer = Math.max(0.7, this._remainingExplosionTime() + 0.12);
+        this.lastResult = this.siege.failure
+            ? `Final shot hit the ground. ${terrainMessage} The castle core is still standing.`
+            : `Shot hit the ground. ${terrainMessage}`;
+        this.statusMessage = 'Impact resolving.';
+    }
+
     _resolveImpact(x, y, collision) {
         if (!this.projectile || !this.shotInfo) return;
         this._resolveProjectileImpact(this.projectile, x, y, collision);
+    }
+
+    _resolveCastleSiegeImpact(projectile, x, y, hitBlock, { final = true } = {}) {
+        if (!projectile || !this.shotInfo || !this.siege) return;
+
+        const weapon = projectile.weapon;
+        this.shotInfo.impactX = x;
+        this.shotInfo.impactY = y;
+        this.shotInfo.collision = 'castle';
+        if (projectile === this.projectile) this.projectile = null;
+        else projectile.done = true;
+
+        const result = this.siege.applyImpact(x, y, weapon);
+        this.shotInfo.totalDamage = result.totalDamage;
+        if (result.totalDamage > 0) {
+            this._addFloatingText(x, y - 18, `Castle -${Math.round(result.totalDamage)}`, '#ffe49b', { size: 17 });
+        }
+        if (result.blocksDestroyed > 0) {
+            this._addFloatingText(x, y - 42, `${result.blocksDestroyed} block${result.blocksDestroyed === 1 ? '' : 's'} down`, '#9edbe6', { size: 16 });
+        }
+
+        const explosion = new Explosion(x, y, weapon.explosionRadius, weapon);
+        this.explosions.push(explosion);
+        this._addScreenShake(weapon);
+        this.audio.playExplosion(weapon, { x, width: this.width });
+        if (result.totalDamage > 0) this.audio.playHit({ x, width: this.width });
+
+        if (!final) return;
+
+        this.phase = 'siegeResolving';
+        this.phaseTimer = Math.max(CONFIG.turn.impactDelaySeconds, this._remainingExplosionTime() + 0.15);
+        this.lastResult = castleSiegeImpactText(hitBlock, result);
+        this.statusMessage = result.objectiveComplete ? 'Castle core destroyed.' : 'Castle impact resolving.';
     }
 
     _resolveProjectileImpact(projectile, x, y, collision, { final = true } = {}) {
@@ -2350,6 +2652,11 @@ export class Game {
     _finishShotResolution() {
         this._settleTanksWithFallDamage();
 
+        if (this.gameMode === 'siege') {
+            this._finishCastleSiegeResolution();
+            return;
+        }
+
         if (this.shotInfo && this.shotInfo.shooterIndex === 1 && this.tanks[1].isCpu) {
             this.cpu.recordShot({
                 hit: this.shotInfo.enemyDamage > 0,
@@ -2367,6 +2674,64 @@ export class Game {
         this.shotInfo = null;
         this._rollWind();
         this._startTurn(true);
+    }
+
+    _finishCastleSiegeResolution() {
+        if (!this.siege) return;
+        this.siege.finishIfNeeded();
+
+        if (this.siege.victory) {
+            this._showCastleSiegeVictory();
+            return;
+        }
+
+        if (this.siege.failure) {
+            this._showCastleSiegeFailure();
+            return;
+        }
+
+        this.currentPlayer = 0;
+        this.shotInfo = null;
+        this.projectile = null;
+        this.projectiles = [];
+        this._rollWind();
+        this.phase = 'siegeAiming';
+        this.statusMessage = `${this.siege.level.name}: line up the next shot.`;
+        this.lastResult = `${this.siege.shotsRemaining} shot${this.siege.shotsRemaining === 1 ? '' : 's'} remaining.`;
+        this.keys.clear();
+        this.ui.update(this._state());
+    }
+
+    _showCastleSiegeVictory() {
+        if (!this.siege) return;
+        this.gameOver = true;
+        this.phase = 'siegeVictory';
+        this.projectile = null;
+        this.projectiles = [];
+        this.keys.clear();
+        this.audio.stopTankMoveLoop();
+        this.statusMessage = 'Castle Siege complete.';
+        this.lastResult = `${this.siege.level.name} cleared with ${this.siege.calculateStars()} star${this.siege.calculateStars() === 1 ? '' : 's'}.`;
+        if (typeof this.ui.showCastleSiegeResult === 'function') {
+            this.ui.showCastleSiegeResult(this.siege.result || this.siege.summary().result);
+        }
+        this.audio.playMatchWin();
+    }
+
+    _showCastleSiegeFailure() {
+        if (!this.siege) return;
+        this.gameOver = true;
+        this.phase = 'siegeFailure';
+        this.projectile = null;
+        this.projectiles = [];
+        this.keys.clear();
+        this.audio.stopTankMoveLoop();
+        this.statusMessage = 'Castle Siege failed.';
+        this.lastResult = 'Out of shots. The castle core survived.';
+        if (typeof this.ui.showCastleSiegeResult === 'function') {
+            this.ui.showCastleSiegeResult(this.siege.result || this.siege.summary().result);
+        }
+        this.audio.playMatchLoss();
     }
 
     _checkWinCondition() {
@@ -2533,6 +2898,9 @@ export class Game {
         const shake = this._screenShakeOffset();
         ctx.translate(shake.x, shake.y);
         this.terrain.draw(ctx);
+        if (this.gameMode === 'siege' && this.siege) {
+            drawCastleSiegeBlocks(ctx, this.siege.blocks);
+        }
 
         for (const tank of this.tanks) {
             if (tank.alive) tank.draw(ctx, this.terrain, this.visualTime);
@@ -2546,10 +2914,16 @@ export class Game {
         if (this.projectile) this.projectile.draw(ctx);
         for (const projectile of this.projectiles) projectile.draw(ctx);
         for (const explosion of this.explosions) explosion.draw(ctx);
+        if (this.gameMode === 'siege' && this.siege) {
+            drawCastleSiegeObjectiveMarker(ctx, this.siege);
+        }
         this._drawFeedback(ctx);
         ctx.restore();
 
         this._drawWindIndicator(ctx);
+        if (this.gameMode === 'siege' && this.siege) {
+            drawCastleSiegeHudOverlay(ctx, this.siege);
+        }
     }
 
     _drawFeedback(ctx) {
@@ -2696,6 +3070,23 @@ function createStartingAmmo() {
     return ammo;
 }
 
+function createSiegeAmmo(loadout = []) {
+    const ammo = {};
+    for (const weapon of WEAPONS) {
+        ammo[weapon.id] = weapon.unlimitedAmmo ? Infinity : 0;
+    }
+
+    for (const item of Array.isArray(loadout) ? loadout : []) {
+        const weapon = getWeaponById(item.weaponId);
+        const max = maxAmmoFor(weapon.id);
+        ammo[weapon.id] = Number.isFinite(item.ammo)
+            ? Math.max(0, Math.min(max, Math.round(item.ammo)))
+            : Infinity;
+    }
+    ammo.standard = Infinity;
+    return ammo;
+}
+
 function summarizeInventory(player) {
     return {
         money: player.money,
@@ -2826,6 +3217,25 @@ function reachNotes(weapon) {
     if (weapon.id === 'heavy') return 'v0.6.9 heavier arc than Standard Shell while keeping practical reach.';
     if (weapon.id === 'mega') return 'v0.6.9 late-match premium price, heavy arc, steep falloff, and largest crater.';
     return 'Normal arcing projectile.';
+}
+
+function castleSiegeImpactText(hitBlock, result) {
+    const material = hitBlock ? hitBlock.material : 'castle';
+    if (result.objectiveComplete) {
+        return 'Core destroyed! The watchtower collapses out of the fight.';
+    }
+    if (result.blocksDestroyed > 0) {
+        return `${capitalize(material)} block destroyed. ${result.blocksDamaged} block${result.blocksDamaged === 1 ? '' : 's'} damaged.`;
+    }
+    if (result.totalDamage > 0) {
+        return `${capitalize(material)} block hit for ${Math.round(result.totalDamage)} total damage.`;
+    }
+    return `${capitalize(material)} block clipped. No meaningful damage.`;
+}
+
+function capitalize(value) {
+    const text = String(value || '');
+    return text ? text.charAt(0).toUpperCase() + text.slice(1) : '';
 }
 
 function randomRange(min, max) {

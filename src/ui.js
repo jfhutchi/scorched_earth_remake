@@ -16,6 +16,12 @@ export class UI {
         this.helpOverlay = document.getElementById('helpOverlay');
         this.helpBtn = document.getElementById('helpBtn');
         this.helpCloseBtn = document.getElementById('helpCloseBtn');
+        this.siegeResultOverlay = document.getElementById('siegeResultOverlay');
+        this.siegeResultTitle = document.getElementById('siegeResultTitle');
+        this.siegeResultStars = document.getElementById('siegeResultStars');
+        this.siegeResultStats = document.getElementById('siegeResultStats');
+        this.siegeReplayBtn = document.getElementById('siegeReplayBtn');
+        this.siegeMenuBtn = document.getElementById('siegeMenuBtn');
 
         this.handoffOverlay = document.getElementById('handoffOverlay');
         this.handoffTitle = document.getElementById('handoffTitle');
@@ -26,6 +32,7 @@ export class UI {
 
         this.twoPlayerBtn = document.getElementById('twoPlayerBtn');
         this.cpuBtn = document.getElementById('cpuBtn');
+        this.campaignBtn = document.getElementById('campaignBtn');
         this.menuMuteBtn = document.getElementById('menuMuteBtn');
         this.muteBtn = document.getElementById('muteBtn');
         this.continueShopBtn = document.getElementById('continueShopBtn');
@@ -97,6 +104,11 @@ export class UI {
     updateMobileHud(game, state) {
         if (!this.mhudTurn) return;
         const tanks = state ? state.tanks : (game && game.tanks);
+        const siege = state ? state.siege : (game && game.siege && game.siege.summary());
+        if ((state && state.gameMode === 'siege') || (game && game.gameMode === 'siege')) {
+            this._updateSiegeMobileHud(tanks && tanks[0], siege, state);
+            return;
+        }
         if (!tanks || tanks.length < 2) return;
         const active = state ? state.active : tanks[game.currentPlayer];
         if (!active) return;
@@ -186,6 +198,7 @@ export class UI {
     hideAllOverlays() {
         this.summaryOverlay.classList.add('hidden');
         this.shopOverlay.classList.add('hidden');
+        if (this.siegeResultOverlay) this.siegeResultOverlay.classList.add('hidden');
         if (this.helpOverlay) this.helpOverlay.classList.add('hidden');
         if (this.handoffOverlay) this.handoffOverlay.classList.add('hidden');
     }
@@ -225,6 +238,7 @@ export class UI {
 
     showSummary(state) {
         this.shopOverlay.classList.add('hidden');
+        if (this.siegeResultOverlay) this.siegeResultOverlay.classList.add('hidden');
         const summary = state.lastSummary;
         const matchWinner = summary.matchWinnerIndex !== null ? state.tanks[summary.matchWinnerIndex].name : null;
         const roundWinner = summary.winnerIndex === null ? 'Draw' : `${state.tanks[summary.winnerIndex].name} wins the round`;
@@ -266,6 +280,7 @@ export class UI {
 
     showShop(state, items) {
         this.summaryOverlay.classList.add('hidden');
+        if (this.siegeResultOverlay) this.siegeResultOverlay.classList.add('hidden');
         // When opening the shop before round 1 (roundNumber === 0),
         // the primary button reads "Start Round" instead of "Start Next Round".
         const isPreRound = state.roundNumber === 0;
@@ -329,6 +344,36 @@ export class UI {
         this.shopOverlay.classList.remove('hidden');
     }
 
+    showCastleSiegeResult(result) {
+        if (!this.siegeResultOverlay || !result) return;
+        this.summaryOverlay.classList.add('hidden');
+        this.shopOverlay.classList.add('hidden');
+        if (this.helpOverlay) this.helpOverlay.classList.add('hidden');
+        if (this.handoffOverlay) this.handoffOverlay.classList.add('hidden');
+
+        const title = result.victory ? 'Victory!' : 'Out of Shots';
+        if (this.siegeResultTitle) this.siegeResultTitle.textContent = title;
+        if (this.siegeResultStars) {
+            this.siegeResultStars.textContent = `Stars ${result.stars || 0}/3`;
+            this.siegeResultStars.dataset.stars = String(result.stars || 0);
+        }
+        if (this.siegeResultStats) {
+            this.siegeResultStats.innerHTML = '';
+            this.siegeResultStats.appendChild(createSiegeResultCard('Level', result.levelName || 'Old Watchtower'));
+            this.siegeResultStats.appendChild(createSiegeResultCard('Coins Earned', `$${result.coinsEarned || 0}`));
+            this.siegeResultStats.appendChild(createSiegeResultCard('Shots Remaining', String(result.shotsRemaining || 0)));
+            this.siegeResultStats.appendChild(createSiegeResultCard('Total Siege Coins', `$${result.totalCoins || 0}`));
+        }
+        this.siegeResultOverlay.classList.remove('hidden');
+        if (this.siegeReplayBtn) {
+            try { this.siegeReplayBtn.focus({ preventScroll: true }); } catch (_err) { /* ignore */ }
+        }
+    }
+
+    hideCastleSiegeResult() {
+        if (this.siegeResultOverlay) this.siegeResultOverlay.classList.add('hidden');
+    }
+
     setMuted(muted) {
         const label = muted ? 'Sound: Off' : 'Sound: On';
         if (this.muteBtn) this.muteBtn.textContent = label;
@@ -337,10 +382,15 @@ export class UI {
 
     update(state) {
         const { tanks, currentPlayer, active, selectedWeapon } = state;
+        if (state.gameMode === 'siege') {
+            this._updateSiegeHud(state);
+            return;
+        }
         if (!tanks || tanks.length < 2 || !active) return;
 
         const p1 = tanks[0];
         const p2 = tanks[1];
+        if (this.p2Panel) this.p2Panel.classList.remove('hidden');
 
         this.p1Name.textContent = p1.name;
         this.p2Name.textContent = p2.name;
@@ -376,6 +426,78 @@ export class UI {
         if (this.windVal) this.windVal.textContent = formatWind(state.wind);
         this.resultVal.textContent = state.lastResult;
         this.controlsHint.textContent = this._controlsText(state);
+    }
+
+    _updateSiegeHud(state) {
+        const tank = state.active || state.tanks[0];
+        const siege = state.siege || {};
+        if (!tank) return;
+
+        if (this.p2Panel) this.p2Panel.classList.remove('hidden');
+        this.p1Name.textContent = 'Player 1';
+        this.p2Name.textContent = 'Castle Core';
+        this.p1Score.textContent = '0';
+        this.p2Score.textContent = 'Obj';
+        this.p1Inventory.textContent = `Shots ${siege.shotsRemaining}/${siege.shotLimit} | Siege coins $${siege.progress?.coins || 0}`;
+        this.p2Inventory.textContent = `Blocks ${siege.blocksRemaining || 0} standing | Best ${siege.progress?.bestStars || 0}/3`;
+
+        this._updateHealth(tank, this.p1Health, this.p1HealthText, this.p1ShieldRow, this.p1ShieldFill, this.p1ShieldText);
+        const core = siege.objectiveHealth || { hp: 0, maxHp: 0, percent: 0 };
+        const corePercent = Math.max(0, Math.min(100, (core.percent || 0) * 100));
+        this.p2Health.style.width = `${corePercent}%`;
+        this.p2Health.style.background = healthColor(corePercent);
+        this.p2HealthText.textContent = `${Math.ceil(core.hp || 0)}/${core.maxHp || 0}`;
+        if (this.p2ShieldRow) this.p2ShieldRow.classList.add('empty');
+        if (this.p2ShieldFill) this.p2ShieldFill.style.width = '0%';
+        if (this.p2ShieldText) this.p2ShieldText.textContent = '0';
+
+        this.p1Panel.classList.toggle('active', state.phase === 'siegeAiming' && !state.gameOver);
+        this.p2Panel.classList.remove('active');
+        this.p1Panel.classList.remove('disabled');
+        this.p2Panel.classList.toggle('disabled', siege.victory || siege.failure);
+
+        this.turnLabel.textContent = siege.victory ? 'Castle Breached' : (siege.failure ? 'Out of Shots' : 'Castle Siege');
+        this.turnLabel.style.color = '#f06b45';
+        this.statusVal.textContent = state.statusMessage;
+        this.roundVal.textContent = siege.levelId || 'siege_001';
+        this.modeVal.textContent = 'Campaign';
+
+        this.angleVal.textContent = `${Math.round(tank.angle)} deg`;
+        this.powerVal.textContent = String(Math.round(tank.power));
+        this.weaponVal.textContent = state.selectedWeapon.name;
+        drawHudWeaponIcon(this.weaponIcon, state.selectedWeapon, 32);
+        this.ammoVal.textContent = `${siege.shotsRemaining}/${siege.shotLimit}`;
+        this.moveVal.textContent = `${Math.round(tank.movementFuel)} px`;
+        this.moveVal.parentElement.classList.toggle('empty', tank.movementFuel <= 0);
+        this.moveVal.parentElement.classList.toggle('available', state.phase === 'siegeAiming' && tank.movementFuel > 0);
+        if (this.windVal) this.windVal.textContent = formatWind(state.wind);
+        this.resultVal.textContent = state.lastResult;
+        this.controlsHint.textContent = this._controlsText(state);
+    }
+
+    _updateSiegeMobileHud(tank, siege, state) {
+        if (!tank || !siege) return;
+        const selectedWeapon = state ? state.selectedWeapon : (tank.selectedWeapon ? tank.selectedWeapon() : null);
+        this.mhudTurn.textContent = siege.victory ? 'WIN' : (siege.failure ? 'OUT' : 'P1');
+        this.mhudTurn.style.background = siege.victory
+            ? 'rgba(47, 158, 68, 0.86)'
+            : (siege.failure ? 'rgba(145, 89, 193, 0.86)' : 'rgba(199, 82, 47, 0.86)');
+        this.mhudP1Hp.textContent = String(Math.max(0, Math.round(tank.health)));
+        const core = siege.objectiveHealth || { hp: 0, maxHp: 0 };
+        this.mhudP2Hp.textContent = `Core ${Math.ceil(core.hp || 0)}`;
+        if (this.mhudP1Shield) this.mhudP1Shield.textContent = '';
+        if (this.mhudP2Shield) this.mhudP2Shield.textContent = '';
+        if (selectedWeapon) {
+            this.mhudWeapon.textContent = shortWeaponName(selectedWeapon);
+            drawHudWeaponIcon(this.mhudWeaponIcon, selectedWeapon, 28);
+        }
+        this.mhudAngle.textContent = String(Math.round(tank.angle));
+        this.mhudPower.textContent = String(Math.round(tank.power));
+        this.mhudAmmo.textContent = `${siege.shotsRemaining}/${siege.shotLimit}`;
+        if (this.mhudP1Inv) this.mhudP1Inv.textContent = `Shots ${siege.shotsRemaining}/${siege.shotLimit}`;
+        if (this.mhudP2Inv) this.mhudP2Inv.textContent = `Core ${Math.ceil(core.hp || 0)}/${core.maxHp || 0}`;
+        if (this.mhudRound) this.mhudRound.textContent = siege.levelId || 'siege_001';
+        if (this.mhudResult) this.mhudResult.textContent = state && state.lastResult ? String(state.lastResult).slice(0, 60) : '--';
     }
 
     showWeaponToast(weapon, tank) {
@@ -427,6 +549,11 @@ export class UI {
     }
 
     _controlsText(state) {
+        if (state.gameMode === 'siege') {
+            if (state.phase === 'siegeVictory' || state.phase === 'siegeFailure') return 'Use Replay or Main Menu.';
+            if (state.phase !== 'siegeAiming') return 'Controls locked until the shot resolves.';
+            return 'Keys: arrows aim, A/D move, Space fire, R restart, M mute, Esc menu. Touch controls are available on mobile.';
+        }
         if (state.phase === 'handoff') return 'Press Enter or tap Start Turn to begin the next local turn. Inputs are locked.';
         if (state.phase === 'roundSummary' && state.matchWinnerIndex !== null) return 'Match complete. Use New Match or Main Menu.';
         if (state.phase === 'roundSummary') return 'Keys: N continue, Esc menu, M mute. Touch: N or menu.';
@@ -513,6 +640,21 @@ function createCpuShopSummary(player, purchases) {
     details.appendChild(list);
     fragment.appendChild(details);
     return fragment;
+}
+
+function createSiegeResultCard(label, value) {
+    const card = document.createElement('section');
+    card.className = 'summary-card siege-result-stat';
+
+    const h3 = document.createElement('h3');
+    h3.textContent = label;
+    card.appendChild(h3);
+
+    const p = document.createElement('p');
+    p.textContent = value;
+    card.appendChild(p);
+
+    return card;
 }
 
 function createShopItemCard(player, playerIndex, item) {

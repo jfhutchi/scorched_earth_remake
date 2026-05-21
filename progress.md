@@ -2,14 +2,16 @@ Original prompt: Implement v0.7.1 as a focused Crater Command polish, debug, CI,
 
 # Project Progress
 
-Current Version: v0.7.1
+Current Version: v0.8.0
 
-Current Branch: version/v0.7.1
+Current Branch: castle-siege-v0.8.0
 
 Release History Source: RELEASE_NOTES.md
 
 ## Latest Completed Work
 
+- Implemented the v0.8.0 Castle Siege campaign vertical slice with a Campaign menu entry, `siege` game mode, `siege_001` / Old Watchtower, destructible castle blocks, a crystal core objective, limited shots, victory/failure results, and local progress saving.
+- Preserved the existing Duel vs CPU and Two Player Local modes while adding Castle Siege through isolated modules for level data, progress, block collision/damage, rendering, and mode state.
 - Implemented the v0.7.1 Crater Command follow-up pass on top of the deployed v0.7.0 baseline.
 - Renamed the displayed game title, browser metadata, iOS home-screen metadata, and PWA manifest metadata to Crater Command without renaming the repository or changing the GitHub Pages URL.
 - Updated GitHub Actions validation and Pages workflows for Node 24-compatible official action versions, kept Pages deployment main-only, and included manifest/icons in the Pages artifact.

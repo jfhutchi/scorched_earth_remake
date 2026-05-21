@@ -1,6 +1,31 @@
 # Release Notes
 
-## v0.7.1 - Pending
+## v0.8.0 - Pending
+
+### Summary
+
+v0.8.0 adds the first playable Castle Siege campaign vertical slice while preserving the existing Duel vs CPU and Two Player Local artillery modes. The slice includes one handcrafted level, destructible castle blocks, a core objective, limited shots, a result overlay, and local progress saving. It does not add a backend, accounts, online multiplayer, ads, in-app purchases, procedural generation, external assets, or a new build system.
+
+### Added
+
+- Main-menu Campaign entry that starts Castle Siege.
+- Castle Siege mode value: `siege`.
+- One level, `siege_001` / Old Watchtower.
+- One player cannon on the left and a destructible castle target on the right.
+- Castle blocks with HP, wood/crystal materials, damage visuals, and a `castle_core` objective block.
+- Projectile collision against castle blocks and explosion damage to nearby blocks.
+- Limited-shot victory/failure flow with Replay and Main Menu.
+- Local Castle Siege progress save under `crater-command-siege-progress-v1`, including best stars, best shots remaining, completion count, and coins.
+
+### Preserved
+
+- Duel vs CPU, Two Player Local, mobile controls, generated Canvas visuals, generated Web Audio, debug helpers, static module loading, and GitHub Pages-safe relative paths remain intact.
+
+### Testing
+
+- Local checks should include static syntax validation, version/release/artifact/path validation, local browser Castle Siege smoke testing, and regression starts for Duel vs CPU and Two Player Local.
+
+## v0.7.1 - Previous
 
 ### Summary
 
