@@ -1,4 +1,11 @@
-import { createCastleBlocks, findCastleBlockHit, applyCastleExplosionDamage, isCastleObjectiveComplete, getCastleObjectiveHealth } from './castleSiegeBlocks.js';
+import {
+    createCastleBlocks,
+    findCastleBlockHit,
+    applyCastleExplosionDamage,
+    updateCastleBlockCollapse,
+    isCastleObjectiveComplete,
+    getCastleObjectiveHealth,
+} from './castleSiegeBlocks.js';
 import { getCastleSiegeLevel, getNextCastleSiegeLevelId } from './castleSiegeLevels.js';
 import { loadCastleSiegeProgress, recordCastleSiegeResult } from './castleSiegeProgress.js';
 
@@ -17,6 +24,7 @@ export class CastleSiegeMode {
         this.resultRecorded = false;
         this.result = null;
         this.lastImpact = null;
+        this.lastCollapse = null;
         this.status = 'active';
         return this;
     }
@@ -36,8 +44,17 @@ export class CastleSiegeMode {
         const summary = applyCastleExplosionDamage(this.blocks, x, y, weapon);
         summary.objectiveComplete = this.isObjectiveComplete();
         this.lastImpact = summary;
-        this.finishIfNeeded();
         return summary;
+    }
+
+    update(dt, terrain) {
+        const summary = updateCastleBlockCollapse(this.blocks, terrain, dt);
+        if (summary.changed) this.lastCollapse = summary;
+        return summary;
+    }
+
+    isSettling() {
+        return this.blocks.some((block) => block && !block.destroyed && block.falling);
     }
 
     isObjectiveComplete() {
@@ -144,6 +161,7 @@ export class CastleSiegeMode {
             blocksRemaining: this.blocks.filter((block) => !block.destroyed).length,
             blocksDestroyed: this.blocks.filter((block) => block.destroyed).length,
             lastImpact: this.lastImpact,
+            lastCollapse: this.lastCollapse,
             progress: {
                 coins: progress.coins,
                 completed: Boolean(levelProgress?.completed),

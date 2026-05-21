@@ -11,6 +11,7 @@ Release History Source: RELEASE_NOTES.md
 ## Latest Completed Work
 
 - Implemented the v0.8.0 Castle Siege campaign vertical slice with a Campaign menu entry, `siege` game mode, `siege_001` / Old Watchtower, destructible castle blocks, a crystal core objective, limited shots, victory/failure results, and local progress saving.
+- Added Castle Siege collapse behavior so unsupported blocks fall vertically, settle on terrain or surviving blocks, expose support/fall state in debug text, and let terrain splash damage nearby castle blocks.
 - Preserved the existing Duel vs CPU and Two Player Local modes while adding Castle Siege through isolated modules for level data, progress, block collision/damage, rendering, and mode state.
 - Implemented the v0.7.1 Crater Command follow-up pass on top of the deployed v0.7.0 baseline.
 - Renamed the displayed game title, browser metadata, iOS home-screen metadata, and PWA manifest metadata to Crater Command without renaming the repository or changing the GitHub Pages URL.
