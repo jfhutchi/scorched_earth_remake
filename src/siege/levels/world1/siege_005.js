@@ -1,0 +1,22 @@
+export const siege_005 = {
+    id: 'siege_005',
+    name: 'Lean-To',
+    worldId: 'world1',
+    shotLimit: 8,
+    parShots: 4,
+    playerStartX: 160,
+    startingAngle: 52,
+    startingPower: 68,
+    objective: { type: 'destroy_core', targetTag: 'castle_core' },
+    windMode: 'light',
+    terrainRoughness: 'smooth',
+    loadout: [{ weaponId: 'standard', ammo: Infinity }],
+    hint: 'The core hangs off the edge. Take the support and gravity does the rest.',
+    blocks: [
+        { id: 'wide_base',  material: 'wood', x: 760, y: 534, width: 120, height: 38, tags: ['foundation'] },
+        { id: 'narrow_mid', material: 'wood', x: 800, y: 496, width: 50, height: 38, tags: ['support'] },
+        { id: 'shelf',      material: 'wood', x: 760, y: 458, width: 180, height: 30, tags: ['shelf'] },
+        { id: 'p_core',     type: 'castle_core', material: 'crystal', x: 880, y: 416, width: 60, height: 42, hp: 40, tags: ['castle_core', 'objective'] },
+        { id: 'side_brace', material: 'wood', x: 900, y: 496, width: 36, height: 38, tags: ['brace'] },
+    ],
+};

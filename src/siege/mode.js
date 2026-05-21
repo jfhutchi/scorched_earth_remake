@@ -5,9 +5,9 @@ import {
     updateCastleBlockCollapse,
     isCastleObjectiveComplete,
     getCastleObjectiveHealth,
-} from './castleSiegeBlocks.js';
-import { getCastleSiegeLevel, getNextCastleSiegeLevelId } from './castleSiegeLevels.js';
-import { loadCastleSiegeProgress, recordCastleSiegeResult } from './castleSiegeProgress.js';
+} from './blocks.js';
+import { getCastleSiegeLevel, getNextCastleSiegeLevelId } from './levels.js';
+import { loadCastleSiegeProgress, recordCastleSiegeResult } from './progress.js';
 
 export class CastleSiegeMode {
     constructor(levelId = 'siege_001') {

@@ -1,0 +1,23 @@
+export const siege_013 = {
+    id: 'siege_013',
+    name: 'Heavy Bridge',
+    worldId: 'world2',
+    shotLimit: 9,
+    parShots: 5,
+    playerStartX: 180,
+    startingAngle: 52,
+    startingPower: 72,
+    objective: { type: 'destroy_core', targetTag: 'castle_core' },
+    windMode: 'gusty',
+    terrainRoughness: 'smooth',
+    loadout: [{ weaponId: 'standard', ammo: Infinity }],
+    hint: 'A heavy stone bridge on fragile wood. The core sits right beneath.',
+    blocks: [
+        { id: 'hb_lpost', material: 'wood', x: 770, y: 504, width: 32, height: 68, tags: ['support'] },
+        { id: 'hb_rpost', material: 'wood', x: 908, y: 504, width: 32, height: 68, tags: ['support'] },
+        { id: 'hb_core',  type: 'castle_core', material: 'crystal', x: 810, y: 516, width: 88, height: 56, hp: 54, tags: ['castle_core', 'objective'] },
+        { id: 'hb_deck',  material: 'stone', x: 760, y: 470, width: 200, height: 34, tags: ['bridge', 'heavy'] },
+        { id: 'hb_rail_l', material: 'wood', x: 760, y: 438, width: 60, height: 32, tags: ['rail'] },
+        { id: 'hb_rail_r', material: 'wood', x: 900, y: 438, width: 60, height: 32, tags: ['rail'] },
+    ],
+};

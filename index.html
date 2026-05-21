@@ -20,7 +20,7 @@
         <div id="menu" class="screen">
             <main class="menu-card">
                 <h1 class="title">Crater Command</h1>
-                <p id="menuVersion" class="version-line">v0.8.0</p>
+                <p id="menuVersion" class="version-line">v0.9.0</p>
                 <p class="subtitle">Destroy the opposing tank across a shifting battlefield of wind, craters, dirt mounds, rolling shells, flame patches, split weapons, and limited special ammo.</p>
 
                 <div class="menu-actions">
@@ -308,8 +308,21 @@
                     <div id="siegeResultStars" class="siege-stars" aria-label="Stars">Stars 0/3</div>
                     <div id="siegeResultStats" class="summary-grid siege-result-stats"></div>
                     <div class="menu-actions">
-                        <button id="siegeReplayBtn" class="btn primary">Replay</button>
+                        <button id="siegeNextBtn" class="btn primary hidden">Next Level</button>
+                        <button id="siegeReplayBtn" class="btn">Replay</button>
+                        <button id="siegeLevelSelectBtn" class="btn">Levels</button>
                         <button id="siegeMenuBtn" class="btn">Main Menu</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="levelSelectOverlay" class="overlay hidden level-select-overlay" role="dialog" aria-modal="true" aria-label="Castle Siege level select">
+                <div class="menu-card overlay-card level-select-card">
+                    <h1 class="title">Castle Siege</h1>
+                    <div id="levelSelectSummary" class="level-select-summary"></div>
+                    <div id="levelSelectWorlds" class="level-select-worlds"></div>
+                    <div class="menu-actions">
+                        <button id="levelSelectBackBtn" class="btn">Main Menu</button>
                     </div>
                 </div>
             </div>

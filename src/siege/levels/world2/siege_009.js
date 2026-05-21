@@ -1,0 +1,23 @@
+export const siege_009 = {
+    id: 'siege_009',
+    name: 'Stone Cap',
+    worldId: 'world2',
+    shotLimit: 8,
+    parShots: 4,
+    playerStartX: 180,
+    startingAngle: 48,
+    startingPower: 68,
+    objective: { type: 'destroy_core', targetTag: 'castle_core' },
+    windMode: 'light',
+    terrainRoughness: 'smooth',
+    loadout: [{ weaponId: 'standard', ammo: Infinity }],
+    hint: 'A stone cap is heavy. Knock its supports out and it will crush the core.',
+    blocks: [
+        { id: 'sc_l_base', material: 'wood', x: 770, y: 534, width: 40, height: 38, tags: ['foundation', 'support'] },
+        { id: 'sc_l_mid',  material: 'wood', x: 770, y: 496, width: 40, height: 38, tags: ['support'] },
+        { id: 'sc_r_base', material: 'wood', x: 890, y: 534, width: 40, height: 38, tags: ['foundation', 'support'] },
+        { id: 'sc_r_mid',  material: 'wood', x: 890, y: 496, width: 40, height: 38, tags: ['support'] },
+        { id: 'sc_core',   type: 'castle_core', material: 'crystal', x: 820, y: 502, width: 60, height: 32, hp: 36, tags: ['castle_core', 'objective'] },
+        { id: 'sc_cap',    material: 'stone', x: 760, y: 460, width: 180, height: 36, tags: ['heavy', 'cover'] },
+    ],
+};

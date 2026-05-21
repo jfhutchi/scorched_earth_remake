@@ -1,4 +1,12 @@
 import { CONFIG, GAME_VERSION, MAX_SHIELD, WEAPONS, clampShieldCharge, maxAmmoFor } from './config.js';
+import { getCastleSiegeLevel } from './siege/levels.js';
+import {
+    CASTLE_SIEGE_WORLDS,
+    getStarsEarnedInWorld,
+    isLevelUnlocked,
+    isWorldUnlocked,
+    summarizeCampaignProgress,
+} from './siege/worlds.js';
 import { drawUtilityIcon, drawWeaponIcon } from './visualAssets.js';
 
 export class UI {
@@ -22,6 +30,12 @@ export class UI {
         this.siegeResultStats = document.getElementById('siegeResultStats');
         this.siegeReplayBtn = document.getElementById('siegeReplayBtn');
         this.siegeMenuBtn = document.getElementById('siegeMenuBtn');
+        this.siegeNextBtn = document.getElementById('siegeNextBtn');
+        this.siegeLevelSelectBtn = document.getElementById('siegeLevelSelectBtn');
+        this.levelSelectOverlay = document.getElementById('levelSelectOverlay');
+        this.levelSelectWorlds = document.getElementById('levelSelectWorlds');
+        this.levelSelectSummary = document.getElementById('levelSelectSummary');
+        this.levelSelectBackBtn = document.getElementById('levelSelectBackBtn');
 
         this.handoffOverlay = document.getElementById('handoffOverlay');
         this.handoffTitle = document.getElementById('handoffTitle');
@@ -199,8 +213,80 @@ export class UI {
         this.summaryOverlay.classList.add('hidden');
         this.shopOverlay.classList.add('hidden');
         if (this.siegeResultOverlay) this.siegeResultOverlay.classList.add('hidden');
+        if (this.levelSelectOverlay) this.levelSelectOverlay.classList.add('hidden');
         if (this.helpOverlay) this.helpOverlay.classList.add('hidden');
         if (this.handoffOverlay) this.handoffOverlay.classList.add('hidden');
+    }
+
+    showLevelSelect(progress, { onSelect, onBack } = {}) {
+        if (!this.levelSelectOverlay || !this.levelSelectWorlds) return;
+        this.hideAllOverlays();
+
+        const summary = summarizeCampaignProgress(progress);
+        if (this.levelSelectSummary) {
+            this.levelSelectSummary.replaceChildren(
+                createLevelSelectPill(`${summary.completed}/${summary.totalLevels} cleared`),
+                createLevelSelectPill(`${summary.stars}/${summary.maxStars} stars`),
+                createLevelSelectPill(`$${summary.coins} siege coins`),
+            );
+        }
+
+        const worldCards = CASTLE_SIEGE_WORLDS.map((world) => {
+            const unlocked = isWorldUnlocked(world.id, progress);
+            const worldStars = getStarsEarnedInWorld(world.id, progress);
+            const card = document.createElement('section');
+            card.className = `level-select-world${unlocked ? '' : ' locked'}`;
+
+            const header = document.createElement('div');
+            header.className = 'level-select-world-header';
+
+            const title = document.createElement('h2');
+            title.textContent = world.name;
+            header.appendChild(title);
+
+            const subtitle = document.createElement('p');
+            subtitle.className = 'subtitle';
+            subtitle.textContent = world.subtitle;
+            header.appendChild(subtitle);
+
+            const status = document.createElement('span');
+            status.className = unlocked ? 'stars' : 'lock';
+            status.textContent = unlocked
+                ? `${worldStars}/${world.levelIds.length * 3} stars`
+                : `Unlocks at ${world.starsToUnlock} total stars`;
+            header.appendChild(status);
+            card.appendChild(header);
+
+            const grid = document.createElement('div');
+            grid.className = 'level-select-grid';
+            for (const levelId of world.levelIds) {
+                grid.appendChild(createLevelSelectButton(levelId, progress, {
+                    onSelect,
+                    unlocked: unlocked && isLevelUnlocked(levelId, progress),
+                }));
+            }
+            card.appendChild(grid);
+            return card;
+        });
+        this.levelSelectWorlds.replaceChildren(...worldCards);
+
+        if (this.levelSelectBackBtn) {
+            this.levelSelectBackBtn.onclick = () => {
+                if (typeof onBack === 'function') onBack();
+                else this.hideLevelSelect();
+            };
+        }
+
+        this.levelSelectOverlay.classList.remove('hidden');
+        const firstUnlocked = this.levelSelectWorlds.querySelector('.level-card:not(:disabled)');
+        const focusTarget = firstUnlocked || this.levelSelectBackBtn;
+        if (focusTarget) {
+            try { focusTarget.focus({ preventScroll: true }); } catch (_err) { /* ignore */ }
+        }
+    }
+
+    hideLevelSelect() {
+        if (this.levelSelectOverlay) this.levelSelectOverlay.classList.add('hidden');
     }
 
     showHandoff(state, activeTank) {
@@ -348,6 +434,7 @@ export class UI {
         if (!this.siegeResultOverlay || !result) return;
         this.summaryOverlay.classList.add('hidden');
         this.shopOverlay.classList.add('hidden');
+        if (this.levelSelectOverlay) this.levelSelectOverlay.classList.add('hidden');
         if (this.helpOverlay) this.helpOverlay.classList.add('hidden');
         if (this.handoffOverlay) this.handoffOverlay.classList.add('hidden');
 
@@ -364,6 +451,13 @@ export class UI {
             this.siegeResultStats.appendChild(createSiegeResultCard('Shots Remaining', String(result.shotsRemaining || 0)));
             this.siegeResultStats.appendChild(createSiegeResultCard('Total Siege Coins', `$${result.totalCoins || 0}`));
         }
+        if (this.siegeNextBtn) {
+            const hasNext = Boolean(result.victory && result.nextLevelId);
+            this.siegeNextBtn.classList.toggle('hidden', !hasNext);
+            this.siegeNextBtn.disabled = !hasNext;
+            this.siegeNextBtn.dataset.levelId = hasNext ? result.nextLevelId : '';
+            this.siegeNextBtn.textContent = result.nextLevelName ? `Next: ${result.nextLevelName}` : 'Next Level';
+        }
         this.siegeResultOverlay.classList.remove('hidden');
         if (this.siegeReplayBtn) {
             try { this.siegeReplayBtn.focus({ preventScroll: true }); } catch (_err) { /* ignore */ }
@@ -372,6 +466,7 @@ export class UI {
 
     hideCastleSiegeResult() {
         if (this.siegeResultOverlay) this.siegeResultOverlay.classList.add('hidden');
+        if (this.siegeNextBtn) this.siegeNextBtn.dataset.levelId = '';
     }
 
     setMuted(muted) {
@@ -655,6 +750,51 @@ function createSiegeResultCard(label, value) {
     card.appendChild(p);
 
     return card;
+}
+
+function createLevelSelectPill(text) {
+    const pill = document.createElement('span');
+    pill.className = 'pill';
+    pill.textContent = text;
+    return pill;
+}
+
+function createLevelSelectButton(levelId, progress, { onSelect, unlocked }) {
+    const level = getCastleSiegeLevel(levelId);
+    const levelProgress = progress?.completedLevels?.[levelId] || null;
+    const completed = Boolean(levelProgress?.completed);
+    const bestStars = levelProgress?.bestStars || 0;
+
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = `level-card${unlocked ? '' : ' locked'}${completed ? ' completed' : ''}`;
+    button.disabled = !unlocked;
+    button.dataset.levelId = levelId;
+    if (unlocked && typeof onSelect === 'function') {
+        button.addEventListener('click', () => onSelect(levelId));
+    }
+
+    const name = document.createElement('span');
+    name.className = 'level-card-name';
+    name.textContent = level.name;
+    button.appendChild(name);
+
+    const meta = document.createElement('span');
+    meta.className = 'level-card-meta';
+    meta.textContent = unlocked ? `${formatLevelNumber(levelId)} | ${level.shotLimit} shots` : 'Locked';
+    button.appendChild(meta);
+
+    const stars = document.createElement('span');
+    stars.className = 'level-card-stars';
+    stars.textContent = completed ? `Best ${bestStars}/3` : 'Stars 0/3';
+    button.appendChild(stars);
+
+    return button;
+}
+
+function formatLevelNumber(levelId) {
+    const match = /_(\d+)$/.exec(String(levelId || ''));
+    return match ? `Level ${Number(match[1])}` : String(levelId || 'Level');
 }
 
 function createShopItemCard(player, playerIndex, item) {

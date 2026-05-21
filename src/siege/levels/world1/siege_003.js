@@ -1,0 +1,23 @@
+export const siege_003 = {
+    id: 'siege_003',
+    name: 'Footbridge',
+    worldId: 'world1',
+    shotLimit: 8,
+    parShots: 4,
+    playerStartX: 160,
+    startingAngle: 46,
+    startingPower: 68,
+    objective: { type: 'destroy_core', targetTag: 'castle_core' },
+    windMode: 'light',
+    terrainRoughness: 'smooth',
+    loadout: [{ weaponId: 'standard', ammo: Infinity }],
+    hint: 'Cover hides the core. Break a side wall first.',
+    blocks: [
+        { id: 'lwall_low', material: 'wood', x: 760, y: 510, width: 36, height: 62, tags: ['cover'] },
+        { id: 'rwall_low', material: 'wood', x: 904, y: 510, width: 36, height: 62, tags: ['cover'] },
+        { id: 'floor',     material: 'wood', x: 760, y: 478, width: 180, height: 32, tags: ['floor'] },
+        { id: 'p_core',    type: 'castle_core', material: 'crystal', x: 808, y: 438, width: 84, height: 40, hp: 38, tags: ['castle_core', 'objective'] },
+        { id: 'cap_left',  material: 'wood', x: 770, y: 408, width: 50, height: 30, tags: ['cap'] },
+        { id: 'cap_right', material: 'wood', x: 880, y: 408, width: 50, height: 30, tags: ['cap'] },
+    ],
+};

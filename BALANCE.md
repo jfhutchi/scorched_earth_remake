@@ -1,6 +1,6 @@
 # Balance Reference
 
-Current version: `v0.8.0`
+Current version: `v0.9.0`
 
 BALANCE.md is the Crater Command tuning reference for weapons, economy, utility items, and CPU usage. It documents intent and current values; it does not claim the balance is final.
 
@@ -31,6 +31,33 @@ Castle Siege rewards:
 - `$50` base clear reward.
 - `$10`, `$25`, or `$50` star bonus for 1, 2, or 3 stars.
 - `$100` first-clear bonus per level; replays do not repeat that first-clear bonus.
+
+Castle Siege progression:
+
+- World 1 / Outpost is unlocked by default and uses wood + crystal blocks.
+- World 2 / Quarry unlocks at 6 total stars and introduces stone blocks.
+- Levels unlock sequentially inside each unlocked world.
+
+## Castle Siege Levels
+
+| Level | World | Name | Shot Limit | Par Shots | Material Focus |
+| --- | --- | --- | ---: | ---: | --- |
+| `siege_001` | Outpost | Lone Pillar | 6 | 3 | Wood + crystal |
+| `siege_002` | Outpost | Twin Stack | 7 | 3 | Wood + crystal |
+| `siege_003` | Outpost | Footbridge | 8 | 4 | Wood + crystal |
+| `siege_004` | Outpost | Old Watchtower | 8 | 4 | Wood + crystal |
+| `siege_005` | Outpost | Lean-To | 8 | 4 | Wood + crystal |
+| `siege_006` | Outpost | Stacked Tower | 9 | 4 | Wood + crystal |
+| `siege_007` | Outpost | Sheltered Core | 9 | 5 | Wood + crystal |
+| `siege_008` | Outpost | Outpost Citadel | 10 | 6 | Wood + crystal |
+| `siege_009` | Quarry | Stone Cap | 8 | 4 | Stone cap + wood supports |
+| `siege_010` | Quarry | Hard Wall | 9 | 4 | Stone wall + wood supports |
+| `siege_011` | Quarry | Stone Pillars | 9 | 5 | Stone pillars + wood beam |
+| `siege_012` | Quarry | The Vault | 10 | 5 | Stone shell + wood brace |
+| `siege_013` | Quarry | Heavy Bridge | 9 | 5 | Stone bridge + wood rails |
+| `siege_014` | Quarry | Layered Defense | 10 | 6 | Stone armor + wood weakpoints |
+| `siege_015` | Quarry | Quarry Keep | 11 | 7 | Stone keep + wood weakpoints |
+| `siege_016` | Quarry | Stronghold | 12 | 8 | Stone stronghold + wood weakpoints |
 
 ## Weapon Categories
 

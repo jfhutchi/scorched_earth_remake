@@ -1,0 +1,21 @@
+export const siege_001 = {
+    id: 'siege_001',
+    name: 'Lone Pillar',
+    worldId: 'world1',
+    shotLimit: 6,
+    parShots: 3,
+    playerStartX: 160,
+    startingAngle: 50,
+    startingPower: 64,
+    objective: { type: 'destroy_core', targetTag: 'castle_core' },
+    windMode: 'calm',
+    terrainRoughness: 'smooth',
+    loadout: [{ weaponId: 'standard', ammo: Infinity }],
+    hint: 'Knock out the bottom block and the core will fall.',
+    blocks: [
+        { id: 'p_base', material: 'wood', x: 830, y: 534, width: 60, height: 38, tags: ['foundation'] },
+        { id: 'p_mid',  material: 'wood', x: 830, y: 496, width: 60, height: 38 },
+        { id: 'p_top',  material: 'wood', x: 830, y: 458, width: 60, height: 38 },
+        { id: 'p_core', type: 'castle_core', material: 'crystal', x: 830, y: 420, width: 60, height: 38, hp: 26, tags: ['castle_core', 'objective'] },
+    ],
+};

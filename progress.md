@@ -2,14 +2,20 @@ Original prompt: Implement v0.7.1 as a focused Crater Command polish, debug, CI,
 
 # Project Progress
 
-Current Version: v0.8.0
+Current Version: v0.9.0
 
-Current Branch: castle-siege-v0.8.0
+Current Branch: feature/v0.9.0-level-engine
 
 Release History Source: RELEASE_NOTES.md
 
 ## Latest Completed Work
 
+- Implemented the v0.9.0 Castle Siege level-engine milestone with a level-select screen, 16 handcrafted levels across Outpost and Quarry, sequential level unlocks, and a 6-star World 2 gate.
+- Moved Castle Siege modules into the minimal `src/siege/` folder and split level data into per-level files aggregated by `src/siege/levels.js`.
+- Added the `src/siege/worlds.js` catalog for world metadata, level membership, star gating, and next-level campaign routing.
+- Extended Castle Siege progress helpers for total-star and per-level reads while preserving the existing `crater-command-siege-progress-v1` localStorage key.
+- Added Next Level and Levels routing to Castle Siege results while keeping Replay and Main Menu behavior.
+- Updated README.md, TESTING.md, RELEASE_NOTES.md, BALANCE.md, GitHub Actions version references, and validation targets for v0.9.0.
 - Implemented the v0.8.0 Castle Siege campaign vertical slice with a Campaign menu entry, `siege` game mode, `siege_001` / Old Watchtower, destructible castle blocks, a crystal core objective, limited shots, victory/failure results, and local progress saving.
 - Added Castle Siege collapse behavior so unsupported blocks fall vertically, settle on terrain or surviving blocks, expose support/fall state in debug text, and let terrain splash damage nearby castle blocks.
 - Preserved the existing Duel vs CPU and Two Player Local modes while adding Castle Siege through isolated modules for level data, progress, block collision/damage, rendering, and mode state.
