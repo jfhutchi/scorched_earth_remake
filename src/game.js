@@ -3070,14 +3070,14 @@ export class Game {
         // Cap preview to roughly 62% of the predicted path, clamped so very
         // short shots still show something and long shots don't trail too far.
         const visibleSteps = clamp(Math.floor(predictedSteps * 0.62), 6, samples.length - 1);
-        const dotStride = 4;
+        const dotStride = 3;
         const dots = [];
         for (let i = dotStride; i <= visibleSteps; i += dotStride) {
             const point = samples[i - 1];
             if (!point) break;
             const progress = i / visibleSteps;
             // Linear fade across the last 40% of the visible arc so the tail
-            // never resolves to a single high-contrast "this is your impact" dot.
+            // stays readable without becoming a high-contrast impact marker.
             const fade = progress > 0.6 ? Math.max(0, 1 - (progress - 0.6) / 0.4) : 1;
             dots.push({ x: point.x, y: point.y, fade });
         }
@@ -3086,15 +3086,21 @@ export class Game {
 
         ctx.save();
         for (const dot of dots) {
-            ctx.fillStyle = `rgba(0, 0, 0, ${0.22 * dot.fade})`;
+            ctx.fillStyle = `rgba(0, 0, 0, ${0.36 * dot.fade})`;
             ctx.beginPath();
-            ctx.arc(dot.x, dot.y, 4.1, 0, Math.PI * 2);
+            ctx.arc(dot.x, dot.y, 5.3, 0, Math.PI * 2);
             ctx.fill();
         }
         for (const dot of dots) {
-            ctx.fillStyle = `rgba(255, 245, 120, ${0.62 * dot.fade})`;
+            ctx.fillStyle = `rgba(70, 225, 255, ${0.5 * dot.fade})`;
             ctx.beginPath();
-            ctx.arc(dot.x, dot.y, 2.45, 0, Math.PI * 2);
+            ctx.arc(dot.x, dot.y, 3.7, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        for (const dot of dots) {
+            ctx.fillStyle = `rgba(255, 250, 120, ${0.92 * dot.fade})`;
+            ctx.beginPath();
+            ctx.arc(dot.x, dot.y, 2.35, 0, Math.PI * 2);
             ctx.fill();
         }
         ctx.restore();
