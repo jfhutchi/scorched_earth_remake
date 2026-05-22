@@ -841,6 +841,16 @@ select option:disabled {
     font-weight: 900;
 }
 
+.siege-result-stat.wide {
+    grid-column: 1 / -1;
+}
+
+.siege-result-stat.wide p {
+    color: #e7dfcb;
+    font-size: 14px;
+    line-height: 1.35;
+}
+
 .level-select-card {
     max-width: 920px;
     width: calc(100vw - 48px);
@@ -862,6 +872,15 @@ select option:disabled {
     border: 1px solid rgba(255, 228, 155, 0.32);
     border-radius: 999px;
     background: linear-gradient(180deg, rgba(120, 74, 35, 0.36), rgba(48, 34, 25, 0.28));
+}
+
+.level-select-note {
+    flex-basis: 100%;
+    max-width: 720px;
+    color: #e7dfcb;
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1.35;
 }
 
 .level-select-worlds {
@@ -965,6 +984,12 @@ select option:disabled {
     font-size: 13px;
     color: #ffe49b;
     font-weight: 800;
+}
+
+.level-card .level-card-hint {
+    color: #d7cfbb;
+    font-size: 11px;
+    line-height: 1.25;
 }
 
 .level-card.locked {

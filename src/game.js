@@ -215,11 +215,12 @@ export class Game {
         this._rollWind();
         this.audio.startAmbience(this.theme);
         this.phase = 'siegeAiming';
-        this.statusMessage = `${this.siege.level.name}: destroy the castle core.`;
+        const siegeHint = this.siege.level.hint || 'Destroy the castle core before you run out of shots.';
+        this.statusMessage = `${this.siege.level.name}: ${siegeHint}`;
         const armoryText = formatSiegeArmorySupplies(this.lastSiegeArmorySupplies);
         this.lastResult = armoryText
-            ? `Castle Siege ready. Armory loaded ${armoryText}. ${this.siege.shotsRemaining} shots available.`
-            : `Castle Siege ready. ${this.siege.shotsRemaining} shots available.`;
+            ? `Castle Siege ready. Armory loaded ${armoryText}. ${this.siege.shotsRemaining} shots available. Tip: ${siegeHint}`
+            : `Castle Siege ready. ${this.siege.shotsRemaining} shots available. Tip: ${siegeHint}`;
         this._draw();
         this.ui.update(this._state());
         this.audio.playRoundStart();

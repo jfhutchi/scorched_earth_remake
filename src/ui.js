@@ -234,6 +234,7 @@ export class UI {
         const armory = summarizeCastleSiegeArmory(progress);
         if (this.levelSelectSummary) {
             this.levelSelectSummary.replaceChildren(
+                createLevelSelectNote('Start here: pick the first unlocked level, aim for the objective block, and use Replay to learn the arc quickly.'),
                 createLevelSelectPill(`${summary.completed}/${summary.totalLevels} cleared`),
                 createLevelSelectPill(`${summary.stars}/${summary.maxStars} stars`),
                 createLevelSelectPill(`$${summary.coins} siege coins`),
@@ -513,6 +514,9 @@ export class UI {
             this.siegeResultStats.appendChild(createSiegeResultCard('Coins Earned', `$${result.coinsEarned || 0}`));
             this.siegeResultStats.appendChild(createSiegeResultCard('Shots Remaining', String(result.shotsRemaining || 0)));
             this.siegeResultStats.appendChild(createSiegeResultCard('Total Siege Coins', `$${result.totalCoins || 0}`));
+            if (!result.victory && result.levelHint) {
+                this.siegeResultStats.appendChild(createSiegeResultCard('Retry Tip', result.levelHint, { wide: true }));
+            }
         }
         if (this.siegeNextBtn) {
             const hasNext = Boolean(result.victory && result.nextLevelId);
@@ -800,9 +804,10 @@ function createCpuShopSummary(player, purchases) {
     return fragment;
 }
 
-function createSiegeResultCard(label, value) {
+function createSiegeResultCard(label, value, { wide = false } = {}) {
     const card = document.createElement('section');
     card.className = 'summary-card siege-result-stat';
+    if (wide) card.classList.add('wide');
 
     const h3 = document.createElement('h3');
     h3.textContent = label;
@@ -852,7 +857,21 @@ function createLevelSelectButton(levelId, progress, { onSelect, unlocked }) {
     stars.textContent = completed ? `Best ${bestStars}/3` : 'Stars 0/3';
     button.appendChild(stars);
 
+    if (level.hint) {
+        const hint = document.createElement('span');
+        hint.className = 'level-card-hint';
+        hint.textContent = level.hint;
+        button.appendChild(hint);
+    }
+
     return button;
+}
+
+function createLevelSelectNote(text) {
+    const note = document.createElement('span');
+    note.className = 'level-select-note';
+    note.textContent = text;
+    return note;
 }
 
 function createArmoryNote(text) {
