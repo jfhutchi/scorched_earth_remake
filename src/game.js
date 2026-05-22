@@ -3028,6 +3028,10 @@ export class Game {
     }
 
     _drawTrajectoryPreview(ctx, tank) {
+        // Tank-Stars-style preview: simulate the same physics as the real shot,
+        // but only render the first ~62% of the predicted path so the player
+        // sees a helpful arc without the exact landing spot. Projectile flight
+        // and collision use the real physics elsewhere; this is visual only.
         const weapon = tank.selectedWeapon();
         const muzzle = tank.muzzlePosition();
         const velocity = tank.fireVelocity(weapon);
@@ -3036,32 +3040,75 @@ export class Game {
         let vx = velocity.vx;
         let vy = velocity.vy;
         const dt = 1 / 30;
-        const points = [];
+        const maxSteps = 96;
+        const samples = [];
+        let predictedSteps = maxSteps;
 
-        for (let i = 0; i < 54; i++) {
+        for (let i = 0; i < maxSteps; i++) {
             vy += CONFIG.physics.gravity * dt;
             vx += this.wind * CONFIG.physics.windAccelScale * dt;
             x += vx * dt;
             y += vy * dt;
-            if (x < 0 || x >= this.width || y >= this.height) break;
-            if (i % 3 === 0) points.push({ x, y, alpha: 1 - i / 62 });
-            if (y >= this.terrain.heightAt(x)) break;
+            samples.push({ x, y });
+
+            if (x < 0 || x >= this.width || y >= this.height) {
+                predictedSteps = i + 1;
+                break;
+            }
+            if (y >= this.terrain.heightAt(x)) {
+                predictedSteps = i + 1;
+                break;
+            }
+            if (this.gameMode === 'siege' && this._previewPointInBlock(x, y)) {
+                predictedSteps = i + 1;
+                break;
+            }
         }
 
+        if (samples.length === 0) return;
+
+        // Cap preview to roughly 62% of the predicted path, clamped so very
+        // short shots still show something and long shots don't trail too far.
+        const visibleSteps = clamp(Math.floor(predictedSteps * 0.62), 6, samples.length - 1);
+        const dotStride = 4;
+        const dots = [];
+        for (let i = dotStride; i <= visibleSteps; i += dotStride) {
+            const point = samples[i - 1];
+            if (!point) break;
+            const progress = i / visibleSteps;
+            // Linear fade across the last 40% of the visible arc so the tail
+            // never resolves to a single high-contrast "this is your impact" dot.
+            const fade = progress > 0.6 ? Math.max(0, 1 - (progress - 0.6) / 0.4) : 1;
+            dots.push({ x: point.x, y: point.y, fade });
+        }
+
+        if (dots.length === 0) return;
+
         ctx.save();
-        for (const point of points) {
-            ctx.fillStyle = `rgba(0, 0, 0, ${0.18 + point.alpha * 0.42})`;
+        for (const dot of dots) {
+            ctx.fillStyle = `rgba(0, 0, 0, ${0.22 * dot.fade})`;
             ctx.beginPath();
-            ctx.arc(point.x, point.y, 4.1, 0, Math.PI * 2);
+            ctx.arc(dot.x, dot.y, 4.1, 0, Math.PI * 2);
             ctx.fill();
         }
-        for (const point of points) {
-            ctx.fillStyle = `rgba(255, 245, 120, ${0.32 + point.alpha * 0.63})`;
+        for (const dot of dots) {
+            ctx.fillStyle = `rgba(255, 245, 120, ${0.62 * dot.fade})`;
             ctx.beginPath();
-            ctx.arc(point.x, point.y, 2.45, 0, Math.PI * 2);
+            ctx.arc(dot.x, dot.y, 2.45, 0, Math.PI * 2);
             ctx.fill();
         }
         ctx.restore();
+    }
+
+    _previewPointInBlock(x, y) {
+        if (!this.siege || !Array.isArray(this.siege.blocks)) return false;
+        for (const block of this.siege.blocks) {
+            if (!block || block.destroyed) continue;
+            if (x < block.x || x > block.x + block.width) continue;
+            if (y < block.y || y > block.y + block.height) continue;
+            return true;
+        }
+        return false;
     }
 
     _drawWindIndicator(ctx) {

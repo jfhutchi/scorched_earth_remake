@@ -1,10 +1,10 @@
 # Balance Reference
 
-Current version: `v0.9.1`
+Current version: `v0.9.2`
 
 BALANCE.md is the Crater Command tuning reference for weapons, economy, utility items, and CPU usage. It documents intent and current values; it does not claim the balance is final.
 
-v0.9.1 is a UI fix release. No weapon, economy, CPU, or Castle Siege level tuning changes. All values below remain at the v0.9.0 baseline.
+v0.9.2 adds Castle Siege Armory pricing (see Armory section below) and a visual-only trajectory preview rework with no impact on projectile flight. v0.9.1 was a mobile UI fix release with no tuning changes.
 
 ## Philosophy
 

@@ -2,14 +2,17 @@ Original prompt: Implement v0.7.1 as a focused Crater Command polish, debug, CI,
 
 # Project Progress
 
-Current Version: v0.9.0
+Current Version: v0.9.2
 
-Current Branch: feature/v0.9.0-level-engine
+Current Branch: feature/v0.9.2-armory-trajectory
 
 Release History Source: RELEASE_NOTES.md
 
 ## Latest Completed Work
 
+- Implemented the v0.9.2 Castle Siege Armory: spends earned siege coins on one-attempt bonus ammo caches (Precision, Heavy, Excavator, Cluster), accessible from level select and the result overlay, with stock persistence under the existing `crater-command-siege-progress-v1` localStorage key and `armory: {}` shape.
+- Reworked the aiming trajectory preview into a Tank-Stars-style partial dotted arc that responds to angle/power/wind but stops short of the actual landing or collision point. Projectile physics, weapon stats, terrain, and CPU behavior are unchanged.
+- v0.9.1 restored the Duel vs CPU button on mobile by removing the `desktop-only` class from `cpuBtn` and adding the same opportunistic-fullscreen handler that Play Campaign uses on phones.
 - Implemented the v0.9.0 Castle Siege level-engine milestone with a level-select screen, 16 handcrafted levels across Outpost and Quarry, sequential level unlocks, and a 6-star World 2 gate.
 - Moved Castle Siege modules into the minimal `src/siege/` folder and split level data into per-level files aggregated by `src/siege/levels.js`.
 - Added the `src/siege/worlds.js` catalog for world metadata, level membership, star gating, and next-level campaign routing.

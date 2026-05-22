@@ -30,14 +30,14 @@ To test from a phone on the same Wi-Fi, use your machine's LAN IP, for example `
 
 ## GitHub Pages Verification
 
-The live game displays `v0.9.1` on the main menu only. Gameplay intentionally does not show a floating version badge over the canvas, HUD, or touch controls. `window.GAME_VERSION` is always available and returns `"v0.9.1"`.
+The live game displays `v0.9.2` on the main menu only. Gameplay intentionally does not show a floating version badge over the canvas, HUD, or touch controls. `window.GAME_VERSION` is always available and returns `"v0.9.2"`.
 
 After a GitHub Pages deployment from `main`:
 
 - Hard refresh `https://jfhutchi.github.io/scorched_earth_remake/`.
 - Confirm the main menu shows `Crater Command`.
-- Confirm the main menu shows `v0.9.1`.
-- Open DevTools and confirm `window.GAME_VERSION` returns `"v0.9.1"`.
+- Confirm the main menu shows `v0.9.2`.
+- Open DevTools and confirm `window.GAME_VERSION` returns `"v0.9.2"`.
 - Confirm no gameplay version badge appears.
 - Confirm no external image or audio assets are requested.
 - Confirm version branches run validation only and do not deploy production Pages.

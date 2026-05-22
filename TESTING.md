@@ -1,6 +1,6 @@
 # Manual Testing Checklist
 
-Current version: `v0.9.1`
+Current version: `v0.9.2`
 
 Use a local static server, open Crater Command in a desktop or mobile browser, and keep DevTools open for console errors. For mobile testing, use a real device on the LAN IP when possible.
 
@@ -8,9 +8,9 @@ Use a local static server, open Crater Command in a desktop or mobile browser, a
 
 - [ ] Browser tab title uses `Crater Command`.
 - [ ] Main menu shows `Crater Command`.
-- [ ] Main menu shows `v0.9.1`.
+- [ ] Main menu shows `v0.9.2`.
 - [ ] Gameplay screen does not show a floating version badge.
-- [ ] `window.GAME_VERSION` returns `"v0.9.1"`.
+- [ ] `window.GAME_VERSION` returns `"v0.9.2"`.
 - [ ] Play Campaign opens the Castle Siege level-select screen.
 - [ ] Castle Siege Armory opens from level select and result screens.
 - [ ] Duel vs CPU still starts.
@@ -26,7 +26,7 @@ Use a local static server, open Crater Command in a desktop or mobile browser, a
 - [ ] CPU can shop, take turns, and fire supported weapons without freezing.
 - [ ] Mobile landscape controls and compact shop remain usable.
 - [ ] Desktop keyboard controls still work.
-- [ ] `BALANCE.md` exists and references `v0.9.1`.
+- [ ] `BALANCE.md` exists and references `v0.9.2`.
 - [ ] Phone-sized layout shows `Duel vs CPU` button (not hidden by `desktop-only`).
 - [ ] GitHub Actions validation passes.
 - [ ] GitHub Actions workflows run without Node 20 deprecation warnings.
@@ -48,6 +48,22 @@ Use a local static server, open Crater Command in a desktop or mobile browser, a
 - [ ] Confirm rounds 4 and 5 are not played.
 - [ ] Confirm the final score is correct.
 - [ ] Confirm no console errors occur.
+
+## v0.9.2 Armory + Trajectory Preview Checks
+
+- [ ] Open Castle Siege level select. Armory button is visible.
+- [ ] Open Armory with 0 coins. All purchase buttons are disabled with a "not enough coins" state.
+- [ ] Earn coins by clearing a level, return to Armory. Affordable items are now enabled.
+- [ ] Buy a Precision Shell Cache. Coins decrement by the listed price. Stocked count increments by 1.
+- [ ] Repeat purchases up to max stock. Further purchases are disabled at max stock.
+- [ ] Start `siege_001`. The stocked Precision Shell appears in player ammo and is decremented from Armory stock by 1.
+- [ ] After the level ends, open Armory from the result overlay. Closing returns to the result overlay (not the menu).
+- [ ] Aiming a shot shows a dotted/segmented trajectory preview that responds to angle, power, and wind.
+- [ ] The trajectory preview is shorter than the projectile's actual flight path. It does not reach the exact landing or collision point.
+- [ ] Dots fade out toward the end of the preview.
+- [ ] Firing still uses the same physics as before v0.9.2 (sanity check by repeated identical shots producing the same impact).
+- [ ] Duel vs CPU and Two Player Local also show the new trajectory preview style.
+- [ ] No console errors during aim, fire, or Armory purchase flows.
 
 ## v0.9.1 Mobile CPU Fix Checks
 
@@ -186,8 +202,8 @@ Open with `?debug=1`.
 ## CI and Static Validation
 
 - [ ] `node --check` passes for all source and script files.
-- [ ] `node scripts/validate-version.mjs v0.9.1` passes.
-- [ ] `node scripts/check-release-notes.mjs v0.9.1` passes.
+- [ ] `node scripts/validate-version.mjs v0.9.2` passes.
+- [ ] `node scripts/check-release-notes.mjs v0.9.2` passes.
 - [ ] `node scripts/check-artifacts.mjs` passes.
 - [ ] `node scripts/check-pages-paths.mjs` passes.
 - [ ] Version branches run validation only.
