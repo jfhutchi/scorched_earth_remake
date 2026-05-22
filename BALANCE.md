@@ -34,6 +34,19 @@ Castle Siege rewards:
 - `$10`, `$25`, or `$50` star bonus for 1, 2, or 3 stars.
 - `$100` first-clear bonus per level; replays do not repeat that first-clear bonus.
 
+Castle Siege Armory:
+
+- Armory supplies are bought with siege coins and are stocked persistently.
+- Stocked supplies auto-load into the next Castle Siege attempt and are consumed when that attempt starts.
+- Armory supplies add bonus ammo on top of the level's authored base loadout; Standard Shell remains unlimited.
+
+| Armory Supply | Price | Max Stock | Attempt Bonus |
+| --- | ---: | ---: | --- |
+| Precision Shell Cache | $80 | 3 | +1 Precision Shell |
+| Heavy Shell Cache | $90 | 3 | +1 Heavy Shell |
+| Excavator Bomb Cache | $105 | 2 | +1 Excavator Bomb |
+| Cluster Bomb Cache | $125 | 2 | +1 Cluster Bomb |
+
 Castle Siege progression:
 
 - World 1 / Outpost is unlocked by default and uses wood + crystal blocks.

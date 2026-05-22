@@ -310,6 +310,7 @@
                     <div class="menu-actions">
                         <button id="siegeNextBtn" class="btn primary hidden">Next Level</button>
                         <button id="siegeReplayBtn" class="btn">Replay</button>
+                        <button id="siegeArmoryBtn" class="btn">Armory</button>
                         <button id="siegeLevelSelectBtn" class="btn">Levels</button>
                         <button id="siegeMenuBtn" class="btn">Main Menu</button>
                     </div>
@@ -322,7 +323,19 @@
                     <div id="levelSelectSummary" class="level-select-summary"></div>
                     <div id="levelSelectWorlds" class="level-select-worlds"></div>
                     <div class="menu-actions">
+                        <button id="levelSelectArmoryBtn" class="btn primary">Armory</button>
                         <button id="levelSelectBackBtn" class="btn">Main Menu</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="armoryOverlay" class="overlay hidden armory-overlay" role="dialog" aria-modal="true" aria-label="Castle Siege armory">
+                <div class="menu-card overlay-card armory-card">
+                    <h1 class="title">Castle Siege Armory</h1>
+                    <div id="armorySummary" class="level-select-summary armory-summary"></div>
+                    <div id="armoryItems" class="armory-grid"></div>
+                    <div class="menu-actions">
+                        <button id="armoryCloseBtn" class="btn primary">Done</button>
                     </div>
                 </div>
             </div>

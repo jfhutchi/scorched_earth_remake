@@ -1,4 +1,5 @@
 import { CONFIG, GAME_VERSION, MAX_SHIELD, WEAPONS, clampShieldCharge, maxAmmoFor } from './config.js';
+import { CASTLE_SIEGE_ARMORY_ITEMS, summarizeCastleSiegeArmory } from './siege/armory.js';
 import { getCastleSiegeLevel } from './siege/levels.js';
 import {
     CASTLE_SIEGE_WORLDS,
@@ -31,11 +32,17 @@ export class UI {
         this.siegeReplayBtn = document.getElementById('siegeReplayBtn');
         this.siegeMenuBtn = document.getElementById('siegeMenuBtn');
         this.siegeNextBtn = document.getElementById('siegeNextBtn');
+        this.siegeArmoryBtn = document.getElementById('siegeArmoryBtn');
         this.siegeLevelSelectBtn = document.getElementById('siegeLevelSelectBtn');
         this.levelSelectOverlay = document.getElementById('levelSelectOverlay');
         this.levelSelectWorlds = document.getElementById('levelSelectWorlds');
         this.levelSelectSummary = document.getElementById('levelSelectSummary');
+        this.levelSelectArmoryBtn = document.getElementById('levelSelectArmoryBtn');
         this.levelSelectBackBtn = document.getElementById('levelSelectBackBtn');
+        this.armoryOverlay = document.getElementById('armoryOverlay');
+        this.armorySummary = document.getElementById('armorySummary');
+        this.armoryItems = document.getElementById('armoryItems');
+        this.armoryCloseBtn = document.getElementById('armoryCloseBtn');
 
         this.handoffOverlay = document.getElementById('handoffOverlay');
         this.handoffTitle = document.getElementById('handoffTitle');
@@ -214,6 +221,7 @@ export class UI {
         this.shopOverlay.classList.add('hidden');
         if (this.siegeResultOverlay) this.siegeResultOverlay.classList.add('hidden');
         if (this.levelSelectOverlay) this.levelSelectOverlay.classList.add('hidden');
+        if (this.armoryOverlay) this.armoryOverlay.classList.add('hidden');
         if (this.helpOverlay) this.helpOverlay.classList.add('hidden');
         if (this.handoffOverlay) this.handoffOverlay.classList.add('hidden');
     }
@@ -223,11 +231,13 @@ export class UI {
         this.hideAllOverlays();
 
         const summary = summarizeCampaignProgress(progress);
+        const armory = summarizeCastleSiegeArmory(progress);
         if (this.levelSelectSummary) {
             this.levelSelectSummary.replaceChildren(
                 createLevelSelectPill(`${summary.completed}/${summary.totalLevels} cleared`),
                 createLevelSelectPill(`${summary.stars}/${summary.maxStars} stars`),
                 createLevelSelectPill(`$${summary.coins} siege coins`),
+                createLevelSelectPill(`${armory.totalSupplies} armory supplies`),
             );
         }
 
@@ -289,6 +299,56 @@ export class UI {
         if (this.levelSelectOverlay) this.levelSelectOverlay.classList.add('hidden');
     }
 
+    showCastleSiegeArmory(progress, { onBuy, onClose, message = '' } = {}) {
+        if (!this.armoryOverlay || !this.armoryItems) return;
+        this.hideAllOverlays();
+
+        const summary = summarizeCastleSiegeArmory(progress);
+        if (this.armorySummary) {
+            const status = message || (summary.loadedText
+                ? `Stocked for next attempt: ${summary.loadedText}.`
+                : 'Buy supplies with siege coins. Stocked supplies auto-load into your next Castle Siege attempt.');
+            this.armorySummary.replaceChildren(
+                createLevelSelectPill(`$${summary.coins} siege coins`),
+                createLevelSelectPill(`${summary.totalSupplies} supplies stocked`),
+                createArmoryNote(status),
+            );
+        }
+
+        const cards = CASTLE_SIEGE_ARMORY_ITEMS.map((item) => {
+            const itemSummary = summary.items.find((candidate) => candidate.id === item.id) || item;
+            return createArmoryItemCard(itemSummary, summary.coins, {
+                onBuy: (itemId) => {
+                    const result = typeof onBuy === 'function' ? onBuy(itemId) : null;
+                    this.showCastleSiegeArmory(result?.progress || progress, {
+                        onBuy,
+                        onClose,
+                        message: result?.message || '',
+                    });
+                },
+            });
+        });
+        this.armoryItems.replaceChildren(...cards);
+
+        if (this.armoryCloseBtn) {
+            this.armoryCloseBtn.onclick = () => {
+                if (typeof onClose === 'function') onClose();
+                else this.hideCastleSiegeArmory();
+            };
+        }
+
+        this.armoryOverlay.classList.remove('hidden');
+        const firstBuy = this.armoryItems.querySelector('button:not(:disabled)');
+        const focusTarget = firstBuy || this.armoryCloseBtn;
+        if (focusTarget) {
+            try { focusTarget.focus({ preventScroll: true }); } catch (_err) { /* ignore */ }
+        }
+    }
+
+    hideCastleSiegeArmory() {
+        if (this.armoryOverlay) this.armoryOverlay.classList.add('hidden');
+    }
+
     showHandoff(state, activeTank) {
         if (!this.handoffOverlay) return;
         const tank = activeTank || (state && state.active);
@@ -325,6 +385,7 @@ export class UI {
     showSummary(state) {
         this.shopOverlay.classList.add('hidden');
         if (this.siegeResultOverlay) this.siegeResultOverlay.classList.add('hidden');
+        if (this.armoryOverlay) this.armoryOverlay.classList.add('hidden');
         const summary = state.lastSummary;
         const matchWinner = summary.matchWinnerIndex !== null ? state.tanks[summary.matchWinnerIndex].name : null;
         const roundWinner = summary.winnerIndex === null ? 'Draw' : `${state.tanks[summary.winnerIndex].name} wins the round`;
@@ -367,6 +428,7 @@ export class UI {
     showShop(state, items) {
         this.summaryOverlay.classList.add('hidden');
         if (this.siegeResultOverlay) this.siegeResultOverlay.classList.add('hidden');
+        if (this.armoryOverlay) this.armoryOverlay.classList.add('hidden');
         // When opening the shop before round 1 (roundNumber === 0),
         // the primary button reads "Start Round" instead of "Start Next Round".
         const isPreRound = state.roundNumber === 0;
@@ -435,6 +497,7 @@ export class UI {
         this.summaryOverlay.classList.add('hidden');
         this.shopOverlay.classList.add('hidden');
         if (this.levelSelectOverlay) this.levelSelectOverlay.classList.add('hidden');
+        if (this.armoryOverlay) this.armoryOverlay.classList.add('hidden');
         if (this.helpOverlay) this.helpOverlay.classList.add('hidden');
         if (this.handoffOverlay) this.handoffOverlay.classList.add('hidden');
 
@@ -790,6 +853,69 @@ function createLevelSelectButton(levelId, progress, { onSelect, unlocked }) {
     button.appendChild(stars);
 
     return button;
+}
+
+function createArmoryNote(text) {
+    const note = document.createElement('span');
+    note.className = 'armory-note';
+    note.textContent = text;
+    return note;
+}
+
+function createArmoryItemCard(item, coins, { onBuy }) {
+    const card = document.createElement('article');
+    card.className = 'armory-item-card';
+
+    const iconWrap = document.createElement('div');
+    iconWrap.className = 'shop-item-icon';
+    const icon = document.createElement('canvas');
+    icon.width = 48;
+    icon.height = 48;
+    const iconCtx = icon.getContext('2d');
+    if (iconCtx && item.weapon) drawWeaponIcon(iconCtx, item.weapon, 24, 24, 42);
+    iconWrap.appendChild(icon);
+    card.appendChild(iconWrap);
+
+    const body = document.createElement('div');
+    body.className = 'armory-item-body';
+
+    const title = document.createElement('h3');
+    title.textContent = item.label;
+    body.appendChild(title);
+
+    const description = document.createElement('p');
+    description.textContent = item.description;
+    body.appendChild(description);
+
+    const meta = document.createElement('p');
+    meta.className = 'armory-item-meta';
+    meta.textContent = `Stocked ${item.owned}/${item.maxCarry} | Next attempt +${item.amount} ${item.weapon.compactName || item.weapon.name}`;
+    body.appendChild(meta);
+    card.appendChild(body);
+
+    const action = document.createElement('div');
+    action.className = 'armory-item-action';
+
+    const price = document.createElement('span');
+    price.className = 'shop-item-price';
+    price.textContent = `$${item.price}`;
+    action.appendChild(price);
+
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'btn armory-buy';
+    button.dataset.item = item.id;
+    const atMax = item.owned >= item.maxCarry;
+    const canAfford = coins >= item.price;
+    button.disabled = atMax || !canAfford;
+    button.textContent = atMax ? 'Stocked' : (canAfford ? 'Buy' : 'Need Coins');
+    if (!button.disabled && typeof onBuy === 'function') {
+        button.addEventListener('click', () => onBuy(item.id));
+    }
+    action.appendChild(button);
+    card.appendChild(action);
+
+    return card;
 }
 
 function formatLevelNumber(levelId) {

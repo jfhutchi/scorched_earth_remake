@@ -13,7 +13,8 @@ Release History Source: RELEASE_NOTES.md
 - Implemented the v0.9.0 Castle Siege level-engine milestone with a level-select screen, 16 handcrafted levels across Outpost and Quarry, sequential level unlocks, and a 6-star World 2 gate.
 - Moved Castle Siege modules into the minimal `src/siege/` folder and split level data into per-level files aggregated by `src/siege/levels.js`.
 - Added the `src/siege/worlds.js` catalog for world metadata, level membership, star gating, and next-level campaign routing.
-- Extended Castle Siege progress helpers for total-star and per-level reads while preserving the existing `crater-command-siege-progress-v1` localStorage key.
+- Extended Castle Siege progress helpers for total-star, per-level, and Armory reads while preserving the existing `crater-command-siege-progress-v1` localStorage key.
+- Added a Castle Siege Armory that spends earned siege coins on one-attempt bonus ammo caches and auto-loads stocked supplies into the next campaign attempt.
 - Added Next Level and Levels routing to Castle Siege results while keeping Replay and Main Menu behavior.
 - Updated README.md, TESTING.md, RELEASE_NOTES.md, BALANCE.md, GitHub Actions version references, and validation targets for v0.9.0.
 - Implemented the v0.8.0 Castle Siege campaign vertical slice with a Campaign menu entry, `siege` game mode, `siege_001` / Old Watchtower, destructible castle blocks, a crystal core objective, limited shots, victory/failure results, and local progress saving.

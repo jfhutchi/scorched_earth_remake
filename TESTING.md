@@ -12,6 +12,7 @@ Use a local static server, open Crater Command in a desktop or mobile browser, a
 - [ ] Gameplay screen does not show a floating version badge.
 - [ ] `window.GAME_VERSION` returns `"v0.9.1"`.
 - [ ] Play Campaign opens the Castle Siege level-select screen.
+- [ ] Castle Siege Armory opens from level select and result screens.
 - [ ] Duel vs CPU still starts.
 - [ ] Phone-sized layout shows the Campaign entry and it opens the level-select screen.
 - [ ] Two Player Local remains available on desktop/wider layouts.
@@ -72,6 +73,12 @@ Use a local static server, open Crater Command in a desktop or mobile browser, a
 - [ ] Destroying `castle_core` triggers victory.
 - [ ] Firing all available shots without destroying the core triggers failure.
 - [ ] Victory/failure result shows level name, stars, coins earned, shots remaining, Replay, Levels, and Main Menu.
+- [ ] Victory/failure result includes Armory.
+- [ ] Armory shows current siege coins and purchasable ammo caches.
+- [ ] Buying an Armory cache deducts siege coins and increments stocked supplies.
+- [ ] Armory blocks purchases when coins are insufficient or an item is fully stocked.
+- [ ] Starting a Castle Siege level consumes stocked Armory supplies and adds the corresponding bonus ammo to the player loadout.
+- [ ] Returning to level select after Armory refreshes the displayed siege coin and supply counts.
 - [ ] Victory result shows Next Level when the next level is unlocked.
 - [ ] Next Level from `siege_001` starts `siege_002`.
 - [ ] Replay restarts the current level.

@@ -1,10 +1,10 @@
 # Crater Command
 
-Current version: `v0.9.1`
+Current version: `v0.9.2`
 
 Crater Command is a local browser-based 2D artillery tank game inspired by classic artillery duels. Two tanks fight across destructible hilly terrain with wind, turn-based aiming, movement fuel, generated Web Audio, match scoring, money, a pre-round and between-round shop, and an optional CPU opponent.
 
-v0.9.1 restores the Duel vs CPU button on mobile, which the v0.9.0 menu reshuffle had hidden behind a desktop-only class. v0.9.0 expanded Castle Siege into a level-engine milestone with a level-select screen, 16 handcrafted levels across two worlds, and a 6-star gate for World 2. Duel vs CPU, Two Player Local, generated visuals/audio, mobile controls, and static GitHub Pages hosting remain preserved. Online multiplayer, room codes, accounts, backends, WebRTC, ads, in-app purchases, and external assets are still not implemented.
+v0.9.2 adds a Castle Siege Armory that spends earned siege coins on one-attempt bonus weapon caches, and reworks the aiming trajectory preview to feel more like Tank Stars — a partial dotted arc that hints at the shot without revealing the exact landing point. v0.9.1 restored the Duel vs CPU button on mobile, and v0.9.0 expanded Castle Siege into a 16-level campaign across two worlds with star-gated World 2. Duel vs CPU, Two Player Local, generated visuals/audio, mobile controls, and static GitHub Pages hosting remain preserved. Online multiplayer, room codes, accounts, backends, WebRTC, ads, in-app purchases, and external assets are still not implemented.
 
 Release history lives in [RELEASE_NOTES.md](RELEASE_NOTES.md). Balance notes live in [BALANCE.md](BALANCE.md).
 
@@ -45,7 +45,8 @@ After a GitHub Pages deployment from `main`:
 
 ## Current Features
 
-- Campaign / Castle Siege level engine with 16 levels across Outpost and Quarry, a level-select screen, star-gated world unlocks, destructible castle blocks, a core objective, limited shots, victory/failure results, next-level routing, and local progress.
+- Campaign / Castle Siege level engine with 16 levels across Outpost and Quarry, a level-select screen, star-gated world unlocks, destructible castle blocks, a core objective, limited shots, victory/failure results, next-level routing, local progress, and a siege-coin Armory.
+- Castle Siege Armory buys one-attempt bonus ammo caches with earned siege coins; stocked supplies auto-load into the next Castle Siege attempt and then clear.
 - Single Player vs CPU and Two Player Local modes.
 - Phone-sized layouts show the Campaign entry as the primary start path.
 - Two Player Local remains available on desktop and wider layouts.

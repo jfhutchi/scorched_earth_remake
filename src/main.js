@@ -2,6 +2,7 @@ import { Game } from './game.js';
 import { UI } from './ui.js';
 import { CONFIG, GAME_VERSION, WEAPONS } from './config.js';
 import { initTouchInput, updateTouchControlsState } from './touchInput.js';
+import { purchaseCastleSiegeArmoryItem } from './siege/armory.js';
 import { loadCastleSiegeProgress } from './siege/progress.js';
 
 const canvas = document.getElementById('gameCanvas');
@@ -270,6 +271,28 @@ function openLevelSelect() {
     refreshLayout();
 }
 
+function openCastleSiegeArmory({ returnTo = 'levels' } = {}) {
+    ui.showGame();
+    ui.showCastleSiegeArmory(loadCastleSiegeProgress(), {
+        onBuy: (itemId) => {
+            const result = purchaseCastleSiegeArmoryItem(itemId);
+            if (result.ok) game.audio.playPurchase();
+            else game.audio.playBlocked();
+            return result;
+        },
+        onClose: () => {
+            game.audio.playUiClick();
+            if (returnTo === 'result' && game.siege && game.siege.result) {
+                ui.showCastleSiegeResult(game.getCastleSiegeResultForUi());
+                refreshLayout();
+                return;
+            }
+            openLevelSelect();
+        },
+    });
+    refreshLayout();
+}
+
 if (ui.campaignBtn) {
     ui.campaignBtn.addEventListener('click', (e) => {
         e.currentTarget.blur();
@@ -404,6 +427,22 @@ if (ui.siegeLevelSelectBtn) {
         e.currentTarget.blur();
         game.audio.playUiClick();
         openLevelSelect();
+    });
+}
+
+if (ui.siegeArmoryBtn) {
+    ui.siegeArmoryBtn.addEventListener('click', (e) => {
+        e.currentTarget.blur();
+        game.audio.playUiClick();
+        openCastleSiegeArmory({ returnTo: 'result' });
+    });
+}
+
+if (ui.levelSelectArmoryBtn) {
+    ui.levelSelectArmoryBtn.addEventListener('click', (e) => {
+        e.currentTarget.blur();
+        game.audio.playUiClick();
+        openCastleSiegeArmory({ returnTo: 'levels' });
     });
 }
 

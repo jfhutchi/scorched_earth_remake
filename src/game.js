@@ -8,6 +8,7 @@ import { drawTankWreck } from './tankRenderer.js';
 import { pickBattleTheme } from './themes.js';
 import { CastleSiegeMode } from './siege/mode.js';
 import { drawCastleSiegeBlocks, drawCastleSiegeHudOverlay, drawCastleSiegeObjectiveMarker } from './siege/renderer.js';
+import { consumeCastleSiegeArmorySupplies } from './siege/armory.js';
 import { getCastleSiegeLevel } from './siege/levels.js';
 import { loadCastleSiegeProgress } from './siege/progress.js';
 import { getNextLevelInCampaign, isLevelUnlocked } from './siege/worlds.js';
@@ -68,6 +69,7 @@ export class Game {
         this.shotInfo = null;
         this.roundStats = this._createRoundStats();
         this.lastSummary = null;
+        this.lastSiegeArmorySupplies = [];
         this.shopCpuPurchased = false;
         this.lastCpuShopPurchases = [];
         this.roundStartMessages = [];
@@ -136,6 +138,8 @@ export class Game {
 
     startCastleSiege(settings = {}, levelId = 'siege_001') {
         this.siege = new CastleSiegeMode(levelId);
+        const armoryUse = consumeCastleSiegeArmorySupplies();
+        this.lastSiegeArmorySupplies = armoryUse.supplies;
         this.settings = normalizeSettings({
             ...settings,
             windMode: this.siege.level.windMode || settings.windMode,
@@ -156,7 +160,7 @@ export class Game {
             name: 'Player 1',
             money: 0,
             health: CONFIG.tank.maxHealth,
-            ammo: createSiegeAmmo(this.siege.level.loadout),
+            ammo: createSiegeAmmo(this.siege.level.loadout, this.lastSiegeArmorySupplies),
             shieldCharge: 0,
             repairKits: 0,
             parachutes: 0,
@@ -212,7 +216,10 @@ export class Game {
         this.audio.startAmbience(this.theme);
         this.phase = 'siegeAiming';
         this.statusMessage = `${this.siege.level.name}: destroy the castle core.`;
-        this.lastResult = `Castle Siege ready. ${this.siege.shotsRemaining} shots available.`;
+        const armoryText = formatSiegeArmorySupplies(this.lastSiegeArmorySupplies);
+        this.lastResult = armoryText
+            ? `Castle Siege ready. Armory loaded ${armoryText}. ${this.siege.shotsRemaining} shots available.`
+            : `Castle Siege ready. ${this.siege.shotsRemaining} shots available.`;
         this._draw();
         this.ui.update(this._state());
         this.audio.playRoundStart();
@@ -227,6 +234,10 @@ export class Game {
     restartCastleSiegeLevel(levelId = this.siege ? this.siege.level.id : 'siege_001') {
         this.ui.showGame();
         this.startCastleSiege(this.settings, levelId);
+    }
+
+    getCastleSiegeResultForUi(result = this.siege ? this.siege.result : null) {
+        return this._castleSiegeResultWithNext(result);
     }
 
     _prepareCastleSiegeTerrain(blocks, playerX) {
@@ -2743,19 +2754,20 @@ export class Game {
     }
 
     _castleSiegeResultWithNext(result) {
+        const progress = loadCastleSiegeProgress();
         if (!result || !result.victory) {
-            return result ? { ...result, nextLevelId: null, nextLevelName: null } : result;
+            return result ? { ...result, totalCoins: progress.coins, nextLevelId: null, nextLevelName: null } : result;
         }
 
         const next = getNextLevelInCampaign(result.levelId || this.siege?.level?.id);
-        const progress = loadCastleSiegeProgress();
         if (!next || !isLevelUnlocked(next.levelId, progress)) {
-            return { ...result, nextLevelId: null, nextLevelName: null };
+            return { ...result, totalCoins: progress.coins, nextLevelId: null, nextLevelName: null };
         }
 
         const nextLevel = getCastleSiegeLevel(next.levelId);
         return {
             ...result,
+            totalCoins: progress.coins,
             nextLevelId: next.levelId,
             nextLevelName: nextLevel ? nextLevel.name : next.levelId,
             nextWorldId: next.worldId,
@@ -3115,7 +3127,7 @@ function createStartingAmmo() {
     return ammo;
 }
 
-function createSiegeAmmo(loadout = []) {
+function createSiegeAmmo(loadout = [], armorySupplies = []) {
     const ammo = {};
     for (const weapon of WEAPONS) {
         ammo[weapon.id] = weapon.unlimitedAmmo ? Infinity : 0;
@@ -3128,8 +3140,29 @@ function createSiegeAmmo(loadout = []) {
             ? Math.max(0, Math.min(max, Math.round(item.ammo)))
             : Infinity;
     }
+
+    for (const supply of Array.isArray(armorySupplies) ? armorySupplies : []) {
+        if (!supply || !supply.weaponId || !Number.isFinite(supply.amount)) continue;
+        const weapon = getWeaponById(supply.weaponId);
+        if (!weapon || weapon.unlimitedAmmo) continue;
+        const max = maxAmmoFor(weapon.id);
+        const current = Number.isFinite(ammo[weapon.id]) ? ammo[weapon.id] : 0;
+        ammo[weapon.id] = Math.min(max, current + Math.max(0, Math.round(supply.amount)));
+    }
+
     ammo.standard = Infinity;
     return ammo;
+}
+
+function formatSiegeArmorySupplies(supplies = []) {
+    if (!Array.isArray(supplies) || supplies.length === 0) return '';
+    return supplies
+        .filter((supply) => supply && supply.weaponId && supply.amount > 0)
+        .map((supply) => {
+            const weapon = getWeaponById(supply.weaponId);
+            return `${weapon.compactName || weapon.name} +${supply.amount}`;
+        })
+        .join(', ');
 }
 
 function summarizeInventory(player) {
