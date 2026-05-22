@@ -286,6 +286,7 @@ ui.twoPlayerBtn.addEventListener('click', (e) => {
 
 ui.cpuBtn.addEventListener('click', (e) => {
     e.currentTarget.blur();
+    if (isPhoneViewport() || isCoarsePointer()) tryFullscreen({ quiet: true });
     startMatch('cpu');
 });
 

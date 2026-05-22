@@ -1,6 +1,27 @@
 # Release Notes
 
-## v0.9.0 - Pending
+## v0.9.1 - Pending
+
+### Summary
+
+v0.9.1 is a targeted fix release for the v0.9.0 campaign. The Duel vs CPU menu button was hidden on mobile by the v0.9.0 menu reshuffle that introduced Play Campaign; this release restores it so phone and tablet players can launch Duel vs CPU again without a desktop layout. No campaign, level, or save-format changes.
+
+### Fixed
+
+- Duel vs CPU is reachable from the main menu on mobile (`cpuBtn` no longer carries the `desktop-only` class).
+- Duel vs CPU on phones/touch devices now attempts the same opportunistic fullscreen + landscape lock that Play Campaign uses, matching the pre-v0.9.0 mobile launch flow.
+
+### Preserved
+
+- v0.9.0 Castle Siege campaign, level-select overlay, 16 levels across two worlds, star-gated World 2 unlock, next-level routing, `src/siege/` module structure, and local progress storage all remain intact.
+- Two Player Local remains desktop-only by design (shared-device turn handoff is awkward on a single phone screen).
+
+### Testing
+
+- Manual: phone-sized viewport shows Play Campaign, Duel vs CPU, How to Play, Sound, Try Fullscreen. Tapping Duel vs CPU starts a CPU duel. Desktop layout unchanged.
+- Automated: `node scripts/validate-version.mjs v0.9.1`, `node scripts/check-release-notes.mjs v0.9.1`, `node scripts/static-check.mjs`, `node scripts/check-artifacts.mjs`, `node scripts/check-pages-paths.mjs` all pass.
+
+## v0.9.0
 
 ### Summary
 

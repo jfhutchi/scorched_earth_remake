@@ -1,10 +1,10 @@
 # Crater Command
 
-Current version: `v0.9.0`
+Current version: `v0.9.1`
 
 Crater Command is a local browser-based 2D artillery tank game inspired by classic artillery duels. Two tanks fight across destructible hilly terrain with wind, turn-based aiming, movement fuel, generated Web Audio, match scoring, money, a pre-round and between-round shop, and an optional CPU opponent.
 
-v0.9.0 expands Castle Siege into a level-engine milestone with a level-select screen, 16 handcrafted levels across two worlds, and a 6-star gate for World 2. Duel vs CPU, Two Player Local, generated visuals/audio, mobile controls, and static GitHub Pages hosting remain preserved. Online multiplayer, room codes, accounts, backends, WebRTC, ads, in-app purchases, and external assets are still not implemented.
+v0.9.1 restores the Duel vs CPU button on mobile, which the v0.9.0 menu reshuffle had hidden behind a desktop-only class. v0.9.0 expanded Castle Siege into a level-engine milestone with a level-select screen, 16 handcrafted levels across two worlds, and a 6-star gate for World 2. Duel vs CPU, Two Player Local, generated visuals/audio, mobile controls, and static GitHub Pages hosting remain preserved. Online multiplayer, room codes, accounts, backends, WebRTC, ads, in-app purchases, and external assets are still not implemented.
 
 Release history lives in [RELEASE_NOTES.md](RELEASE_NOTES.md). Balance notes live in [BALANCE.md](BALANCE.md).
 
@@ -30,14 +30,14 @@ To test from a phone on the same Wi-Fi, use your machine's LAN IP, for example `
 
 ## GitHub Pages Verification
 
-The live game displays `v0.9.0` on the main menu only. Gameplay intentionally does not show a floating version badge over the canvas, HUD, or touch controls. `window.GAME_VERSION` is always available and returns `"v0.9.0"`.
+The live game displays `v0.9.1` on the main menu only. Gameplay intentionally does not show a floating version badge over the canvas, HUD, or touch controls. `window.GAME_VERSION` is always available and returns `"v0.9.1"`.
 
 After a GitHub Pages deployment from `main`:
 
 - Hard refresh `https://jfhutchi.github.io/scorched_earth_remake/`.
 - Confirm the main menu shows `Crater Command`.
-- Confirm the main menu shows `v0.9.0`.
-- Open DevTools and confirm `window.GAME_VERSION` returns `"v0.9.0"`.
+- Confirm the main menu shows `v0.9.1`.
+- Open DevTools and confirm `window.GAME_VERSION` returns `"v0.9.1"`.
 - Confirm no gameplay version badge appears.
 - Confirm no external image or audio assets are requested.
 - Confirm version branches run validation only and do not deploy production Pages.

@@ -1,6 +1,6 @@
 # Manual Testing Checklist
 
-Current version: `v0.9.0`
+Current version: `v0.9.1`
 
 Use a local static server, open Crater Command in a desktop or mobile browser, and keep DevTools open for console errors. For mobile testing, use a real device on the LAN IP when possible.
 
@@ -8,9 +8,9 @@ Use a local static server, open Crater Command in a desktop or mobile browser, a
 
 - [ ] Browser tab title uses `Crater Command`.
 - [ ] Main menu shows `Crater Command`.
-- [ ] Main menu shows `v0.9.0`.
+- [ ] Main menu shows `v0.9.1`.
 - [ ] Gameplay screen does not show a floating version badge.
-- [ ] `window.GAME_VERSION` returns `"v0.9.0"`.
+- [ ] `window.GAME_VERSION` returns `"v0.9.1"`.
 - [ ] Play Campaign opens the Castle Siege level-select screen.
 - [ ] Duel vs CPU still starts.
 - [ ] Phone-sized layout shows the Campaign entry and it opens the level-select screen.
@@ -25,7 +25,8 @@ Use a local static server, open Crater Command in a desktop or mobile browser, a
 - [ ] CPU can shop, take turns, and fire supported weapons without freezing.
 - [ ] Mobile landscape controls and compact shop remain usable.
 - [ ] Desktop keyboard controls still work.
-- [ ] `BALANCE.md` exists and references `v0.9.0`.
+- [ ] `BALANCE.md` exists and references `v0.9.1`.
+- [ ] Phone-sized layout shows `Duel vs CPU` button (not hidden by `desktop-only`).
 - [ ] GitHub Actions validation passes.
 - [ ] GitHub Actions workflows run without Node 20 deprecation warnings.
 - [ ] No stale test artifacts are committed.
@@ -46,6 +47,13 @@ Use a local static server, open Crater Command in a desktop or mobile browser, a
 - [ ] Confirm rounds 4 and 5 are not played.
 - [ ] Confirm the final score is correct.
 - [ ] Confirm no console errors occur.
+
+## v0.9.1 Mobile CPU Fix Checks
+
+- [ ] Resize browser to a phone-sized viewport (e.g. 390 x 844). Main menu shows: Play Campaign, Duel vs CPU, How to Play, Sound, Try Fullscreen.
+- [ ] Tap Duel vs CPU on the phone-sized viewport. A CPU duel starts (not the Castle Siege level-select).
+- [ ] Two Player Local stays hidden on the phone-sized viewport (still desktop-only by design).
+- [ ] Desktop viewport (e.g. 1280 x 800) layout is unchanged: Play Campaign, Duel vs CPU, Two Player Local, How to Play, Sound, Try Fullscreen all visible.
 
 ## v0.9.0 Castle Siege Checks
 
@@ -171,8 +179,8 @@ Open with `?debug=1`.
 ## CI and Static Validation
 
 - [ ] `node --check` passes for all source and script files.
-- [ ] `node scripts/validate-version.mjs v0.9.0` passes.
-- [ ] `node scripts/check-release-notes.mjs v0.9.0` passes.
+- [ ] `node scripts/validate-version.mjs v0.9.1` passes.
+- [ ] `node scripts/check-release-notes.mjs v0.9.1` passes.
 - [ ] `node scripts/check-artifacts.mjs` passes.
 - [ ] `node scripts/check-pages-paths.mjs` passes.
 - [ ] Version branches run validation only.
