@@ -1,0 +1,23 @@
+# Normalize source and documentation line endings for Windows/WSL editors.
+* text=auto eol=lf
+
+# Binary assets must never be line-ending normalized.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.lnk binary
+
+# Text assets used by the static site.
+*.svg text eol=lf
+*.html text eol=lf
+*.css text eol=lf
+*.js text eol=lf
+*.mjs text eol=lf
+*.json text eol=lf
+*.webmanifest text eol=lf
+*.md text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf

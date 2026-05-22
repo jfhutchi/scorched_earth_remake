@@ -18,8 +18,8 @@ Use the existing validation gate:
 
 ```bash
 node scripts/static-check.mjs
-node scripts/validate-version.mjs v0.9.1
-node scripts/check-release-notes.mjs v0.9.1
+node scripts/validate-version.mjs v0.9.2
+node scripts/check-release-notes.mjs v0.9.2
 node scripts/check-artifacts.mjs
 node scripts/check-pages-paths.mjs
 ```
