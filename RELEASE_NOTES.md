@@ -4,7 +4,7 @@
 
 ### Summary
 
-v0.9.2 adds the Castle Siege Armory — a lightweight siege-coin store that lets players spend earned campaign coins on one-attempt bonus ammo caches without touching the Duel shop — and reworks the aiming trajectory preview into a Tank-Stars-style partial dotted arc that hints at the shot without revealing the exact landing point. No projectile physics, weapon stats, terrain, CPU behavior, or save-format changes. Duel vs CPU and Two Player Local shop loops remain untouched.
+v0.9.2 adds the Castle Siege Armory — a lightweight siege-coin store that lets players spend earned campaign coins on one-attempt bonus ammo caches without touching the Duel shop — and reworks the aiming trajectory preview into a Tank-Stars-style partial dotted arc that hints at the shot without revealing the exact landing point. No projectile physics, weapon stats, terrain, CPU behavior, or localStorage key migration. Existing Castle Siege saves are sanitized and back-filled with an `armory: {}` field. Duel vs CPU and Two Player Local shop loops remain untouched.
 
 ### Added
 
@@ -22,7 +22,7 @@ v0.9.2 adds the Castle Siege Armory — a lightweight siege-coin store that lets
 
 ### Preserved
 
-- Projectile flight, collision, weapon stats, damage, wind, terrain reshaping, and CPU aim logic are byte-for-byte unchanged.
+- Projectile flight, collision, weapon stats, damage, wind, terrain reshaping, and CPU aim logic are intended to remain unchanged.
 - v0.9.1 mobile Duel vs CPU button, v0.9.0 Castle Siege level engine, level-select overlay, 16 levels across two worlds, star-gated World 2 unlock, next-level routing, `src/siege/` module structure, and local progress storage all remain intact.
 - Duel vs CPU and Two Player Local shop and gameplay are unchanged.
 
@@ -64,9 +64,6 @@ v0.9.0 turns Castle Siege from a one-level vertical slice into a campaign level-
 - World catalog for Outpost and Quarry, including world membership, star unlock requirements, and level unlock helpers.
 - Sixteen Castle Siege levels: `siege_001` through `siege_008` in Outpost, and `siege_009` through `siege_016` in Quarry.
 - Wood/crystal Outpost levels and stone-supported Quarry levels.
-- Castle Siege Armory overlay accessible from level select and the result screen.
-- Persistent armory inventory under the existing Castle Siege progress save.
-- One-attempt ammo cache purchases for Precision Shell, Heavy Shell, Excavator Bomb, and Cluster Bomb.
 - Next Level action on victory when the next campaign level is unlocked.
 - Progress helpers for total stars and per-level progress reads.
 
@@ -75,8 +72,6 @@ v0.9.0 turns Castle Siege from a one-level vertical slice into a campaign level-
 - Moved Castle Siege modules into the minimal `src/siege/` folder.
 - Refactored Castle Siege level data into per-level files aggregated by `src/siege/levels.js`.
 - Campaign now opens the level-select screen instead of immediately starting `siege_001`.
-- Castle Siege attempts consume stocked Armory supplies when the level starts, adding bonus ammo on top of the level-authored base loadout.
-- Result overlays include an Armory route so siege coins can be spent before replaying or advancing.
 - Updated workflow validation references to `v0.9.0`.
 
 ### Preserved
@@ -85,7 +80,7 @@ v0.9.0 turns Castle Siege from a one-level vertical slice into a campaign level-
 
 ### Testing
 
-- Local checks should include static syntax validation, version/release/artifact/path validation, level-select smoke testing, Armory purchase/consume checks, first-level victory and Next Level routing, World 2 lock/unlock checks, and regression starts for Duel vs CPU and Two Player Local.
+- Local checks should include static syntax validation, version/release/artifact/path validation, level-select smoke testing, first-level victory and Next Level routing, World 2 lock/unlock checks, and regression starts for Duel vs CPU and Two Player Local.
 
 ## v0.8.0 - Previous
 

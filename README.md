@@ -145,8 +145,8 @@ Controls are locked while a projectile is flying, an explosion is resolving, the
 
 Phone landscape remains the intended mobile gameplay mode.
 
-- Phones show one primary `Play` button that starts Single Player vs CPU.
-- Desktop and larger layouts still show both `Two Player Local` and `Single Player vs CPU`.
+- Phone-sized layouts show `Play Campaign` and `Duel vs CPU`; Two Player Local stays hidden on phone-sized viewports.
+- Desktop and larger layouts still show `Play Campaign`, `Duel vs CPU`, and `Two Player Local`.
 - Phone portrait shows the rotate overlay unless the player chooses to continue.
 - Touch hold works for angle, power, and movement.
 - Fire and weapon-cycle trigger once per tap.
