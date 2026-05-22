@@ -980,6 +980,66 @@ select option:disabled {
     color: #9edbe6;
 }
 
+.armory-card {
+    max-width: 920px;
+    width: calc(100vw - 48px);
+}
+
+.armory-note {
+    flex-basis: 100%;
+    color: #e4dcc8;
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1.35;
+}
+
+.armory-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin: 18px 0;
+    text-align: left;
+}
+
+.armory-item-card {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 12px;
+    align-items: center;
+    padding: 14px;
+    border: 1px solid rgba(255, 236, 190, 0.16);
+    border-radius: 8px;
+    background: rgba(12, 20, 20, 0.28);
+}
+
+.armory-item-body h3 {
+    margin: 0 0 6px;
+    color: #ffe8a6;
+    font-size: 16px;
+}
+
+.armory-item-body p {
+    color: #e4dcc8;
+    font-size: 13px;
+    line-height: 1.35;
+}
+
+.armory-item-body .armory-item-meta {
+    margin-top: 6px;
+    color: #9edbe6;
+    font-weight: 800;
+}
+
+.armory-item-action {
+    display: grid;
+    gap: 8px;
+    justify-items: end;
+}
+
+.armory-buy {
+    min-width: 104px;
+}
+
 .summary-card,
 .shop-card {
     padding: 14px;
@@ -1726,7 +1786,8 @@ body.is-mobile-game .weapon-toast {
 
 body.is-mobile-game #shopOverlay .overlay-card,
 body.is-mobile-game #summaryOverlay .overlay-card,
-body.is-mobile-game #siegeResultOverlay .overlay-card {
+body.is-mobile-game #siegeResultOverlay .overlay-card,
+body.is-mobile-game #armoryOverlay .overlay-card {
     width: calc(100vw - 12px);
     max-width: calc(100vw - 12px);
     max-height: calc(var(--app-height, 100dvh) - 10px);
@@ -1739,7 +1800,8 @@ body.is-mobile-game #siegeResultOverlay .overlay-card {
 
 body.is-mobile-game #shopContent,
 body.is-mobile-game #summaryStats,
-body.is-mobile-game #siegeResultStats {
+body.is-mobile-game #siegeResultStats,
+body.is-mobile-game #armoryItems {
     min-height: 0;
     overflow: auto;
     -webkit-overflow-scrolling: touch;
@@ -1759,9 +1821,39 @@ body.is-mobile-game .level-select-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+body.is-mobile-game .armory-grid {
+    grid-template-columns: 1fr;
+}
+
+body.is-mobile-game .armory-item-card {
+    grid-template-columns: auto 1fr;
+}
+
+body.is-mobile-game .armory-item-action {
+    grid-column: 1 / -1;
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    justify-items: stretch;
+}
+
 @media (max-width: 720px) {
     .level-select-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .armory-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .armory-item-card {
+        grid-template-columns: auto 1fr;
+    }
+
+    .armory-item-action {
+        grid-column: 1 / -1;
+        grid-template-columns: auto 1fr;
+        align-items: center;
+        justify-items: stretch;
     }
 }
 

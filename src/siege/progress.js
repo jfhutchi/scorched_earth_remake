@@ -5,6 +5,7 @@ export function getDefaultCastleSiegeProgress() {
     return {
         version: VERSION,
         coins: 0,
+        armory: {},
         completedLevels: {},
     };
 }
@@ -79,6 +80,7 @@ function sanitizeProgress(value) {
     if (!value || typeof value !== 'object') return progress;
 
     progress.coins = Math.max(0, Math.round(Number(value.coins) || 0));
+    progress.armory = sanitizeArmory(value.armory);
     const completedLevels = value.completedLevels && typeof value.completedLevels === 'object'
         ? value.completedLevels
         : {};
@@ -92,6 +94,19 @@ function sanitizeProgress(value) {
     }
 
     return progress;
+}
+
+function sanitizeArmory(value) {
+    const armory = {};
+    if (!value || typeof value !== 'object') return armory;
+
+    for (const [itemId, count] of Object.entries(value)) {
+        if (!itemId) continue;
+        const safeCount = clampInt(count, 0, 99);
+        if (safeCount > 0) armory[itemId] = safeCount;
+    }
+
+    return armory;
 }
 
 function sanitizeLevelProgress(value) {

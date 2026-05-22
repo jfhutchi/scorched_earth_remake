@@ -8,6 +8,7 @@ import { drawTankWreck } from './tankRenderer.js';
 import { pickBattleTheme } from './themes.js';
 import { CastleSiegeMode } from './siege/mode.js';
 import { drawCastleSiegeBlocks, drawCastleSiegeHudOverlay, drawCastleSiegeObjectiveMarker } from './siege/renderer.js';
+import { consumeCastleSiegeArmorySupplies } from './siege/armory.js';
 import { getCastleSiegeLevel } from './siege/levels.js';
 import { loadCastleSiegeProgress } from './siege/progress.js';
 import { getNextLevelInCampaign, isLevelUnlocked } from './siege/worlds.js';
@@ -68,6 +69,7 @@ export class Game {
         this.shotInfo = null;
         this.roundStats = this._createRoundStats();
         this.lastSummary = null;
+        this.lastSiegeArmorySupplies = [];
         this.shopCpuPurchased = false;
         this.lastCpuShopPurchases = [];
         this.roundStartMessages = [];
@@ -136,6 +138,8 @@ export class Game {
 
     startCastleSiege(settings = {}, levelId = 'siege_001') {
         this.siege = new CastleSiegeMode(levelId);
+        const armoryUse = consumeCastleSiegeArmorySupplies();
+        this.lastSiegeArmorySupplies = armoryUse.supplies;
         this.settings = normalizeSettings({
             ...settings,
             windMode: this.siege.level.windMode || settings.windMode,
@@ -156,7 +160,7 @@ export class Game {
             name: 'Player 1',
             money: 0,
             health: CONFIG.tank.maxHealth,
-            ammo: createSiegeAmmo(this.siege.level.loadout),
+            ammo: createSiegeAmmo(this.siege.level.loadout, this.lastSiegeArmorySupplies),
             shieldCharge: 0,
             repairKits: 0,
             parachutes: 0,
@@ -212,7 +216,10 @@ export class Game {
         this.audio.startAmbience(this.theme);
         this.phase = 'siegeAiming';
         this.statusMessage = `${this.siege.level.name}: destroy the castle core.`;
-        this.lastResult = `Castle Siege ready. ${this.siege.shotsRemaining} shots available.`;
+        const armoryText = formatSiegeArmorySupplies(this.lastSiegeArmorySupplies);
+        this.lastResult = armoryText
+            ? `Castle Siege ready. Armory loaded ${armoryText}. ${this.siege.shotsRemaining} shots available.`
+            : `Castle Siege ready. ${this.siege.shotsRemaining} shots available.`;
         this._draw();
         this.ui.update(this._state());
         this.audio.playRoundStart();
@@ -227,6 +234,10 @@ export class Game {
     restartCastleSiegeLevel(levelId = this.siege ? this.siege.level.id : 'siege_001') {
         this.ui.showGame();
         this.startCastleSiege(this.settings, levelId);
+    }
+
+    getCastleSiegeResultForUi(result = this.siege ? this.siege.result : null) {
+        return this._castleSiegeResultWithNext(result);
     }
 
     _prepareCastleSiegeTerrain(blocks, playerX) {
@@ -2743,19 +2754,20 @@ export class Game {
     }
 
     _castleSiegeResultWithNext(result) {
+        const progress = loadCastleSiegeProgress();
         if (!result || !result.victory) {
-            return result ? { ...result, nextLevelId: null, nextLevelName: null } : result;
+            return result ? { ...result, totalCoins: progress.coins, nextLevelId: null, nextLevelName: null } : result;
         }
 
         const next = getNextLevelInCampaign(result.levelId || this.siege?.level?.id);
-        const progress = loadCastleSiegeProgress();
         if (!next || !isLevelUnlocked(next.levelId, progress)) {
-            return { ...result, nextLevelId: null, nextLevelName: null };
+            return { ...result, totalCoins: progress.coins, nextLevelId: null, nextLevelName: null };
         }
 
         const nextLevel = getCastleSiegeLevel(next.levelId);
         return {
             ...result,
+            totalCoins: progress.coins,
             nextLevelId: next.levelId,
             nextLevelName: nextLevel ? nextLevel.name : next.levelId,
             nextWorldId: next.worldId,
@@ -3016,6 +3028,10 @@ export class Game {
     }
 
     _drawTrajectoryPreview(ctx, tank) {
+        // Tank-Stars-style preview: simulate the same physics as the real shot,
+        // but only render the first ~62% of the predicted path so the player
+        // sees a helpful arc without the exact landing spot. Projectile flight
+        // and collision use the real physics elsewhere; this is visual only.
         const weapon = tank.selectedWeapon();
         const muzzle = tank.muzzlePosition();
         const velocity = tank.fireVelocity(weapon);
@@ -3024,32 +3040,75 @@ export class Game {
         let vx = velocity.vx;
         let vy = velocity.vy;
         const dt = 1 / 30;
-        const points = [];
+        const maxSteps = 96;
+        const samples = [];
+        let predictedSteps = maxSteps;
 
-        for (let i = 0; i < 54; i++) {
+        for (let i = 0; i < maxSteps; i++) {
             vy += CONFIG.physics.gravity * dt;
             vx += this.wind * CONFIG.physics.windAccelScale * dt;
             x += vx * dt;
             y += vy * dt;
-            if (x < 0 || x >= this.width || y >= this.height) break;
-            if (i % 3 === 0) points.push({ x, y, alpha: 1 - i / 62 });
-            if (y >= this.terrain.heightAt(x)) break;
+            samples.push({ x, y });
+
+            if (x < 0 || x >= this.width || y >= this.height) {
+                predictedSteps = i + 1;
+                break;
+            }
+            if (y >= this.terrain.heightAt(x)) {
+                predictedSteps = i + 1;
+                break;
+            }
+            if (this.gameMode === 'siege' && this._previewPointInBlock(x, y)) {
+                predictedSteps = i + 1;
+                break;
+            }
         }
 
+        if (samples.length === 0) return;
+
+        // Cap preview to roughly 62% of the predicted path, clamped so very
+        // short shots still show something and long shots don't trail too far.
+        const visibleSteps = clamp(Math.floor(predictedSteps * 0.62), 6, samples.length - 1);
+        const dotStride = 4;
+        const dots = [];
+        for (let i = dotStride; i <= visibleSteps; i += dotStride) {
+            const point = samples[i - 1];
+            if (!point) break;
+            const progress = i / visibleSteps;
+            // Linear fade across the last 40% of the visible arc so the tail
+            // never resolves to a single high-contrast "this is your impact" dot.
+            const fade = progress > 0.6 ? Math.max(0, 1 - (progress - 0.6) / 0.4) : 1;
+            dots.push({ x: point.x, y: point.y, fade });
+        }
+
+        if (dots.length === 0) return;
+
         ctx.save();
-        for (const point of points) {
-            ctx.fillStyle = `rgba(0, 0, 0, ${0.18 + point.alpha * 0.42})`;
+        for (const dot of dots) {
+            ctx.fillStyle = `rgba(0, 0, 0, ${0.22 * dot.fade})`;
             ctx.beginPath();
-            ctx.arc(point.x, point.y, 4.1, 0, Math.PI * 2);
+            ctx.arc(dot.x, dot.y, 4.1, 0, Math.PI * 2);
             ctx.fill();
         }
-        for (const point of points) {
-            ctx.fillStyle = `rgba(255, 245, 120, ${0.32 + point.alpha * 0.63})`;
+        for (const dot of dots) {
+            ctx.fillStyle = `rgba(255, 245, 120, ${0.62 * dot.fade})`;
             ctx.beginPath();
-            ctx.arc(point.x, point.y, 2.45, 0, Math.PI * 2);
+            ctx.arc(dot.x, dot.y, 2.45, 0, Math.PI * 2);
             ctx.fill();
         }
         ctx.restore();
+    }
+
+    _previewPointInBlock(x, y) {
+        if (!this.siege || !Array.isArray(this.siege.blocks)) return false;
+        for (const block of this.siege.blocks) {
+            if (!block || block.destroyed) continue;
+            if (x < block.x || x > block.x + block.width) continue;
+            if (y < block.y || y > block.y + block.height) continue;
+            return true;
+        }
+        return false;
     }
 
     _drawWindIndicator(ctx) {
@@ -3115,7 +3174,7 @@ function createStartingAmmo() {
     return ammo;
 }
 
-function createSiegeAmmo(loadout = []) {
+function createSiegeAmmo(loadout = [], armorySupplies = []) {
     const ammo = {};
     for (const weapon of WEAPONS) {
         ammo[weapon.id] = weapon.unlimitedAmmo ? Infinity : 0;
@@ -3128,8 +3187,29 @@ function createSiegeAmmo(loadout = []) {
             ? Math.max(0, Math.min(max, Math.round(item.ammo)))
             : Infinity;
     }
+
+    for (const supply of Array.isArray(armorySupplies) ? armorySupplies : []) {
+        if (!supply || !supply.weaponId || !Number.isFinite(supply.amount)) continue;
+        const weapon = getWeaponById(supply.weaponId);
+        if (!weapon || weapon.unlimitedAmmo) continue;
+        const max = maxAmmoFor(weapon.id);
+        const current = Number.isFinite(ammo[weapon.id]) ? ammo[weapon.id] : 0;
+        ammo[weapon.id] = Math.min(max, current + Math.max(0, Math.round(supply.amount)));
+    }
+
     ammo.standard = Infinity;
     return ammo;
+}
+
+function formatSiegeArmorySupplies(supplies = []) {
+    if (!Array.isArray(supplies) || supplies.length === 0) return '';
+    return supplies
+        .filter((supply) => supply && supply.weaponId && supply.amount > 0)
+        .map((supply) => {
+            const weapon = getWeaponById(supply.weaponId);
+            return `${weapon.compactName || weapon.name} +${supply.amount}`;
+        })
+        .join(', ');
 }
 
 function summarizeInventory(player) {
